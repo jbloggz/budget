@@ -8,7 +8,7 @@
 
 import os
 import sqlite3
-from typing import List
+from typing import List, Dict, Optional, Any
 
 
 class Singleton(object):
@@ -81,3 +81,61 @@ class Database(Singleton):
             key:   The setting key
         '''
         self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
+
+    def add_transaction(self, time: int, amount: float, description: str, source: str) -> int:
+        '''
+        Add a new transaction
+
+        Args:
+            time:           The time of the transaction
+            amount:         The amount of the transaction
+            description:    The transaction description
+            source:         The source of the transaction
+
+        Returns:
+            The ID of the added transaction
+        '''
+        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (time, amount, description, source))
+        return self.db.lastrowid
+
+    def get_transaction(self, txn_id: int) -> Optional[Dict[str, Any]]:
+        '''
+        Add a new transaction
+
+        Args:
+            txn_id: The transaction ID
+
+        Returns:
+            A dictionary of the transaction details, or None if txn_id is invalid
+        '''
+        self.db.execute('SELECT time, amount, description, source FROM txn WHERE id = ?', (txn_id, ))
+        row = self.db.fetchone()
+        if row is None:
+            return None
+        return {
+            'time': row[0],
+            'amount': row[1],
+            'description': row[2],
+            'source': row[3],
+        }
+
+    def get_transaction_list(self, expr: str) -> List[Dict[str, Any]]:
+        '''
+        Get list of transaction based on a filter expression
+
+        Args:
+            filter: An SQL filter expression
+
+        Returns:
+            A list of transactions that match the filter
+        '''
+        self.db.execute(f'SELECT time, amount, description, source FROM txn WHERE {expr}')
+        res = []
+        for row in self.db:
+            res.append({
+                'time': row[0],
+                'amount': row[1],
+                'description': row[2],
+                'source': row[3],
+            })
+        return res

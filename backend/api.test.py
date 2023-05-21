@@ -57,6 +57,28 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(self.db.get_setting('interval'), 'weekly')
         self.assertEqual(self.db.get_setting('foo'), 'bar')
 
+    def test_add_transaction(self) -> None:
+        txn_id = self.db.add_transaction(1684670193, 34.56, 'FooBar Enterprises', 'Bank of Foo')
+        txn = self.db.get_transaction(txn_id)
+        self.assertIsNotNone(txn)
+        if txn is not None:
+            self.assertEqual(txn['time'], 1684670193)
+            self.assertEqual(txn['amount'], 34.56)
+            self.assertEqual(txn['description'], 'FooBar Enterprises')
+            self.assertEqual(txn['source'], 'Bank of Foo')
+
+    def test_get_invalid_transaction(self) -> None:
+        txn = self.db.get_transaction(1234)
+        self.assertEqual(txn, None)
+
+    def test_get_transaction_list(self) -> None:
+        self.db.add_transaction(1684670193, 34.56, 'FooBar Enterprises', 'Bank of Foo')
+        self.db.add_transaction(1684680193, 123.34, 'Qwerty Inc', 'Bank of Foo')
+        self.db.add_transaction(1684690193, 9382.30, 'FooBar Enterprises', 'Bank of Foo')
+        self.db.add_transaction(1684700193, 291.2, 'FooBar Enterprises', 'Bank of Foo')
+        txn_list = self.db.get_transaction_list('description = \'FooBar Enterprises\'')
+        self.assertEqual(len(txn_list), 3)
+
 
 class TestAPI(unittest.TestCase):
     def test_hello(self) -> None:
