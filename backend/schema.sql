@@ -29,12 +29,14 @@ CREATE TABLE IF NOT EXISTS category (
    id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
    name            TEXT     NOT NULL      /* The category name */
 );
+INSERT OR IGNORE INTO category VALUES (1, 'Unknown');
 
 /* A table to store the locations */
 CREATE TABLE IF NOT EXISTS location (
    id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
    name            TEXT     NOT NULL      /* The location name */
 );
+INSERT OR IGNORE INTO location VALUES (1, 'Unknown');
 
 /* A table to store the assignments of transactions to categories */
 CREATE TABLE IF NOT EXISTS allocation (
@@ -47,3 +49,6 @@ CREATE TABLE IF NOT EXISTS allocation (
 CREATE INDEX IF NOT EXISTS allocation_txn_idx ON allocation(txn_id);
 CREATE INDEX IF NOT EXISTS allocation_category_idx ON allocation(category_id);
 CREATE INDEX IF NOT EXISTS allocation_location_idx ON allocation(location_id);
+
+/* Make sure foreign key constrainst are enabled */
+PRAGMA foreign_keys = ON;
