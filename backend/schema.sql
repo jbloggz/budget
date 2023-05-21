@@ -6,6 +6,13 @@
  * schema.sql: This file is the schema for the budget database
  */
 
+/* A table to store the app settings */
+CREATE TABLE IF NOT EXISTS setting (
+   key             TEXT     PRIMARY KEY,  /* The key of the setting */
+   value           TEXT     NOT NULL      /* The value of the setting */
+);
+CREATE INDEX IF NOT exists setting_key ON setting(key);
+
 /* A table to store the raw transactions scaped from the accounts */
 CREATE TABLE IF NOT EXISTS txn (
    id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
@@ -32,10 +39,10 @@ CREATE TABLE IF NOT EXISTS location (
 /* A table to store the assignments of transactions to categories */
 CREATE TABLE IF NOT EXISTS allocation (
    id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
-   amount          INTEGER  NOT NULL      /* The amount of the transaction in cents */
+   amount          INTEGER  NOT NULL,     /* The amount of the transaction in cents */
    txn_id          INTEGER  NOT NULL REFERENCES txn(id) ON DELETE CASCADE ON UPDATE CASCADE,
    category_id     INTEGER  NOT NULL REFERENCES category(id) ON DELETE CASCADE ON UPDATE CASCADE,
-   location_id     INTEGER  NOT NULL REFERENCES location(id) ON DELETE CASCADE ON UPDATE CASCADE,
+   location_id     INTEGER  NOT NULL REFERENCES location(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE INDEX IF NOT EXISTS allocation_txn_idx ON allocation(txn_id);
 CREATE INDEX IF NOT EXISTS allocation_category_idx ON allocation(category_id);

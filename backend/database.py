@@ -8,6 +8,7 @@
 
 import os
 import sqlite3
+from typing import List
 
 
 class Singleton(object):
@@ -22,6 +23,9 @@ class Singleton(object):
 
 
 class Database(Singleton):
+    '''
+    A class that abstracts the interaction with the SQLite database
+    '''
     DB_PATH = os.environ.get('DB_PATH') or './budget.db'
 
     def __init__(self):
@@ -31,16 +35,49 @@ class Database(Singleton):
             schema = fp.read()
             self.db.executescript(schema)
 
-    def get_tables(self):
+    def get_tables(self) -> List[str]:
         '''
         Get a list of all the sql tables in the database
         '''
         self.db.execute('SELECT name FROM sqlite_master WHERE type=\'table\'')
         return [v[0] for v in self.db.fetchall()]
 
-    def get_fields(self, table):
+    def get_fields(self, table: str) -> List[str]:
         '''
         Get a list of all the fields for a given table
         '''
-        self.db.execute('select name from pragma_table_info(?)', (table, ))
+        self.db.execute('SELECT name FROM pragma_table_info(?)', (table, ))
         return [v[0] for v in self.db.fetchall()]
+
+    def set_setting(self, key: str, value: str) -> None:
+        '''
+        Insert a setting option
+
+        Args:
+            key:   The setting key
+            value: The setting value
+        '''
+        self.db.execute('INSERT INTO setting VALUES (?, ?) ON CONFLICT DO UPDATE SET value = ?', (key, value, value))
+
+    def get_setting(self, key: str) -> str:
+        '''
+        Get a setting option
+
+        Args:
+            key:   The setting key
+
+        Returns:
+            The setting value
+        '''
+        self.db.execute('SELECT VALUE FROM setting WHERE key = ?', (key, ))
+        res = self.db.fetchone()
+        return res[0] if res else None
+
+    def clear_setting(self, key: str) -> None:
+        '''
+        Remove a setting option
+
+        Args:
+            key:   The setting key
+        '''
+        self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
