@@ -11,29 +11,24 @@ import sqlite3
 from typing import List, Dict, Optional, Any
 
 
-class Singleton(object):
-    '''
-    This is a singleton class. Anything that inherits from it will be a singleton
-    '''
-    def __new__(cls, *args, **kw):
-        if not hasattr(cls, '_instance'):
-            org = super(Singleton, cls)
-            cls._instance = org.__new__(cls, *args, **kw)
-        return cls._instance
-
-
-class Database(Singleton):
+class Database:
     '''
     A class that abstracts the interaction with the SQLite database
     '''
     DB_PATH = os.environ.get('DB_PATH') or './budget.db'
 
-    def __init__(self):
+    def __enter__(self):
         self.con = sqlite3.connect(Database.DB_PATH)
         self.db = self.con.cursor()
         with open('schema.sql') as fp:
             schema = fp.read()
             self.db.executescript(schema)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.db.close()
+        self.con.commit()
+        self.con.close()
 
     def get_tables(self) -> List[str]:
         '''
