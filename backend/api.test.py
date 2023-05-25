@@ -111,6 +111,7 @@ class TestDatabase(unittest.TestCase):
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
+
             db.update_allocation(alloc_list[0].id, 'Foo', 'Foo Inc')
             alloc = db.get_allocation(alloc_list[0].id)
             self.assertIsNotNone(alloc)
@@ -120,16 +121,24 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(alloc.category, 'Foo')
             self.assertEqual(alloc.location, 'Foo Inc')
             assert alloc_list[0].id is not None
+
             db.update_allocation(alloc_list[0].id, 'Bar', 'Bar Inc')
             alloc = db.get_allocation(alloc_list[0].id)
             assert alloc is not None
             self.assertEqual(alloc.category, 'Bar')
             self.assertEqual(alloc.location, 'Bar Inc')
             assert alloc_list[0].id is not None
+
             db.update_allocation(alloc_list[0].id, location='Foo Inc')
             alloc = db.get_allocation(alloc_list[0].id)
             assert alloc is not None
             self.assertEqual(alloc.category, 'Bar')
+            self.assertEqual(alloc.location, 'Foo Inc')
+
+            db.update_allocation(alloc_list[0].id, category='Foo')
+            alloc = db.get_allocation(alloc_list[0].id)
+            assert alloc is not None
+            self.assertEqual(alloc.category, 'Foo')
             self.assertEqual(alloc.location, 'Foo Inc')
 
     def test_update_allocation_note(self) -> None:
