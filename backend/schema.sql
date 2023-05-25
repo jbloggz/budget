@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS allocation (
    amount          INTEGER  NOT NULL,     /* The amount of the transaction in cents */
    txn_id          INTEGER  NOT NULL REFERENCES txn(id) ON DELETE CASCADE ON UPDATE CASCADE,
    category_id     INTEGER  NOT NULL REFERENCES category(id) ON DELETE CASCADE ON UPDATE CASCADE,
-   location_id     INTEGER  NOT NULL REFERENCES location(id) ON DELETE CASCADE ON UPDATE CASCADE
+   location_id     INTEGER  NOT NULL REFERENCES location(id) ON DELETE CASCADE ON UPDATE CASCADE,
+   note            TEXT     DEFAULT NULL
 );
 CREATE INDEX IF NOT EXISTS allocation_txn_idx ON allocation(txn_id);
 CREATE INDEX IF NOT EXISTS allocation_category_idx ON allocation(category_id);

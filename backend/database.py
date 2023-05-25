@@ -92,7 +92,7 @@ class Database:
         '''
         self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (time, amount, description, source))
         rowid = self.db.lastrowid
-        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1)', (amount, rowid))
+        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, rowid))
         return rowid
 
     def get_transaction_list(self, expr: str) -> List[Dict[str, Any]]:
@@ -166,7 +166,7 @@ class Database:
         Returns:
             A list of allocations that match the filter
         '''
-        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.time as time, allocation.amount as amount, category.name as category, location.name as location
+        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.time as time, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
                             FROM allocation
                             LEFT JOIN category ON category_id = category.id
                             LEFT JOIN location ON location_id = location.id
@@ -181,6 +181,7 @@ class Database:
                 'amount': row[3],
                 'category': row[4],
                 'location': row[5],
+                'note': row[6],
             })
         return res
 
@@ -197,7 +198,7 @@ class Database:
         alloc_list = self.get_allocation_list(f'allocation.id = {alloc_id}')
         return alloc_list[0] if alloc_list else None
 
-    def update_allocation(self, alloc_id: int, category: str, location: str) -> None:
+    def update_allocation(self, alloc_id: int, category: str = None, location: str = None, note: str = None) -> None:
         '''
         Update the category and location for an existing allocation
 
@@ -205,20 +206,25 @@ class Database:
             alloc_id: The allocation ID
             category: The new category
             location: The new location
+            location: A note for the allocation
         '''
         categories = self.get_categories()
-        if category not in categories:
+        if category is None:
+            category_id = None
+        elif category not in categories:
             self.db.execute(f'INSERT INTO category VALUES (NULL, ?)', (category, ))
             category_id = self.db.lastrowid
         else:
             category_id = categories[category]
         locations = self.get_locations()
-        if location not in locations:
+        if location is None:
+            location_id = None
+        elif location not in locations:
             self.db.execute(f'INSERT INTO location VALUES (NULL, ?)', (location, ))
             location_id = self.db.lastrowid
         else:
             location_id = locations[location]
-        self.db.execute(f'UPDATE allocation SET category_id = ?, location_id = ? WHERE id = ?', (category_id, location_id, alloc_id))
+        self.db.execute(f'UPDATE allocation SET category_id = IFNULL(?, category_id), location_id = IFNULL(?, location_id), note = IFNULL(?, note) WHERE id = ?', (category_id, location_id, note, alloc_id))
 
     def split_allocation(self, alloc_id: int, amount: int) -> int:
         '''
@@ -233,7 +239,7 @@ class Database:
             raise ValueError('Invalid allocaction')
         if amount >= alloc['amount'] or amount <= 0:
             raise ValueError('Invalid amount to split from allocation')
-        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1)', (amount, alloc['txn_id']))
+        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, alloc['txn_id']))
         res = self.db.lastrowid
         self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc['amount'] - amount, alloc_id))
         return res

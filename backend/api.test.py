@@ -38,7 +38,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_allocation_fields(self) -> None:
         with db:
-            self.assertEqual(set(db.get_fields('allocation')), {'id', 'txn_id', 'location_id', 'category_id', 'amount'})
+            self.assertEqual(set(db.get_fields('allocation')), {'id', 'txn_id', 'location_id', 'category_id', 'amount', 'note'})
 
     def test_create_setting(self) -> None:
         with db:
@@ -117,11 +117,25 @@ class TestDatabase(unittest.TestCase):
             assert alloc is not None
             self.assertEqual(alloc['category'], 'Bar')
             self.assertEqual(alloc['location'], 'Bar Inc')
-            db.update_allocation(alloc_list[0]['id'], 'Foo', 'Foo Inc')
+            db.update_allocation(alloc_list[0]['id'], location='Foo Inc')
             alloc = db.get_allocation(alloc_list[0]['id'])
             assert alloc is not None
-            self.assertEqual(alloc['category'], 'Foo')
+            self.assertEqual(alloc['category'], 'Bar')
             self.assertEqual(alloc['location'], 'Foo Inc')
+
+    def test_update_allocation_note(self) -> None:
+        with db:
+            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
+            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            self.assertEqual(len(alloc_list), 1)
+            db.update_allocation(alloc_list[0]['id'], note='A little note from the heart', category='Shopping')
+            alloc = db.get_allocation(alloc_list[0]['id'])
+            assert alloc is not None
+            self.assertEqual(alloc['amount'], 3456)
+            self.assertEqual(alloc['txn_id'], txn_id)
+            self.assertEqual(alloc['category'], 'Shopping')
+            self.assertEqual(alloc['location'], 'Unknown')
+            self.assertEqual(alloc['note'], 'A little note from the heart')
 
     def test_split_allocation(self) -> None:
         with db:
