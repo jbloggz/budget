@@ -20,6 +20,15 @@ class Transaction(BaseModel):
     source: str
 
 
+class Allocation(BaseModel):
+    id: int | None = None
+    txn_id: int
+    time: int
+    amount: int
+    category: str
+    location: str
+
+
 app = FastAPI()
 
 
@@ -35,3 +44,10 @@ def get_transactions(query: str) -> List[Transaction]:
     with Database() as db:
         txn_list = db.get_transaction_list(query)
     return [Transaction(id=t['id'], time=t['time'], amount=t['amount'], description=t['description'], source=t['source']) for t in txn_list]
+
+
+@app.get('/allocation/', response_model=List[Allocation])
+def get_allocations(query: str) -> List[Allocation]:
+    with Database() as db:
+        txn_list = db.get_allocation_list(query)
+    return [Allocation(id=t['id'], txn_id=t['txn_id'], time=t['time'], amount=t['amount'], category=t['category'], location=t['location']) for t in txn_list]

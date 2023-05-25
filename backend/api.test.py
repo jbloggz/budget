@@ -166,7 +166,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertGreater(response.json()['id'], 0)
 
-    def test_get_existing_transaction(self) -> None:
+    def test_get_existing_transactions(self) -> None:
         with db:
             txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
         response = client.get(f'/transaction/?query=id={txn_id}')
@@ -176,6 +176,26 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.json()[0]['amount'], 3456)
         self.assertEqual(response.json()[0]['description'], 'FooBar Enterprises')
         self.assertEqual(response.json()[0]['source'], 'Bank of Foo')
+
+    def test_get_existing_allocations(self) -> None:
+        with db:
+            txn_id = db.add_transaction(1584670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
+            db.add_transaction(1584671193, 125, '123 Inc', 'Bank of Bar')
+            db.add_transaction(1584672193, 13305, 'Qwerty Corp', 'Bank of Foo')
+        response = client.get(f'/allocation/?query=time<1584672000')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 2)
+        for resp in response.json():
+            self.assertGreater(resp['id'], 0)
+            self.assertGreater(resp['txn_id'], 0)
+            self.assertEqual(resp['category'], 'Unknown')
+            self.assertEqual(resp['location'], 'Unknown')
+            if resp['txn_id'] == txn_id:
+                self.assertEqual(resp['time'], 1584670193)
+                self.assertEqual(resp['amount'], 3456)
+            else:
+                self.assertEqual(resp['time'], 1584671193)
+                self.assertEqual(resp['amount'], 125)
 
 
 unittest.main()

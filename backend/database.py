@@ -166,19 +166,21 @@ class Database:
         Returns:
             A list of allocations that match the filter
         '''
-        self.db.execute(f'''SELECT allocation.id, allocation.amount, allocation.txn_id, category.name, location.name
+        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.time as time, allocation.amount as amount, category.name as category, location.name as location
                             FROM allocation
                             LEFT JOIN category ON category_id = category.id
                             LEFT JOIN location ON location_id = location.id
+                            LEFT JOIN txn ON txn_id = txn.id
                             WHERE {expr}''')
         res = []
         for row in self.db:
             res.append({
                 'id': row[0],
-                'amount': row[1],
-                'txn_id': row[2],
-                'category': row[3],
-                'location': row[4],
+                'txn_id': row[1],
+                'time': row[2],
+                'amount': row[3],
+                'category': row[4],
+                'location': row[5],
             })
         return res
 
