@@ -6,10 +6,15 @@
 # api.test.py: This file contains the unit tests for the backend of the budget App
 #
 
+# System imports
 from fastapi.testclient import TestClient
 import unittest
+
+# Local imports
 from api import app
 from database import Database
+from model import Transaction, Allocation
+
 
 client = TestClient(app)
 db = Database()
@@ -65,15 +70,16 @@ class TestDatabase(unittest.TestCase):
 
     def test_add_transaction(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            txn = db.get_transaction(txn_id)
+            added_txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            assert added_txn.id is not None
+            txn = db.get_transaction(added_txn.id)
             self.assertIsNotNone(txn)
             assert txn is not None
-            self.assertEqual(txn['id'], txn_id)
-            self.assertEqual(txn['time'], 1684670193)
-            self.assertEqual(txn['amount'], 3456)
-            self.assertEqual(txn['description'], 'FooBar Enterprises')
-            self.assertEqual(txn['source'], 'Bank of Foo')
+            self.assertEqual(txn.id, added_txn.id)
+            self.assertEqual(txn.time, 1684670193)
+            self.assertEqual(txn.amount, 3456)
+            self.assertEqual(txn.description, 'FooBar Enterprises')
+            self.assertEqual(txn.source, 'Bank of Foo')
 
     def test_get_invalid_transaction(self) -> None:
         with db:
@@ -82,78 +88,86 @@ class TestDatabase(unittest.TestCase):
 
     def test_get_transaction_list(self) -> None:
         with db:
-            db.add_transaction(1684670193, 3456, 'Joe Pty Ltd', 'Bank of Foo')
-            db.add_transaction(1684680193, 12334, 'Qwerty Inc', 'Bank of Foo')
-            db.add_transaction(1684690193, 938230, 'Joe Pty Ltd', 'Bank of Foo')
-            db.add_transaction(1684700193, 29120, 'Joe Pty Ltd', 'Bank of Foo')
+            db.add_transaction(Transaction(time=1684670193, amount=3456, description='Joe Pty Ltd', source='Bank of Foo'))
+            db.add_transaction(Transaction(time=1684680193, amount=12334, description='Qwerty Inc', source='Bank of Foo'))
+            db.add_transaction(Transaction(time=1684690193, amount=938230, description='Joe Pty Ltd', source='Bank of Foo'))
+            db.add_transaction(Transaction(time=1684700193, amount=29120, description='Joe Pty Ltd', source='Bank of Foo'))
             txn_list = db.get_transaction_list('description = \'Joe Pty Ltd\'')
             self.assertEqual(len(txn_list), 3)
 
     def test_default_allocation_added_when_transaction_added(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
-            self.assertEqual(alloc_list[0]['amount'], 3456)
-            self.assertEqual(alloc_list[0]['txn_id'], txn_id)
-            self.assertEqual(alloc_list[0]['category'], 'Unknown')
-            self.assertEqual(alloc_list[0]['location'], 'Unknown')
+            self.assertEqual(alloc_list[0].amount, 3456)
+            self.assertEqual(alloc_list[0].txn_id, txn.id)
+            self.assertEqual(alloc_list[0].category, 'Unknown')
+            self.assertEqual(alloc_list[0].location, 'Unknown')
 
     def test_update_allocation(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
-            db.update_allocation(alloc_list[0]['id'], 'Foo', 'Foo Inc')
-            alloc = db.get_allocation(alloc_list[0]['id'])
+            assert alloc_list[0].id is not None
+            db.update_allocation(alloc_list[0].id, 'Foo', 'Foo Inc')
+            alloc = db.get_allocation(alloc_list[0].id)
             self.assertIsNotNone(alloc)
             assert alloc is not None
-            self.assertEqual(alloc['amount'], 3456)
-            self.assertEqual(alloc['txn_id'], txn_id)
-            self.assertEqual(alloc['category'], 'Foo')
-            self.assertEqual(alloc['location'], 'Foo Inc')
-            db.update_allocation(alloc_list[0]['id'], 'Bar', 'Bar Inc')
-            alloc = db.get_allocation(alloc_list[0]['id'])
+            self.assertEqual(alloc.amount, 3456)
+            self.assertEqual(alloc.txn_id, txn.id)
+            self.assertEqual(alloc.category, 'Foo')
+            self.assertEqual(alloc.location, 'Foo Inc')
+            assert alloc_list[0].id is not None
+            db.update_allocation(alloc_list[0].id, 'Bar', 'Bar Inc')
+            alloc = db.get_allocation(alloc_list[0].id)
             assert alloc is not None
-            self.assertEqual(alloc['category'], 'Bar')
-            self.assertEqual(alloc['location'], 'Bar Inc')
-            db.update_allocation(alloc_list[0]['id'], location='Foo Inc')
-            alloc = db.get_allocation(alloc_list[0]['id'])
+            self.assertEqual(alloc.category, 'Bar')
+            self.assertEqual(alloc.location, 'Bar Inc')
+            assert alloc_list[0].id is not None
+            db.update_allocation(alloc_list[0].id, location='Foo Inc')
+            alloc = db.get_allocation(alloc_list[0].id)
             assert alloc is not None
-            self.assertEqual(alloc['category'], 'Bar')
-            self.assertEqual(alloc['location'], 'Foo Inc')
+            self.assertEqual(alloc.category, 'Bar')
+            self.assertEqual(alloc.location, 'Foo Inc')
 
     def test_update_allocation_note(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
-            db.update_allocation(alloc_list[0]['id'], note='A little note from the heart', category='Shopping')
-            alloc = db.get_allocation(alloc_list[0]['id'])
+            assert alloc_list[0].id is not None
+            db.update_allocation(alloc_list[0].id, note='A little note from the heart', category='Shopping')
+            alloc = db.get_allocation(alloc_list[0].id)
             assert alloc is not None
-            self.assertEqual(alloc['amount'], 3456)
-            self.assertEqual(alloc['txn_id'], txn_id)
-            self.assertEqual(alloc['category'], 'Shopping')
-            self.assertEqual(alloc['location'], 'Unknown')
-            self.assertEqual(alloc['note'], 'A little note from the heart')
+            self.assertEqual(alloc.amount, 3456)
+            self.assertEqual(alloc.txn_id, txn.id)
+            self.assertEqual(alloc.category, 'Shopping')
+            self.assertEqual(alloc.location, 'Unknown')
+            self.assertEqual(alloc.note, 'A little note from the heart')
 
     def test_split_allocation(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
-            alloc_id = db.split_allocation(alloc_list[0]['id'], 1234)
-            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            assert alloc_list[0].id is not None
+            alloc_id = db.split_allocation(alloc_list[0].id, 1234)
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 2)
-            old_idx, new_idx = [1, 0] if alloc_list[0]['id'] == alloc_id else [0, 1]
-            self.assertEqual(alloc_list[old_idx]['amount'], 2222)
-            self.assertEqual(alloc_list[old_idx]['txn_id'], txn_id)
-            self.assertEqual(alloc_list[old_idx]['category'], 'Unknown')
-            self.assertEqual(alloc_list[old_idx]['location'], 'Unknown')
-            self.assertEqual(alloc_list[new_idx]['amount'], 1234)
-            self.assertEqual(alloc_list[new_idx]['txn_id'], txn_id)
-            self.assertEqual(alloc_list[new_idx]['category'], 'Unknown')
-            self.assertEqual(alloc_list[new_idx]['location'], 'Unknown')
+            assert alloc_list[0].id is not None
+            old_idx, new_idx = [1, 0] if alloc_list[0].id == alloc_id else [0, 1]
+            assert alloc_list[old_idx].id is not None
+            assert alloc_list[new_idx].id is not None
+            self.assertEqual(alloc_list[old_idx].amount, 2222)
+            self.assertEqual(alloc_list[old_idx].txn_id, txn.id)
+            self.assertEqual(alloc_list[old_idx].category, 'Unknown')
+            self.assertEqual(alloc_list[old_idx].location, 'Unknown')
+            self.assertEqual(alloc_list[new_idx].amount, 1234)
+            self.assertEqual(alloc_list[new_idx].txn_id, txn.id)
+            self.assertEqual(alloc_list[new_idx].category, 'Unknown')
+            self.assertEqual(alloc_list[new_idx].location, 'Unknown')
 
     def test_throws_if_split_invalid_allocation(self) -> None:
         with db:
@@ -162,11 +176,12 @@ class TestDatabase(unittest.TestCase):
 
     def test_throws_if_split_to_much(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            alloc_list = db.get_allocation_list(f'txn_id = {txn_id}')
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
+            assert alloc_list[0].id is not None
             with self.assertRaises(ValueError):
-                db.split_allocation(alloc_list[0]['id'], 10000)
+                db.split_allocation(alloc_list[0].id, 10000)
 
 
 class TestAPI(unittest.TestCase):
@@ -182,20 +197,20 @@ class TestAPI(unittest.TestCase):
 
     def test_get_existing_transactions(self) -> None:
         with db:
-            txn_id = db.add_transaction(1684670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-        response = client.get(f'/transaction/?query=id={txn_id}')
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+        response = client.get(f'/transaction/?query=id={txn.id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]['id'], txn_id)
+        self.assertEqual(response.json()[0]['id'], txn.id)
         self.assertEqual(response.json()[0]['amount'], 3456)
         self.assertEqual(response.json()[0]['description'], 'FooBar Enterprises')
         self.assertEqual(response.json()[0]['source'], 'Bank of Foo')
 
     def test_get_existing_allocations(self) -> None:
         with db:
-            txn_id = db.add_transaction(1584670193, 3456, 'FooBar Enterprises', 'Bank of Foo')
-            db.add_transaction(1584671193, 125, '123 Inc', 'Bank of Bar')
-            db.add_transaction(1584672193, 13305, 'Qwerty Corp', 'Bank of Foo')
+            txn = db.add_transaction(Transaction(time=1584670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            db.add_transaction(Transaction(time=1584671193, amount=125, description='123 Inc', source='Bank of Bar'))
+            db.add_transaction(Transaction(time=1584672193, amount=13305, description='Qwerty Corp', source='Bank of Foo'))
         response = client.get(f'/allocation/?query=time<1584672000')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 2)
@@ -204,7 +219,7 @@ class TestAPI(unittest.TestCase):
             self.assertGreater(resp['txn_id'], 0)
             self.assertEqual(resp['category'], 'Unknown')
             self.assertEqual(resp['location'], 'Unknown')
-            if resp['txn_id'] == txn_id:
+            if resp['txn_id'] == txn.id:
                 self.assertEqual(resp['time'], 1584670193)
                 self.assertEqual(resp['amount'], 3456)
             else:

@@ -6,9 +6,13 @@
 # database.py: This file implements a wrapper around a SQLite database
 #
 
+# System imports
 import os
 import sqlite3
 from typing import List, Dict, Optional, Any
+
+# Local imports
+from model import Transaction, Allocation
 
 
 class Database:
@@ -77,25 +81,22 @@ class Database:
         '''
         self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
 
-    def add_transaction(self, time: int, amount: int, description: str, source: str) -> int:
+    def add_transaction(self, txn: Transaction) -> Transaction:
         '''
         Add a new transaction
 
         Args:
-            time:           The time of the transaction
-            amount:         The amount of the transaction in cents
-            description:    The transaction description
-            source:         The source of the transaction
+            txn:   The transaction to add
 
         Returns:
-            The ID of the added transaction
+            The transaction with the ID filled in
         '''
-        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (time, amount, description, source))
-        rowid = self.db.lastrowid
-        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, rowid))
-        return rowid
+        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (txn.time, txn.amount, txn.description, txn.source))
+        txn.id = self.db.lastrowid
+        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
+        return txn
 
-    def get_transaction_list(self, expr: str) -> List[Dict[str, Any]]:
+    def get_transaction_list(self, expr: str) -> List[Transaction]:
         '''
         Get list of transaction based on a filter expression
 
@@ -108,16 +109,16 @@ class Database:
         self.db.execute(f'SELECT id, time, amount, description, source FROM txn WHERE {expr}')
         res = []
         for row in self.db:
-            res.append({
-                'id': row[0],
-                'time': row[1],
-                'amount': row[2],
-                'description': row[3],
-                'source': row[4],
-            })
+            res.append(Transaction(
+                id=row[0],
+                time=row[1],
+                amount=row[2],
+                description=row[3],
+                source=row[4],
+            ))
         return res
 
-    def get_transaction(self, txn_id: int) -> Optional[Dict[str, Any]]:
+    def get_transaction(self, txn_id: int) -> Optional[Transaction]:
         '''
         Get an existing transaction
 
@@ -125,7 +126,7 @@ class Database:
             txn_id: The transaction ID
 
         Returns:
-            A dictionary of the transaction details, or None if txn_id is invalid
+            The transaction, or None if the id is invalid
         '''
         txn_list = self.get_transaction_list(f'id = {txn_id}')
         return txn_list[0] if txn_list else None
@@ -156,7 +157,7 @@ class Database:
             res[row[1]] = row[0]
         return res
 
-    def get_allocation_list(self, expr: str) -> List[Dict[str, Any]]:
+    def get_allocation_list(self, expr: str) -> List[Allocation]:
         '''
         Get list of allocations based on a filter expression
 
@@ -174,18 +175,18 @@ class Database:
                             WHERE {expr}''')
         res = []
         for row in self.db:
-            res.append({
-                'id': row[0],
-                'txn_id': row[1],
-                'time': row[2],
-                'amount': row[3],
-                'category': row[4],
-                'location': row[5],
-                'note': row[6],
-            })
+            res.append(Allocation(
+                id=row[0],
+                txn_id=row[1],
+                time=row[2],
+                amount=row[3],
+                category=row[4],
+                location=row[5],
+                note=row[6],
+            ))
         return res
 
-    def get_allocation(self, alloc_id: int) -> Optional[Dict[str, Any]]:
+    def get_allocation(self, alloc_id: int) -> Optional[Allocation]:
         '''
         Get an existing allocation
 
@@ -193,7 +194,7 @@ class Database:
             alloc_id: The allocation ID
 
         Returns:
-            A dictionary of the allocation details, or None if alloc_id is invalid
+            The allocation, or None if alloc_id is invalid
         '''
         alloc_list = self.get_allocation_list(f'allocation.id = {alloc_id}')
         return alloc_list[0] if alloc_list else None
@@ -224,7 +225,8 @@ class Database:
             location_id = self.db.lastrowid
         else:
             location_id = locations[location]
-        self.db.execute(f'UPDATE allocation SET category_id = IFNULL(?, category_id), location_id = IFNULL(?, location_id), note = IFNULL(?, note) WHERE id = ?', (category_id, location_id, note, alloc_id))
+        self.db.execute(f'UPDATE allocation SET category_id = IFNULL(?, category_id), location_id = IFNULL(?, location_id), note = IFNULL(?, note) WHERE id = ?',
+                        (category_id, location_id, note, alloc_id))
 
     def split_allocation(self, alloc_id: int, amount: int) -> int:
         '''
@@ -237,9 +239,9 @@ class Database:
         alloc = self.get_allocation(alloc_id)
         if alloc is None:
             raise ValueError('Invalid allocaction')
-        if amount >= alloc['amount'] or amount <= 0:
+        if amount >= alloc.amount or amount <= 0:
             raise ValueError('Invalid amount to split from allocation')
-        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, alloc['txn_id']))
+        self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, alloc.txn_id))
         res = self.db.lastrowid
-        self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc['amount'] - amount, alloc_id))
+        self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc.amount - amount, alloc_id))
         return res
