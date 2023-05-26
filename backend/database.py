@@ -216,7 +216,7 @@ class Database:
         self.db.execute(f'UPDATE allocation SET category_id = ?, location_id = ?, note = ? WHERE id = ?',
                         (category_id, location_id, alloc.note, alloc.id))
 
-    def split_allocation(self, alloc_id: int, amount: int) -> int:
+    def split_allocation(self, alloc_id: int, amount: int) -> Allocation:
         '''
         Split an allocation by creating a second allocation that takes some of the amount
 
@@ -232,4 +232,27 @@ class Database:
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, alloc.txn_id))
         res = self.db.lastrowid
         self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc.amount - amount, alloc_id))
-        return res
+        return self.get_allocation(res)
+
+    def merge_allocations(self, id_list: List[int]) -> Allocation:
+        '''
+        Merge multiple allocations into a singel allocation by adding all the ammounts to the first
+
+        Args:
+            id_list: The list of allocation IDs
+
+        Returns:
+            The merged allocation
+        '''
+        alloc_list = self.get_allocation_list(f"allocation.id IN ({','.join(str(i) for i in id_list)})")
+        if not alloc_list:
+            raise ValueError('No allocations found')
+        if not all([alloc.txn_id == alloc_list[0].txn_id for alloc in alloc_list]):
+            raise ValueError('Allocations found from different transactions')
+        if len(alloc_list) == 1:
+            return alloc_list[0]
+
+        alloc_list[0].amount = sum([alloc.amount for alloc in alloc_list])
+        self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc_list[0].amount, alloc_list[0].id))
+        self.db.execute(f"DELETE FROM allocation WHERE id IN ({','.join(str(i) for i in id_list[1:])})")
+        return alloc_list[0]

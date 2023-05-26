@@ -227,6 +227,55 @@ class TestDatabase(unittest.TestCase):
             with self.assertRaises(ValueError):
                 db.split_allocation(alloc_list[0].id, 10000)
 
+    def test_merge_allocations(self) -> None:
+        with db:
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
+            self.assertEqual(len(alloc_list), 1)
+            assert alloc_list[0].id is not None
+            db.split_allocation(alloc_list[0].id, 1234)
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
+            self.assertEqual(len(alloc_list), 2)
+            assert alloc_list[0].id is not None
+            self.assertEqual(alloc_list[0].amount, 2222)
+            self.assertEqual(alloc_list[1].amount, 1234)
+            assert alloc_list[0].id is not None
+            assert alloc_list[1].id is not None
+            db.merge_allocations([alloc_list[0].id, alloc_list[1].id])
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
+            self.assertEqual(len(alloc_list), 1)
+            self.assertEqual(alloc_list[0].amount, 3456)
+
+    def test_throws_if_merge_no_allocations(self) -> None:
+        with db:
+            with self.assertRaises(ValueError):
+                db.merge_allocations([12938, 92387423])
+
+    def test_no_op_if_merge_single_allocation(self) -> None:
+        with db:
+            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
+            self.assertEqual(len(alloc_list), 1)
+            self.assertEqual(alloc_list[0].amount, 3456)
+            assert alloc_list[0].id is not None
+            db.merge_allocations([alloc_list[0].id])
+            alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
+            self.assertEqual(alloc_list[0].amount, 3456)
+            self.assertEqual(len(alloc_list), 1)
+
+    def test_throws_if_merge_invalid_allocations(self) -> None:
+        with db:
+            txn1 = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn2 = db.add_transaction(Transaction(time=1684671193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            assert txn1.id is not None
+            assert txn2.id is not None
+            alloc_list = db.get_allocation_list(f'txn_id IN ({txn1.id},{txn2.id})')
+            assert len(alloc_list) == 2
+            assert alloc_list[0].id is not None
+            assert alloc_list[1].id is not None
+            with self.assertRaises(ValueError):
+                db.merge_allocations([alloc_list[0].id, alloc_list[1].id])
+
 
 class TestAPI(unittest.TestCase):
     def test_add_a_transaction(self) -> None:
@@ -280,14 +329,14 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(txn_response.status_code, 201)
         alloc = client.get(f'/allocation/?query=description=\'test_update_an_allocation_category\'')
         self.assertEqual(alloc.status_code, 200)
-        self.assertEquals(len(alloc.json()), 1)
+        self.assertEqual(len(alloc.json()), 1)
         alloc = alloc.json()[0]
         alloc['category'] = 'Medical'
         response = client.put("/allocation/", json=alloc)
         self.assertEqual(response.status_code, 200)
         alloc = client.get(f'/allocation/?query=description=\'test_update_an_allocation_category\'')
         self.assertEqual(alloc.status_code, 200)
-        self.assertEquals(len(alloc.json()), 1)
+        self.assertEqual(len(alloc.json()), 1)
         self.assertEqual(alloc.json()[0]['category'], 'Medical')
         self.assertEqual(alloc.json()[0]['location'], 'Unknown')
         self.assertIsNone(alloc.json()[0]['note'])
@@ -302,14 +351,14 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(txn_response.status_code, 201)
         alloc = client.get(f'/allocation/?query=description=\'test_update_an_allocation_location\'')
         self.assertEqual(alloc.status_code, 200)
-        self.assertEquals(len(alloc.json()), 1)
+        self.assertEqual(len(alloc.json()), 1)
         alloc = alloc.json()[0]
         alloc['location'] = 'Mcdonalds'
         response = client.put("/allocation/", json=alloc)
         self.assertEqual(response.status_code, 200)
         alloc = client.get(f'/allocation/?query=description=\'test_update_an_allocation_location\'')
         self.assertEqual(alloc.status_code, 200)
-        self.assertEquals(len(alloc.json()), 1)
+        self.assertEqual(len(alloc.json()), 1)
         self.assertEqual(alloc.json()[0]['category'], 'Unknown')
         self.assertEqual(alloc.json()[0]['location'], 'Mcdonalds')
         self.assertIsNone(alloc.json()[0]['note'])
@@ -324,17 +373,65 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(txn_response.status_code, 201)
         alloc = client.get(f'/allocation/?query=description=\'test_update_an_allocation_note\'')
         self.assertEqual(alloc.status_code, 200)
-        self.assertEquals(len(alloc.json()), 1)
+        self.assertEqual(len(alloc.json()), 1)
         alloc = alloc.json()[0]
         alloc['note'] = 'Hi there'
         response = client.put("/allocation/", json=alloc)
         self.assertEqual(response.status_code, 200)
         alloc = client.get(f'/allocation/?query=description=\'test_update_an_allocation_note\'')
         self.assertEqual(alloc.status_code, 200)
-        self.assertEquals(len(alloc.json()), 1)
+        self.assertEqual(len(alloc.json()), 1)
         self.assertEqual(alloc.json()[0]['category'], 'Unknown')
         self.assertEqual(alloc.json()[0]['location'], 'Unknown')
         self.assertEqual(alloc.json()[0]['note'], 'Hi there')
+
+    def test_split_an_allocation(self) -> None:
+        txn_response = client.post("/transaction/", json={
+            'time': 1685019387,
+            'amount': 9932,
+            'description': 'test_split_an_allocation',
+            'source': 'coescijsoeicj',
+        })
+        self.assertEqual(txn_response.status_code, 201)
+        alloc = client.get(f'/allocation/?query=description=\'test_split_an_allocation\'')
+        self.assertEqual(alloc.status_code, 200)
+        self.assertEqual(len(alloc.json()), 1)
+        alloc = alloc.json()[0]
+        response = client.get(f"/allocation/split?id={alloc['id']}&amount=1234")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['amount'], 1234)
+        alloc = client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
+        self.assertEqual(alloc.status_code, 200)
+        self.assertEqual(len(alloc.json()), 2)
+        self.assertEqual(alloc.json()[0]['amount'], 8698)
+        self.assertEqual(alloc.json()[1]['amount'], 1234)
+
+    def test_merge_allocations(self) -> None:
+        txn_response = client.post("/transaction/", json={
+            'time': 1685019387,
+            'amount': 9932,
+            'description': 'test_merge_an_allocation',
+            'source': 'coescijsoeicj',
+        })
+        self.assertEqual(txn_response.status_code, 201)
+        alloc = client.get(f'/allocation/?query=description=\'test_merge_an_allocation\'')
+        self.assertEqual(alloc.status_code, 200)
+        self.assertEqual(len(alloc.json()), 1)
+        alloc = alloc.json()[0]
+        response = client.get(f"/allocation/split?id={alloc['id']}&amount=1234")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['amount'], 1234)
+        alloc = client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
+        self.assertEqual(alloc.status_code, 200)
+        self.assertEqual(len(alloc.json()), 2)
+        self.assertEqual(alloc.json()[0]['amount'], 8698)
+        self.assertEqual(alloc.json()[1]['amount'], 1234)
+        response = client.get(f"/allocation/merge/?ids={alloc.json()[0]['id']}&ids={alloc.json()[1]['id']}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['amount'], 9932)
+        alloc = client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
+        self.assertEqual(alloc.status_code, 200)
+        self.assertEqual(len(alloc.json()), 1)
 
 
 unittest.main()

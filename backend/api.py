@@ -7,8 +7,8 @@
 #
 
 # System imports
-from typing import List
-from fastapi import FastAPI
+from typing import List, Annotated
+from fastapi import FastAPI, Query
 
 # Local imports
 from database import Database
@@ -41,3 +41,15 @@ def get_allocations(query: str) -> List[Allocation]:
 def update_allocation(alloc: Allocation) -> None:
     with Database() as db:
         db.update_allocation(alloc)
+
+
+@app.get('/allocation/split/')
+def split_allocation(id: int, amount: int) -> Allocation:
+    with Database() as db:
+        return db.split_allocation(id, amount)
+
+
+@app.get('/allocation/merge/')
+def merge_allocation(ids: Annotated[List[int], Query()]) -> Allocation:
+    with Database() as db:
+        return db.merge_allocations(ids)
