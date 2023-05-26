@@ -230,9 +230,11 @@ class Database:
         if amount >= alloc.amount or amount <= 0:
             raise ValueError('Invalid amount to split from allocation')
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, alloc.txn_id))
-        res = self.db.lastrowid
+        res_id = self.db.lastrowid
         self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc.amount - amount, alloc_id))
-        return self.get_allocation(res)
+        res = self.get_allocation(res_id)
+        assert res is not None
+        return res
 
     def merge_allocations(self, id_list: List[int]) -> Allocation:
         '''
