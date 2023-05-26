@@ -35,3 +35,9 @@ def get_transactions(query: str) -> List[Transaction]:
 def get_allocations(query: str) -> List[Allocation]:
     with Database() as db:
         return db.get_allocation_list(query)
+
+
+@app.put('/allocation/')
+def update_allocation(alloc: Allocation) -> None:
+    with Database() as db:
+        db.update_allocation(alloc)

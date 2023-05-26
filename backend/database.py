@@ -131,31 +131,35 @@ class Database:
         txn_list = self.get_transaction_list(f'id = {txn_id}')
         return txn_list[0] if txn_list else None
 
-    def get_categories(self) -> Dict[str, int]:
+    def get_category_id(self, name: str) -> int:
         '''
-        Get the mapping of category names the their ID's
+        Get a category id (creating one if necessary)
+
+        Args:
+            name: The name of the category
 
         Returns:
-            A dictionary of the categories
+            The ID of the category
         '''
-        self.db.execute(f'SELECT id, name FROM category')
-        res = {}
-        for row in self.db:
-            res[row[1]] = row[0]
-        return res
+        self.db.execute(f'INSERT OR IGNORE INTO category VALUES (NULL, ?)', (name, ))
+        self.db.execute(f'SELECT id FROM category WHERE name = ?', (name, ))
+        row = self.db.fetchone()
+        return row[0]
 
-    def get_locations(self) -> Dict[str, int]:
+    def get_location_id(self, name: str) -> int:
         '''
-        Get the mapping of location names the their ID's
+        Get a location id (creating one if necessary)
+
+        Args:
+            name: The name of the location
 
         Returns:
-            A dictionary of the locations
+            The ID of the location
         '''
-        self.db.execute(f'SELECT id, name FROM location')
-        res = {}
-        for row in self.db:
-            res[row[1]] = row[0]
-        return res
+        self.db.execute(f'INSERT OR IGNORE INTO location VALUES (NULL, ?)', (name, ))
+        self.db.execute(f'SELECT id FROM location WHERE name = ?', (name, ))
+        row = self.db.fetchone()
+        return row[0]
 
     def get_allocation_list(self, expr: str) -> List[Allocation]:
         '''
@@ -199,34 +203,18 @@ class Database:
         alloc_list = self.get_allocation_list(f'allocation.id = {alloc_id}')
         return alloc_list[0] if alloc_list else None
 
-    def update_allocation(self, alloc_id: int, category: str = None, location: str = None, note: str = None) -> None:
+    def update_allocation(self, alloc: Allocation) -> None:
         '''
-        Update the category and location for an existing allocation
+        Update the category and location and note for an existing allocation.
+        The other fields of alloc are ignored
 
         Args:
-            alloc_id: The allocation ID
-            category: The new category
-            location: The new location
-            location: A note for the allocation
+            alloc: The allocation
         '''
-        categories = self.get_categories()
-        if category is None:
-            category_id = None
-        elif category not in categories:
-            self.db.execute(f'INSERT INTO category VALUES (NULL, ?)', (category, ))
-            category_id = self.db.lastrowid
-        else:
-            category_id = categories[category]
-        locations = self.get_locations()
-        if location is None:
-            location_id = None
-        elif location not in locations:
-            self.db.execute(f'INSERT INTO location VALUES (NULL, ?)', (location, ))
-            location_id = self.db.lastrowid
-        else:
-            location_id = locations[location]
-        self.db.execute(f'UPDATE allocation SET category_id = IFNULL(?, category_id), location_id = IFNULL(?, location_id), note = IFNULL(?, note) WHERE id = ?',
-                        (category_id, location_id, note, alloc_id))
+        category_id = self.get_category_id(alloc.category)
+        location_id = self.get_location_id(alloc.location)
+        self.db.execute(f'UPDATE allocation SET category_id = ?, location_id = ?, note = ? WHERE id = ?',
+                        (category_id, location_id, alloc.note, alloc.id))
 
     def split_allocation(self, alloc_id: int, amount: int) -> int:
         '''
