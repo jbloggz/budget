@@ -9,10 +9,11 @@
 # System imports
 import os
 import sqlite3
-from typing import List, Dict, Optional, Any
+from typing import List, Optional
 
 # Local imports
-from model import Transaction, Allocation
+from model import Transaction, Allocation, User
+from auth import hash_password
 
 
 class Database:
@@ -80,6 +81,34 @@ class Database:
             key:   The setting key
         '''
         self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
+
+    def add_user(self, user: User) -> User:
+        '''
+        Add a new user
+
+        Args:
+            user:   The user to add
+
+        Returns:
+            The user with the password hashed
+        '''
+        user.password = hash_password(user.password)
+        self.db.execute('INSERT INTO user VALUES (?, ?)', (user.name, user.password))
+        return user
+
+    def get_user(self, name: str) -> Optional[User]:
+        '''
+        Get an existing user
+
+        Args:
+            name: The user name
+
+        Returns:
+            The user, or None if the namel is invalid
+        '''
+        self.db.execute(f'SELECT password FROM user WHERE name = ?', (name, ))
+        res = self.db.fetchone()
+        return User(name=name, password=res[0]) if res else None
 
     def add_transaction(self, txn: Transaction) -> Transaction:
         '''

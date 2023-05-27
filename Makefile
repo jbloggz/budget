@@ -6,7 +6,7 @@
 # Makefile: The recipies for building the budget app
 #
 
-.PHONY: test coverage coverage_html clean
+.PHONY: test coverage coverage_html serve clean
 
 test:
 	rm -f backend/budget-test.db*
@@ -21,6 +21,9 @@ coverage:
 
 coverage_html: coverage
 	cd backend && python3 -m coverage html
+
+serve:
+	cd backend && uvicorn api:app --reload
 
 clean:
 	rm -f backend/budget-test.db*

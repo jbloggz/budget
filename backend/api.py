@@ -8,11 +8,13 @@
 
 # System imports
 from typing import List, Annotated
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 # Local imports
 from database import Database
-from model import Transaction, Allocation
+from model import Transaction, Allocation, Token
+from auth import verify_password, create_token
 
 
 app = FastAPI()
@@ -53,3 +55,16 @@ def split_allocation(id: int, amount: int) -> Allocation:
 def merge_allocation(ids: Annotated[List[int], Query()]) -> Allocation:
     with Database() as db:
         return db.merge_allocations(ids)
+
+
+@app.post('/login/', response_model=Token)
+def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+    with Database() as db:
+        user = db.get_user(form_data.username)
+        if not user or not verify_password(form_data.password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return create_token(form_data.username)

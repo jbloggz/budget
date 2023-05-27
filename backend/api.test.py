@@ -13,7 +13,8 @@ import unittest
 # Local imports
 from api import app
 from database import Database
-from model import Transaction, Allocation
+from model import Transaction, User
+from auth import verify_password
 
 
 client = TestClient(app)
@@ -23,7 +24,11 @@ db = Database()
 class TestDatabase(unittest.TestCase):
     def test_tables(self) -> None:
         with db:
-            self.assertEqual(set(db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation'})
+            self.assertEqual(set(db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation', 'user'})
+
+    def test_user_fields(self) -> None:
+        with db:
+            self.assertEqual(set(db.get_fields('user')), {'name', 'password'})
 
     def test_setting_fields(self) -> None:
         with db:
@@ -58,6 +63,15 @@ class TestDatabase(unittest.TestCase):
             db.clear_setting('interval')
             self.assertEqual(db.get_setting('interval'), None)
             self.assertEqual(db.get_setting('foo'), 'bar')
+
+    def test_add_user(self) -> None:
+        with db:
+            added_user = db.add_user(User(name='Foo', password='bar'))
+            assert added_user is not None
+            user = db.get_user('Foo')
+            assert user is not None
+            self.assertEqual(user.name, 'Foo')
+            self.assertTrue(verify_password('bar', user.password))
 
     def test_update_setting(self) -> None:
         with db:
@@ -436,5 +450,39 @@ class TestAPI(unittest.TestCase):
     def test_throws_on_merge_allocations_fail(self) -> None:
         with self.assertRaises(ValueError):
             client.get(f"/allocation/merge/?ids=10000&ids=223423&ids=34353452")
+
+    def test_login(self) -> None:
+        with db:
+            db.add_user(User(name='Joe', password='hello'))
+
+        form_data = {
+            'username': 'Joe',
+            'password': 'hello'
+        }
+        response = client.post(
+            "/login/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        result = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(result['token_type'], 'bearer')
+        self.assertTrue(result['access_token'])
+
+    def test_failed_login(self) -> None:
+        with db:
+            db.add_user(User(name='Ivy', password='world'))
+
+        form_data = {
+            'username': 'Ivy',
+            'password': 'hello'
+        }
+        response = client.post(
+            "/login/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.assertEqual(response.status_code, 401)
+
 
 unittest.main()

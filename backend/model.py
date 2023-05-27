@@ -26,3 +26,13 @@ class Allocation(BaseModel):
     category: str
     location: str
     note: str | None = None
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class User(BaseModel):
+    name: str
+    password: str
