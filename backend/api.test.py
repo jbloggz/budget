@@ -13,22 +13,17 @@ import unittest
 # Local imports
 from api import app
 from database import Database
-from model import Transaction, User
-from auth import verify_password
+from model import Transaction
+from auth import secrets, hash_password, create_token
 
 
-client = TestClient(app)
 db = Database()
 
 
 class TestDatabase(unittest.TestCase):
     def test_tables(self) -> None:
         with db:
-            self.assertEqual(set(db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation', 'user'})
-
-    def test_user_fields(self) -> None:
-        with db:
-            self.assertEqual(set(db.get_fields('user')), {'name', 'password'})
+            self.assertEqual(set(db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation'})
 
     def test_setting_fields(self) -> None:
         with db:
@@ -63,15 +58,6 @@ class TestDatabase(unittest.TestCase):
             db.clear_setting('interval')
             self.assertEqual(db.get_setting('interval'), None)
             self.assertEqual(db.get_setting('foo'), 'bar')
-
-    def test_add_user(self) -> None:
-        with db:
-            added_user = db.add_user(User(name='Foo', password='bar'))
-            assert added_user is not None
-            user = db.get_user('Foo')
-            assert user is not None
-            self.assertEqual(user.name, 'Foo')
-            self.assertTrue(verify_password('bar', user.password))
 
     def test_update_setting(self) -> None:
         with db:
@@ -292,8 +278,16 @@ class TestDatabase(unittest.TestCase):
 
 
 class TestAPI(unittest.TestCase):
+    def setUp(self) -> None:
+        self.client = TestClient(app)
+        secrets['users']['foo'] = hash_password('bar')
+        form_data = {'username': 'foo', 'password': 'bar'}
+        response = self.client.post("/login/", data=form_data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        self.token = response.json()['access_token']
+        self.client.headers.update({'Authorization': f'Bearer {self.token}'})
+
     def test_add_a_transaction(self) -> None:
-        response = client.post("/transaction/", json={
+        response = self.client.post("/transaction/", json={
             'time': 1684670193,
             'amount': 3456,
             'description': 'FooBar Enterprises',
@@ -305,7 +299,7 @@ class TestAPI(unittest.TestCase):
     def test_get_existing_transactions(self) -> None:
         with db:
             txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
-        response = client.get(f'/transaction/?query=id={txn.id}')
+        response = self.client.get(f'/transaction/?query=id={txn.id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]['id'], txn.id)
@@ -318,7 +312,7 @@ class TestAPI(unittest.TestCase):
             txn = db.add_transaction(Transaction(time=1584670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             db.add_transaction(Transaction(time=1584671193, amount=125, description='123 Inc', source='Bank of Bar'))
             db.add_transaction(Transaction(time=1584672193, amount=13305, description='Qwerty Corp', source='Bank of Foo'))
-        response = client.get(f'/allocation/?query=time<1584672000')
+        response = self.client.get(f'/allocation/?query=time<1584672000')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 2)
         for resp in response.json():
@@ -334,21 +328,21 @@ class TestAPI(unittest.TestCase):
                 self.assertEqual(resp['amount'], 125)
 
     def test_update_an_allocation_category(self) -> None:
-        txn_response = client.post("/transaction/", json={
+        txn_response = self.client.post("/transaction/", json={
             'time': 1685019387,
             'amount': 9932,
             'description': 'test_update_an_allocation_category',
             'source': 'coescijsoeicj',
         })
         self.assertEqual(txn_response.status_code, 201)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_update_an_allocation_category\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_update_an_allocation_category\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         alloc = alloc_list.json()[0]
         alloc['category'] = 'Medical'
-        response = client.put("/allocation/", json=alloc)
+        response = self.client.put("/allocation/", json=alloc)
         self.assertEqual(response.status_code, 200)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_update_an_allocation_category\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_update_an_allocation_category\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         self.assertEqual(alloc_list.json()[0]['category'], 'Medical')
@@ -356,21 +350,21 @@ class TestAPI(unittest.TestCase):
         self.assertIsNone(alloc_list.json()[0]['note'])
 
     def test_update_an_allocation_location(self) -> None:
-        txn_response = client.post("/transaction/", json={
+        txn_response = self.client.post("/transaction/", json={
             'time': 1685019387,
             'amount': 9932,
             'description': 'test_update_an_allocation_location',
             'source': 'coescijsoeicj',
         })
         self.assertEqual(txn_response.status_code, 201)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_update_an_allocation_location\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_update_an_allocation_location\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         alloc = alloc_list.json()[0]
         alloc['location'] = 'Mcdonalds'
-        response = client.put("/allocation/", json=alloc)
+        response = self.client.put("/allocation/", json=alloc)
         self.assertEqual(response.status_code, 200)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_update_an_allocation_location\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_update_an_allocation_location\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         self.assertEqual(alloc_list.json()[0]['category'], 'Unknown')
@@ -378,21 +372,21 @@ class TestAPI(unittest.TestCase):
         self.assertIsNone(alloc_list.json()[0]['note'])
 
     def test_update_an_allocation_note(self) -> None:
-        txn_response = client.post("/transaction/", json={
+        txn_response = self.client.post("/transaction/", json={
             'time': 1685019387,
             'amount': 9932,
             'description': 'test_update_an_allocation_note',
             'source': 'coescijsoeicj',
         })
         self.assertEqual(txn_response.status_code, 201)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_update_an_allocation_note\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_update_an_allocation_note\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         alloc = alloc_list.json()[0]
         alloc['note'] = 'Hi there'
-        response = client.put("/allocation/", json=alloc)
+        response = self.client.put("/allocation/", json=alloc)
         self.assertEqual(response.status_code, 200)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_update_an_allocation_note\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_update_an_allocation_note\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         self.assertEqual(alloc_list.json()[0]['category'], 'Unknown')
@@ -400,66 +394,74 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(alloc_list.json()[0]['note'], 'Hi there')
 
     def test_split_an_allocation(self) -> None:
-        txn_response = client.post("/transaction/", json={
+        txn_response = self.client.post("/transaction/", json={
             'time': 1685019387,
             'amount': 9932,
             'description': 'test_split_an_allocation',
             'source': 'coescijsoeicj',
         })
         self.assertEqual(txn_response.status_code, 201)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_split_an_allocation\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_split_an_allocation\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         alloc = alloc_list.json()[0]
-        response = client.get(f"/allocation/split?id={alloc['id']}&amount=1234")
+        response = self.client.get(f"/allocation/split?id={alloc['id']}&amount=1234")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['amount'], 1234)
-        alloc_list = client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
+        alloc_list = self.client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 2)
         self.assertEqual(alloc_list.json()[0]['amount'], 8698)
         self.assertEqual(alloc_list.json()[1]['amount'], 1234)
 
     def test_merge_allocations(self) -> None:
-        txn_response = client.post("/transaction/", json={
+        txn_response = self.client.post("/transaction/", json={
             'time': 1685019387,
             'amount': 9932,
             'description': 'test_merge_an_allocation',
             'source': 'coescijsoeicj',
         })
         self.assertEqual(txn_response.status_code, 201)
-        alloc_list = client.get(f'/allocation/?query=description=\'test_merge_an_allocation\'')
+        alloc_list = self.client.get(f'/allocation/?query=description=\'test_merge_an_allocation\'')
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
         alloc = alloc_list.json()[0]
-        response = client.get(f"/allocation/split?id={alloc['id']}&amount=1234")
+        response = self.client.get(f"/allocation/split?id={alloc['id']}&amount=1234")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['amount'], 1234)
-        alloc_list = client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
+        alloc_list = self.client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 2)
         self.assertEqual(alloc_list.json()[0]['amount'], 8698)
         self.assertEqual(alloc_list.json()[1]['amount'], 1234)
-        response = client.get(f"/allocation/merge/?ids={alloc_list.json()[0]['id']}&ids={alloc_list.json()[1]['id']}")
+        response = self.client.get(f"/allocation/merge/?ids={alloc_list.json()[0]['id']}&ids={alloc_list.json()[1]['id']}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['amount'], 9932)
-        alloc_list = client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
+        alloc_list = self.client.get(f"/allocation/?query=txn_id={txn_response.json()['id']}")
         self.assertEqual(alloc_list.status_code, 200)
         self.assertEqual(len(alloc_list.json()), 1)
 
     def test_throws_on_merge_allocations_fail(self) -> None:
         with self.assertRaises(ValueError):
-            client.get(f"/allocation/merge/?ids=10000&ids=223423&ids=34353452")
+            self.client.get(f"/allocation/merge/?ids=10000&ids=223423&ids=34353452")
+
+    def test_failed_with_corrupt_token(self) -> None:
+        self.client.headers.update({'Authorization': 'Bearer foobar'})
+        resp = self.client.get(f"/transaction/?query=id>0")
+        self.assertEqual(resp.status_code, 401)
+
+    def test_failed_with_unknown_name(self) -> None:
+        self.client.headers.update({'Authorization': f'Bearer {create_token("qwerty").access_token}'})
+        resp = self.client.get(f'/transaction/?query=id>0')
+        self.assertEqual(resp.status_code, 401)
 
     def test_login(self) -> None:
-        with db:
-            db.add_user(User(name='Joe', password='hello'))
-
+        secrets['users']['foo'] = hash_password('bar')
         form_data = {
-            'username': 'Joe',
-            'password': 'hello'
+            'username': 'foo',
+            'password': 'bar'
         }
-        response = client.post(
+        response = self.client.post(
             "/login/",
             data=form_data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
@@ -470,14 +472,11 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(result['access_token'])
 
     def test_failed_login(self) -> None:
-        with db:
-            db.add_user(User(name='Ivy', password='world'))
-
         form_data = {
             'username': 'Ivy',
             'password': 'hello'
         }
-        response = client.post(
+        response = self.client.post(
             "/login/",
             data=form_data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}

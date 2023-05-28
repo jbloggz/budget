@@ -14,54 +14,54 @@ from fastapi.security import OAuth2PasswordRequestForm
 # Local imports
 from database import Database
 from model import Transaction, Allocation, Token
-from auth import verify_password, create_token
+from auth import create_token, verify_user, validate_token
 
 
 app = FastAPI()
+db = Database()
 
 
-@app.post("/transaction/", status_code=201, response_model=Transaction)
-def add_transaction(txn: Transaction) -> Transaction:
-    with Database() as db:
+@app.post("/transaction/", status_code=201, response_model=Transaction, dependencies=[Depends(validate_token)])
+def add_transaction(user: Annotated[str, Depends(validate_token)], txn: Transaction) -> Transaction:
+    with db:
         db.add_transaction(txn)
     return txn
 
 
-@app.get('/transaction/', response_model=List[Transaction])
+@app.get('/transaction/', response_model=List[Transaction], dependencies=[Depends(validate_token)])
 def get_transactions(query: str) -> List[Transaction]:
-    with Database() as db:
+    with db:
         return db.get_transaction_list(query)
 
 
-@app.get('/allocation/', response_model=List[Allocation])
+@app.get('/allocation/', response_model=List[Allocation], dependencies=[Depends(validate_token)])
 def get_allocations(query: str) -> List[Allocation]:
-    with Database() as db:
+    with db:
         return db.get_allocation_list(query)
 
 
-@app.put('/allocation/')
+@app.put('/allocation/', dependencies=[Depends(validate_token)])
 def update_allocation(alloc: Allocation) -> None:
-    with Database() as db:
+    with db:
         db.update_allocation(alloc)
 
 
-@app.get('/allocation/split/')
+@app.get('/allocation/split/', dependencies=[Depends(validate_token)])
 def split_allocation(id: int, amount: int) -> Allocation:
-    with Database() as db:
+    with db:
         return db.split_allocation(id, amount)
 
 
-@app.get('/allocation/merge/')
+@app.get('/allocation/merge/', dependencies=[Depends(validate_token)])
 def merge_allocation(ids: Annotated[List[int], Query()]) -> Allocation:
-    with Database() as db:
+    with db:
         return db.merge_allocations(ids)
 
 
 @app.post('/login/', response_model=Token)
 def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
-    with Database() as db:
-        user = db.get_user(form_data.username)
-        if not user or not verify_password(form_data.password, user.password):
+    with db:
+        if not verify_user(form_data.username, form_data.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",

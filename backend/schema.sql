@@ -6,12 +6,6 @@
  * schema.sql: This file is the schema for the budget database
  */
 
-/* A table to store the users */
-CREATE TABLE IF NOT EXISTS user (
-   name            TEXT     PRIMARY KEY,  /* The user name */
-   password        TEXT     NOT NULL      /* The user password */
-);
-
 /* A table to store the app settings */
 CREATE TABLE IF NOT EXISTS setting (
    key             TEXT     PRIMARY KEY,  /* The key of the setting */

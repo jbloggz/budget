@@ -7,7 +7,11 @@
 #
 
 # System imports
+import os
 import json
+from typing import Annotated
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
@@ -17,20 +21,26 @@ from model import Token
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+with open(os.environ.get('SECRETS_PATH', 'secrets.json')) as fp:
+    secrets = json.load(fp)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+
+def verify_user(username: str, password: str) -> bool:
     '''
-    Verify a password from a user
+    Verify a user
 
     Args:
-        plain_password:  The plain text password
-        hashed_password: The hashed password from the database
+        username: The name of the user
+        password: The password of the user
 
     Returns:
-        True if the password is valid, False if not
+        True if the user is valid, False if not
     '''
-    return pwd_context.verify(plain_password, hashed_password)
+    if username not in secrets['users']:
+        return False
+    return pwd_context.verify(password, secrets['users'][username])
 
 
 def hash_password(password: str) -> str:
@@ -57,11 +67,24 @@ def create_token(user: str) -> Token:
     Returns:
         The encoded token
     '''
-    with open('secrets.json') as fp:
-        secrets = json.load(fp)
-
     expire = datetime.utcnow() + timedelta(seconds=secrets['ttl'])
     return Token(
-        access_token=jwt.encode({'user': user, 'exp': expire}, secrets['key'], algorithm=secrets['algorithm']),
+        access_token=jwt.encode({'sub': user, 'exp': expire}, secrets['key'], algorithm=secrets['algorithm']),
         token_type='bearer'
     )
+
+
+def validate_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, secrets['key'], algorithms=secrets['algorithm'])
+        username: str = payload.get('sub')
+        if username not in secrets['users']:
+            raise credentials_exception
+        return username
+    except:
+        raise credentials_exception
