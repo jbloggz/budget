@@ -13,6 +13,12 @@ CREATE TABLE IF NOT EXISTS setting (
 );
 CREATE INDEX IF NOT exists setting_key ON setting(key);
 
+/* A table to store in-use tokens */
+CREATE TABLE IF NOT EXISTS token (
+   value           TEXT     PRIMARY KEY,  /* The token value */
+   expire          INTEGER  NOT NULL      /* The expire time of the token */
+);
+
 /* A table to store the raw transactions scaped from the accounts */
 CREATE TABLE IF NOT EXISTS txn (
    id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */

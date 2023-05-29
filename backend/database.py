@@ -10,6 +10,7 @@
 import os
 import sqlite3
 from typing import List, Optional
+import time
 
 # Local imports
 from model import Transaction, Allocation
@@ -80,6 +81,17 @@ class Database:
             key:   The setting key
         '''
         self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
+
+    def add_token(self, value: str, expire: int) -> None:
+        self.db.execute('INSERT OR IGNORE INTO token VALUES (?, ?)', (value, expire))
+
+    def clear_token(self, value: str) -> None:
+        self.db.execute('DELETE FROM token WHERE value = ?', (value,))
+
+    def has_token(self, value: str) -> bool:
+        self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
+        self.db.execute('SELECT value FROM token WHERE value = ?', (value,))
+        return self.db.fetchone() is not None
 
     def add_transaction(self, txn: Transaction) -> Transaction:
         '''

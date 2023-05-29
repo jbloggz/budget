@@ -12,19 +12,20 @@ import json
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from calendar import timegm
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 
 # Local imports
 from model import Token
+from database import Database
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="oauth2/token")
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='oauth2/token')
 with open(os.environ.get('SECRETS_PATH', 'secrets.json')) as fp:
     secrets = json.load(fp)
-
 
 
 def verify_user(username: str, password: str) -> bool:
@@ -67,29 +68,33 @@ def create_token(user: str) -> Token:
     Returns:
         The encoded token
     '''
-    access_expire = datetime.utcnow() + timedelta(seconds=secrets['access_token_ttl'])
-    refresh_expire = datetime.utcnow() + timedelta(seconds=secrets['refresh_token_ttl'])
-    return Token(
-        access_token=jwt.encode({'sub': user, 'exp': access_expire}, secrets['access_token_key'], algorithm=secrets['algorithm']),
-        refresh_token=jwt.encode({'sub': user, 'exp': refresh_expire}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
+    now = datetime.utcnow()
+    access_expire = now + timedelta(seconds=secrets['access_token_ttl'])
+    refresh_expire = now + timedelta(seconds=secrets['refresh_token_ttl'])
+    token = Token(
+        access_token=jwt.encode({'sub': user, 'exp': access_expire, 'iat': now}, secrets['access_token_key'], algorithm=secrets['algorithm']),
+        refresh_token=jwt.encode({'sub': user, 'exp': refresh_expire, 'iat': now}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
         token_type='bearer'
     )
+    with Database() as db:
+        db.add_token(token.refresh_token, timegm(refresh_expire.utctimetuple()))
+
+    return token
 
 
 def validate_token(key: str, token: Annotated[str, Depends(oauth2_scheme)]) -> str:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, secrets[key], algorithms=secrets['algorithm'])
         username: str = payload.get('sub')
         if username not in secrets['users']:
-            raise credentials_exception
+            raise ValueError('Invalid username')
         return username
     except:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Could not validate credentials',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
 
 
 def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
@@ -97,4 +102,12 @@ def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
 
 
 def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
-    return validate_token('refresh_token_key', token)
+    with Database() as db:
+        if not db.has_token(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Invalid/expired refresh token',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
+        db.clear_token(token)
+        return validate_token('refresh_token_key', token)

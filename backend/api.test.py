@@ -8,7 +8,9 @@
 
 # System imports
 from fastapi.testclient import TestClient
+from datetime import datetime, timedelta
 import unittest
+import time
 
 # Local imports
 from api import app
@@ -23,11 +25,15 @@ db = Database()
 class TestDatabase(unittest.TestCase):
     def test_tables(self) -> None:
         with db:
-            self.assertEqual(set(db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation'})
+            self.assertEqual(set(db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation', 'token'})
 
     def test_setting_fields(self) -> None:
         with db:
             self.assertEqual(set(db.get_fields('setting')), {'key', 'value'})
+
+    def test_token_fields(self) -> None:
+        with db:
+            self.assertEqual(set(db.get_fields('token')), {'value', 'expire'})
 
     def test_txn_fields(self) -> None:
         with db:
@@ -67,6 +73,26 @@ class TestDatabase(unittest.TestCase):
             db.set_setting('interval', 'weekly')
             self.assertEqual(db.get_setting('interval'), 'weekly')
             self.assertEqual(db.get_setting('foo'), 'bar')
+
+    def test_add_token(self) -> None:
+        with db:
+            self.assertFalse(db.has_token('soeiw9ehwe'))
+            db.add_token('soeiw9ehwe', int(time.time()) + 60)
+            self.assertTrue(db.has_token('soeiw9ehwe'))
+
+    def test_clear_token(self) -> None:
+        with db:
+            db.add_token('298h2938f', int(time.time()) + 60)
+            self.assertTrue(db.has_token('298h2938f'))
+            db.clear_token('298h2938f')
+            self.assertFalse(db.has_token('298h2938f'))
+
+    def test_expire_token(self) -> None:
+        with db:
+            db.add_token('9w83fhweu', int(time.time()) + 1)
+            self.assertTrue(db.has_token('9w83fhweu'))
+            time.sleep(1)
+            self.assertFalse(db.has_token('9w83fhweu'))
 
     def test_add_transaction(self) -> None:
         with db:
@@ -519,6 +545,48 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result['token_type'], 'bearer')
         self.assertTrue(result['access_token'])
         self.assertTrue(result['refresh_token'])
+
+
+    def test_refresh_token_can_be_used_only_once(self) -> None:
+        secrets['users']['foo'] = hash_password('bar')
+        form_data = {
+            'username': 'foo',
+            'password': 'bar',
+            'grant_type': 'password'
+        }
+        response = self.client.post(
+            "/oauth2/token/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual(result.get('token_type'), 'bearer')
+        self.assertIn('access_token', result)
+        self.assertIn('refresh_token', result)
+
+        form_data = {
+            'refresh_token': result['refresh_token'],
+            'grant_type': 'refresh_token'
+        }
+        time.sleep(1)
+        response = self.client.post(
+            "/oauth2/token/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.assertEqual(response.status_code, 200)
+        result2 = response.json()
+        self.assertEqual(result2['token_type'], 'bearer')
+        self.assertTrue(result2['access_token'])
+        self.assertTrue(result2['refresh_token'])
+
+        response = self.client.post(
+            "/oauth2/token/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.assertEqual(response.status_code, 401)
 
 
 unittest.main()
