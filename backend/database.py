@@ -258,7 +258,7 @@ class Database:
         Returns:
             The merged allocation
         '''
-        alloc_list = self.get_allocation_list(f"allocation.id IN ({','.join(str(i) for i in id_list)})")
+        alloc_list = self.get_allocation_list(f'allocation.id IN ({",".join(str(i) for i in id_list)})')
         if not alloc_list:
             raise ValueError('No allocations found')
         if not all([alloc.txn_id == alloc_list[0].txn_id for alloc in alloc_list]):
@@ -268,5 +268,5 @@ class Database:
 
         alloc_list[0].amount = sum([alloc.amount for alloc in alloc_list])
         self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc_list[0].amount, alloc_list[0].id))
-        self.db.execute(f"DELETE FROM allocation WHERE id IN ({','.join(str(i) for i in id_list[1:])})")
+        self.db.execute(f'DELETE FROM allocation WHERE id IN ({",".join(str(i) for i in id_list[1:])})')
         return alloc_list[0]

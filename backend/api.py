@@ -20,7 +20,7 @@ app = FastAPI()
 db = Database()
 
 
-@app.post("/transaction/", status_code=201, response_model=Transaction)
+@app.post('/transaction/', status_code=201, response_model=Transaction)
 def add_transaction(user: Annotated[str, Depends(validate_access_token)], txn: Transaction) -> Transaction:
     with db:
         db.add_transaction(txn)
@@ -66,7 +66,7 @@ def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
         if not verify_user(form_data.username, form_data.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
+                detail='Incorrect username or password',
+                headers={'WWW-Authenticate': 'Bearer'},
             )
         return create_token(form_data.username)

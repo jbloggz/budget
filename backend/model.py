@@ -45,7 +45,7 @@ class OAuth2RequestForm:
 
     def __init__(
         self,
-        grant_type: str = Form(regex="password|refresh_token"),
+        grant_type: str = Form(regex='password|refresh_token'),
         username: str = Form(default=''),
         password: str = Form(default=''),
         refresh_token: str = Form(default=''),
