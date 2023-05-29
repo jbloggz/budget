@@ -16,12 +16,12 @@ from model import Transaction, Allocation, Token, OAuth2RequestForm
 from auth import create_token, verify_user, validate_access_token, validate_refresh_token
 
 
-app = FastAPI()
+app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
 db = Database()
 
 
-@app.post('/transaction/', status_code=201, response_model=Transaction)
-def add_transaction(user: Annotated[str, Depends(validate_access_token)], txn: Transaction) -> Transaction:
+@app.post('/transaction/', status_code=201, response_model=Transaction, dependencies=[Depends(validate_access_token)])
+def add_transaction(txn: Transaction) -> Transaction:
     with db:
         db.add_transaction(txn)
     return txn
