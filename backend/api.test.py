@@ -281,8 +281,9 @@ class TestAPI(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
         secrets['users']['foo'] = hash_password('bar')
-        form_data = {'username': 'foo', 'password': 'bar'}
-        response = self.client.post("/login/", data=form_data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        form_data = {'username': 'foo', 'password': 'bar', 'grant_type': 'password'}
+        response = self.client.post("/oauth2/token/", data=form_data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        self.assertEqual(response.status_code, 200)
         self.token = response.json()['access_token']
         self.client.headers.update({'Authorization': f'Bearer {self.token}'})
 
@@ -459,29 +460,65 @@ class TestAPI(unittest.TestCase):
         secrets['users']['foo'] = hash_password('bar')
         form_data = {
             'username': 'foo',
-            'password': 'bar'
+            'password': 'bar',
+            'grant_type': 'password'
         }
         response = self.client.post(
-            "/login/",
+            "/oauth2/token/",
             data=form_data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         )
         result = response.json()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(result['token_type'], 'bearer')
-        self.assertTrue(result['access_token'])
+        self.assertEqual(result.get('token_type'), 'bearer')
+        self.assertIn('access_token', result)
 
     def test_failed_login(self) -> None:
         form_data = {
             'username': 'Ivy',
-            'password': 'hello'
+            'password': 'hello',
+            'grant_type': 'password'
         }
         response = self.client.post(
-            "/login/",
+            "/oauth2/token/",
             data=form_data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         )
         self.assertEqual(response.status_code, 401)
+
+
+    def test_refresh_token(self) -> None:
+        secrets['users']['foo'] = hash_password('bar')
+        form_data = {
+            'username': 'foo',
+            'password': 'bar',
+            'grant_type': 'password'
+        }
+        response = self.client.post(
+            "/oauth2/token/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual(result.get('token_type'), 'bearer')
+        self.assertIn('access_token', result)
+        self.assertIn('refresh_token', result)
+
+        form_data = {
+            'refresh_token': result['refresh_token'],
+            'grant_type': 'refresh_token'
+        }
+        response = self.client.post(
+            "/oauth2/token/",
+            data=form_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual(result['token_type'], 'bearer')
+        self.assertTrue(result['access_token'])
+        self.assertTrue(result['refresh_token'])
 
 
 unittest.main()

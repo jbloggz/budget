@@ -21,7 +21,7 @@ from model import Token
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="oauth2/token")
 with open(os.environ.get('SECRETS_PATH', 'secrets.json')) as fp:
     secrets = json.load(fp)
 
@@ -67,24 +67,34 @@ def create_token(user: str) -> Token:
     Returns:
         The encoded token
     '''
-    expire = datetime.utcnow() + timedelta(seconds=secrets['ttl'])
+    access_expire = datetime.utcnow() + timedelta(seconds=secrets['access_token_ttl'])
+    refresh_expire = datetime.utcnow() + timedelta(seconds=secrets['refresh_token_ttl'])
     return Token(
-        access_token=jwt.encode({'sub': user, 'exp': expire}, secrets['key'], algorithm=secrets['algorithm']),
+        access_token=jwt.encode({'sub': user, 'exp': access_expire}, secrets['access_token_key'], algorithm=secrets['algorithm']),
+        refresh_token=jwt.encode({'sub': user, 'exp': refresh_expire}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
         token_type='bearer'
     )
 
 
-def validate_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
+def validate_token(key: str, token: Annotated[str, Depends(oauth2_scheme)]) -> str:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, secrets['key'], algorithms=secrets['algorithm'])
+        payload = jwt.decode(token, secrets[key], algorithms=secrets['algorithm'])
         username: str = payload.get('sub')
         if username not in secrets['users']:
             raise credentials_exception
         return username
     except:
         raise credentials_exception
+
+
+def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
+    return validate_token('access_token_key', token)
+
+
+def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
+    return validate_token('refresh_token_key', token)
