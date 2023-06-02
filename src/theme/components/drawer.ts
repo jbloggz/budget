@@ -18,7 +18,7 @@ const dialogStyle = defineStyle((props) => {
    if (c === 'gray') {
       bg = mode(`gray.100`, `gray.700`)(props);
    } else {
-      bg = mode(`${c}.500`, `gray.700`)(props);
+      bg = mode(`${c}.500`, `${c}.200`)(props);
    }
    return {
       bg,
