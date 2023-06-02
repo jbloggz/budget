@@ -6,17 +6,24 @@
  * main.tsx: This file is the main entry point for react
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import App from './App.tsx';
-import theme from './theme.ts';
+import theme from './theme/index.ts';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-   <React.StrictMode>
-      <ChakraProvider theme={theme}>
-         <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-         <App />
-      </ChakraProvider>
-   </React.StrictMode>
-);
+export const Main = () => {
+   const [colorScheme, setColorScheme] = useState('teal');
+
+   const currentTheme = theme(colorScheme);
+   return (
+      <React.StrictMode>
+         <ChakraProvider theme={currentTheme}>
+            <ColorModeScript initialColorMode={currentTheme.config.initialColorMode} />
+            <App setColorScheme={setColorScheme} />
+         </ChakraProvider>
+      </React.StrictMode>
+   );
+};
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(<Main />);
