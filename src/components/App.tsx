@@ -6,7 +6,7 @@
  * main.tsx: This file contains the top level App component
  */
 
-import { CalendarIcon, HamburgerIcon, MoonIcon, SettingsIcon, SunIcon, TimeIcon } from '@chakra-ui/icons';
+import { CalendarIcon, HamburgerIcon, SettingsIcon, TimeIcon } from '@chakra-ui/icons';
 import {
    Avatar,
    Box,
@@ -27,18 +27,13 @@ import {
    ListItem,
    Select,
    Show,
-   useColorMode,
    useDisclosure,
    useStyleConfig,
 } from '@chakra-ui/react';
-import { Dispatch, SetStateAction } from 'react';
-
-interface appProps {
-   setColorScheme: Dispatch<SetStateAction<string>>;
-}
+import { useContext } from 'react';
+import { themeType, themes, ThemeContext } from '../theme';
 
 const TopBar = () => {
-   const { colorMode, toggleColorMode } = useColorMode();
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
 
@@ -60,7 +55,6 @@ const TopBar = () => {
                      <IconButton aria-label="Navigation" icon={<HamburgerIcon />} onClick={onOpen} />
                   </Show>
                </Hide>
-               <IconButton aria-label="Navigation" icon={colorMode === 'light' ? <SunIcon /> : <MoonIcon />} onClick={toggleColorMode} />
             </Flex>
             <Center flex="1" gap="2">
                <Image src="/favicon.ico" height="8" />
@@ -117,7 +111,8 @@ const BottomNav = () => {
    );
 };
 
-const App = ({ setColorScheme }: appProps) => {
+const App = () => {
+   const { theme, setTheme } = useContext(ThemeContext);
    return (
       <Flex direction="column" minHeight="100vh">
          <TopBar />
@@ -127,17 +122,12 @@ const App = ({ setColorScheme }: appProps) => {
             </Show>
             <Box w="100%" overflowY="auto" height="calc(100vh - 100px)">
                <Container as="main" paddingY="4">
-                  <Select placeholder="Select colour scheme" onChange={(e) => setColorScheme(e.target.value)}>
-                     <option value="gray">Gray</option>
-                     <option value="red">Red</option>
-                     <option value="orange">Orange</option>
-                     <option value="yellow">Yellow</option>
-                     <option value="green">Green</option>
-                     <option value="teal">Teal</option>
-                     <option value="blue">Blue</option>
-                     <option value="cyan">Cyan</option>
-                     <option value="purple">Purple</option>
-                     <option value="pink">Pink</option>
+                  <Select placeholder="Select theme..." value={theme} onChange={(e) => setTheme(e.target.value as themeType)}>
+                     {themes.map((theme) => (
+                        <option key={theme} value={theme}>
+                           {theme}
+                        </option>
+                     ))}
                   </Select>
                </Container>
             </Box>

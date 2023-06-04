@@ -6,24 +6,26 @@
  * main.tsx: This file is the main entry point for react
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
-import App from './App.tsx';
-import theme from './theme/index.ts';
+import { ChakraProvider } from '@chakra-ui/react';
+import App from './components/App';
+import { themeConfig, themeType, ThemeProvider } from './theme';
+import { useLocalStorage } from 'react-use';
 
-export const Main = () => {
-   const [colorScheme, setColorScheme] = useState('teal');
-
-   const currentTheme = theme(colorScheme);
+export const ThemedApp = () => {
+   const [theme, setTheme] = useLocalStorage<themeType>('theme', 'light');
    return (
-      <React.StrictMode>
-         <ChakraProvider theme={currentTheme}>
-            <ColorModeScript initialColorMode={currentTheme.config.initialColorMode} />
-            <App setColorScheme={setColorScheme} />
-         </ChakraProvider>
-      </React.StrictMode>
+      <ChakraProvider theme={themeConfig(theme)}>
+         <ThemeProvider theme={theme} setTheme={setTheme}>
+            <App />
+         </ThemeProvider>
+      </ChakraProvider>
    );
 };
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(<Main />);
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+   <React.StrictMode>
+      <ThemedApp />
+   </React.StrictMode>
+);
