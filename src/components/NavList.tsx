@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2023 Josef Barnes
  *
- * Settings.tsx: This file contains the navigation items list component
+ * NavList.tsx: This file contains the navigation items list component
  */
 
 import { CalendarIcon, SettingsIcon, TimeIcon } from '@chakra-ui/icons';
