@@ -7,9 +7,9 @@
  */
 
 import { Box, useStyleConfig } from '@chakra-ui/react';
-import { NavList } from './NavList';
+import { NavList } from '.';
 
-export const SideBar = () => {
+const SideBar = () => {
    const styles = useStyleConfig('SideBar');
    return (
       <Box minWidth="xs" as="aside" __css={styles}>
@@ -17,3 +17,5 @@ export const SideBar = () => {
       </Box>
    );
 };
+
+export default SideBar;

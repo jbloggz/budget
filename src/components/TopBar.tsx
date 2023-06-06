@@ -6,7 +6,6 @@
  * TopBar.tsx: This file contains the top bar component
  */
 
-import { HamburgerIcon } from '@chakra-ui/icons';
 import {
    Avatar,
    Box,
@@ -25,9 +24,10 @@ import {
    useDisclosure,
    useStyleConfig,
 } from '@chakra-ui/react';
-import { NavList } from './NavList';
+import { HamburgerIcon } from '@chakra-ui/icons';
+import { NavList } from '.';
 
-export const TopBar = () => {
+const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
 
@@ -63,3 +63,5 @@ export const TopBar = () => {
       </Box>
    );
 };
+
+export default TopBar;

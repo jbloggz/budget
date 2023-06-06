@@ -9,7 +9,7 @@
 import { CalendarIcon, SettingsIcon, TimeIcon } from '@chakra-ui/icons';
 import { Flex, IconButton } from '@chakra-ui/react';
 
-export const BottomNav = () => {
+const BottomNav = () => {
    return (
       <Flex as="nav" justify="space-evenly">
          <IconButton aria-label="Allocations" flex="1" borderRight="1px" borderRadius={0} icon={<TimeIcon />} />
@@ -18,3 +18,5 @@ export const BottomNav = () => {
       </Flex>
    );
 };
+
+export default BottomNav;

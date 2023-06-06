@@ -11,10 +11,10 @@ import styles from './styles';
 import { components } from './components';
 import type { themeType } from './theme.types';
 
-export { ThemeContext, ThemeProvider } from './ThemeProvider.tsx';
-export type { themeType, themeContextType } from './theme.types';
+export type { themeType } from './theme.types';
 export const themes = ['light', 'dark', 'red', 'orange', 'yellow', 'green', 'blue', 'teal', 'cyan', 'purple', 'pink'] as const;
 
+/* Some global config settings for the theme */
 const config: ThemeConfig = {
    initialColorMode: 'light',
    useSystemColorMode: false,

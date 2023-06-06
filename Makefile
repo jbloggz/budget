@@ -23,7 +23,7 @@ coverage_html: coverage
 	cd backend && python3 -m coverage html
 
 serve:
-	node_modules/.bin/concurrently "cd backend && uvicorn api:app --reload" "node_modules/.bin/vite"
+	node_modules/.bin/concurrently "cd backend && uvicorn api:app --reload" "node_modules/.bin/vite --host"
 
 clean:
 	rm -f backend/budget-test.db*

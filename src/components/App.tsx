@@ -7,10 +7,8 @@
  */
 
 import { Box, Flex, Show } from '@chakra-ui/react';
-import { TopBar } from './TopBar';
-import { SideBar } from './SideBar';
-import { BottomNav } from './BottomNav';
-import { Settings } from '../pages/Settings';
+import { TopBar, SideBar, BottomNav } from '.';
+import { Settings } from '../pages';
 
 const App = () => {
    return (

@@ -9,16 +9,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ChakraProvider } from '@chakra-ui/react';
-import App from './components/App';
-import { themeConfig, themeType, ThemeProvider } from './theme';
 import { useLocalStorage } from 'react-use';
+import { App } from './components';
+import { themeConfig, themeType } from './theme';
+import { ThemeProvider, AuthProvider } from './providers';
 
 export const ThemedApp = () => {
    const [theme, setTheme] = useLocalStorage<themeType>('theme', 'light');
    return (
       <ChakraProvider theme={themeConfig(theme)}>
          <ThemeProvider theme={theme} setTheme={setTheme}>
-            <App />
+            <AuthProvider>
+               <App />
+            </AuthProvider>
          </ThemeProvider>
       </ChakraProvider>
    );

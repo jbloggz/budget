@@ -9,7 +9,7 @@
 import { CalendarIcon, SettingsIcon, TimeIcon } from '@chakra-ui/icons';
 import { Button, List, ListItem } from '@chakra-ui/react';
 
-export const NavList = () => {
+const NavList = () => {
    return (
       <List>
          <ListItem>
@@ -30,3 +30,5 @@ export const NavList = () => {
       </List>
    );
 };
+
+export default NavList;

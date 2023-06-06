@@ -10,10 +10,12 @@ import { drawerTheme } from './drawer';
 import { buttonTheme } from './button';
 import { topBarTheme } from './topBar';
 import { sideBarTheme } from './sideBar';
+import { loginTheme } from './login';
 
 export const components = {
    Drawer: drawerTheme,
    Button: buttonTheme,
    TopBar: topBarTheme,
    SideBar: sideBarTheme,
+   Login: loginTheme,
 };

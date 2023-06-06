@@ -8,10 +8,11 @@
 
 import { Container, Select } from '@chakra-ui/react';
 import { useContext } from 'react';
-import { themeType, themes, ThemeContext } from '../theme';
+import { themeType, themes } from '../theme';
+import { ThemeContext, themeContextType } from '../providers';
 
-export const Settings = () => {
-   const { theme, setTheme } = useContext(ThemeContext);
+const Settings = () => {
+   const { theme, setTheme } = useContext<themeContextType>(ThemeContext);
    return (
       <Container as="main" paddingY="4">
          <Select placeholder="Select theme..." value={theme} onChange={(e) => setTheme(e.target.value as themeType)}>
@@ -24,3 +25,5 @@ export const Settings = () => {
       </Container>
    );
 };
+
+export default Settings;

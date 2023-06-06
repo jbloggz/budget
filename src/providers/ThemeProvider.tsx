@@ -8,7 +8,8 @@
 
 import { Dispatch, PropsWithChildren, SetStateAction, createContext, useCallback } from 'react';
 import { useColorMode } from '@chakra-ui/react';
-import { themeType, themeContextType } from '.';
+import { themeType } from '../theme';
+import { themeContextType } from '.';
 
 export const ThemeContext = createContext<themeContextType>({
    theme: 'light',
