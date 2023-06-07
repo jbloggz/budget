@@ -6,9 +6,11 @@
  * TopBar.tsx: This file contains the top bar component
  */
 
+import { useContext } from 'react';
 import {
    Avatar,
    Box,
+   Button,
    Center,
    Drawer,
    DrawerBody,
@@ -20,16 +22,22 @@ import {
    Hide,
    IconButton,
    Image,
+   Menu,
+   MenuButton,
+   MenuItem,
+   MenuList,
    Show,
    useDisclosure,
    useStyleConfig,
 } from '@chakra-ui/react';
-import { HamburgerIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { NavList } from '.';
+import { AuthContext, authContextType } from '../providers';
 
 const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
+   const { logout } = useContext<authContextType>(AuthContext);
 
    return (
       <Box as="header" __css={styles} p="2">
@@ -57,7 +65,14 @@ const TopBar = () => {
                </Heading>
             </Center>
             <Flex flex="1" justify="right" alignItems="center">
-               <Avatar name="Joe" size="sm" />
+               <Menu>
+                  <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                     <Avatar name="Joe" size="sm" />
+                  </MenuButton>
+                  <MenuList>
+                     <MenuItem onClick={logout}>Logout</MenuItem>
+                  </MenuList>
+               </Menu>
             </Flex>
          </Flex>
       </Box>
