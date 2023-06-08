@@ -24,7 +24,6 @@ import {
    InputRightElement,
    useDisclosure,
    useMultiStyleConfig,
-   Spinner,
    FormErrorMessage,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
@@ -133,8 +132,8 @@ const Login = () => {
                      <Checkbox name="remember" value="checked" defaultChecked isDisabled={submit.isOpen}>
                         Remember me
                      </Checkbox>
-                     <Button type="submit" onClick={authenticate} isDisabled={submit.isOpen}>
-                        {submit.isOpen ? <Spinner /> : 'Sign in'}
+                     <Button type="submit" isLoading={submit.isOpen} onClick={authenticate} isDisabled={submit.isOpen}>
+                        Sign in
                      </Button>
                      <FormControl isInvalid={authError !== ''}>
                         <FormErrorMessage>{authError}</FormErrorMessage>

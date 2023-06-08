@@ -7,6 +7,7 @@
  */
 
 import { useContext } from 'react';
+import { Link } from 'react-router-dom';
 import {
    Avatar,
    Box,
@@ -70,6 +71,7 @@ const TopBar = () => {
                      <Avatar name="Joe" size="sm" />
                   </MenuButton>
                   <MenuList>
+                     <MenuItem as={Link} to="settings">Settings</MenuItem>
                      <MenuItem onClick={logout}>Logout</MenuItem>
                   </MenuList>
                </Menu>

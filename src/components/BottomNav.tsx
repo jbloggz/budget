@@ -6,15 +6,47 @@
  * BottomNav.tsx: This file contains the bottom navigation component
  */
 
-import { CalendarIcon, SettingsIcon, TimeIcon } from '@chakra-ui/icons';
+import { Link, useLocation } from 'react-router-dom';
+import { CalendarIcon, StarIcon, TimeIcon } from '@chakra-ui/icons';
 import { Flex, IconButton } from '@chakra-ui/react';
 
 const BottomNav = () => {
+   const location = useLocation();
    return (
       <Flex as="nav" justify="space-evenly">
-         <IconButton aria-label="Allocations" flex="1" borderRight="1px" borderRadius={0} icon={<TimeIcon />} />
-         <IconButton aria-label="Transactions" flex="1" borderX="1px" borderRadius={0} icon={<CalendarIcon />} />
-         <IconButton aria-label="Settings" flex="1" borderLeft="1px" borderRadius={0} icon={<SettingsIcon />} />
+         <IconButton
+            as={Link}
+            isActive={location.pathname === '/'}
+            to="/"
+            aria-label="Dashboard"
+            flex="1"
+            borderRight="1px"
+            borderTop="1px"
+            borderRadius={0}
+            icon={<StarIcon />}
+         />
+         <IconButton
+            as={Link}
+            isActive={location.pathname === '/allocations'}
+            to="allocations"
+            aria-label="Allocations"
+            flex="1"
+            borderX="1px"
+            borderTop="1px"
+            borderRadius={0}
+            icon={<TimeIcon />}
+         />
+         <IconButton
+            as={Link}
+            isActive={location.pathname === '/transactions'}
+            to="transactions"
+            aria-label="Transactions"
+            flex="1"
+            borderLeft="1px"
+            borderTop="1px"
+            borderRadius={0}
+            icon={<CalendarIcon />}
+         />
       </Flex>
    );
 };

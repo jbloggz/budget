@@ -3,10 +3,10 @@
  *
  * Copyright (c) 2023 Josef Barnes
  *
- * Settings.tsx: This file contains the setting page component
+ * Settings.tsx: This file contains the settings page component
  */
 
-import { Container, Select } from '@chakra-ui/react';
+import { FormControl, FormLabel, Heading, Select } from '@chakra-ui/react';
 import { useContext } from 'react';
 import { themeType, themes } from '../theme';
 import { ThemeContext, themeContextType } from '../providers';
@@ -14,15 +14,19 @@ import { ThemeContext, themeContextType } from '../providers';
 const Settings = () => {
    const { theme, setTheme } = useContext<themeContextType>(ThemeContext);
    return (
-      <Container as="main" paddingY="4">
-         <Select placeholder="Select theme..." value={theme} onChange={(e) => setTheme(e.target.value as themeType)}>
-            {themes.map((theme) => (
-               <option key={theme} value={theme}>
-                  {theme}
-               </option>
-            ))}
-         </Select>
-      </Container>
+      <>
+         <Heading pb="8" size="lg">Settings</Heading>
+         <FormControl>
+            <FormLabel htmlFor="theme">Theme</FormLabel>
+            <Select placeholder="Select theme..." value={theme} onChange={(e) => setTheme(e.target.value as themeType)}>
+               {themes.map((theme) => (
+                  <option key={theme} value={theme}>
+                     {theme}
+                  </option>
+               ))}
+            </Select>
+         </FormControl>
+      </>
    );
 };
 
