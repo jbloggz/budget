@@ -25,6 +25,7 @@ import {
    useDisclosure,
    useMultiStyleConfig,
    FormErrorMessage,
+   useToast,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { AuthContext, authContextType } from '../providers';
@@ -37,10 +38,10 @@ interface credentialsType {
 }
 
 const Login = () => {
+   const toast = useToast();
    const { login } = useContext<authContextType>(AuthContext);
    const [invalidEmail, setInvalidEmail] = useState<boolean>(false);
    const [invalidPassword, setInvalidPassword] = useState<boolean>(false);
-   const [authError, setAuthError] = useState<string>('');
    const passwordReveal = useDisclosure();
    const styles = useMultiStyleConfig('Login');
    const submit = useDisclosure();
@@ -73,7 +74,6 @@ const Login = () => {
    };
 
    const authenticate = () => {
-      setAuthError('');
       const creds = validate_form();
       if (creds === null) {
          return;
@@ -82,7 +82,12 @@ const Login = () => {
          if (creds.email === 'foo@foo.com' && creds.password === 'bar') {
             login();
          } else {
-            setAuthError('Invalid username/password');
+            toast({
+               title: 'Error',
+               description: 'Invalid username/password',
+               status: 'error',
+               duration: 5000,
+            });
          }
          submit.onClose();
       }, 2000);
@@ -135,9 +140,6 @@ const Login = () => {
                      <Button type="submit" isLoading={submit.isOpen} onClick={authenticate} isDisabled={submit.isOpen}>
                         Sign in
                      </Button>
-                     <FormControl isInvalid={authError !== ''}>
-                        <FormErrorMessage>{authError}</FormErrorMessage>
-                     </FormControl>
                   </Stack>
                </form>
             </Box>
