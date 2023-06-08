@@ -74,6 +74,7 @@ const Login = () => {
    };
 
    const authenticate = () => {
+      setAuthError('');
       const creds = validate_form();
       if (creds === null) {
          return;
