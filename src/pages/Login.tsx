@@ -28,15 +28,9 @@ import {
    useToast,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { AuthContext, authContextType } from '../providers';
+import { AuthContext, authContextType, credentialsType } from '../providers';
 
 /* An interface for the login credentials */
-interface credentialsType {
-   email: string;
-   password: string;
-   remember: boolean;
-}
-
 const Login = () => {
    const toast = useToast();
    const { login } = useContext<authContextType>(AuthContext);
@@ -79,9 +73,7 @@ const Login = () => {
          return;
       }
       setTimeout(() => {
-         if (creds.email === 'foo@foo.com' && creds.password === 'bar') {
-            login();
-         } else {
+         if (!login(creds)) {
             toast({
                title: 'Error',
                description: 'Invalid username/password',

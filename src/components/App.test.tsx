@@ -6,22 +6,18 @@
  * App.test.tsx: This file contains the tests for the App component
  */
 
-import { describe, it, vi, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { App } from '.';
 
-/* Mock the useNavigate() hook */
-vi.mock('react-router-dom', async () => {
-   const actual = (await vi.importActual('react-router-dom')) as object;
-   return {
-      ...actual,
-      useNavigate: vi.fn(),
-   };
-});
-
 describe('App', () => {
    it('renders login page by default', () => {
-      render(<App />);
+      render(
+         <MemoryRouter>
+            <App />
+         </MemoryRouter>
+      );
       const btn = screen.getByRole('button', { name: 'Sign in' });
       expect(btn).toBeInTheDocument();
    });

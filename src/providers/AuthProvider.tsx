@@ -8,19 +8,24 @@
 
 import { PropsWithChildren, createContext, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authContextType } from './context.types';
+import { authContextType, credentialsType } from './context.types';
 import { Login } from '../pages';
 
 export const AuthContext = createContext<authContextType>({
-   login: () => undefined,
+   login: () => false,
    logout: () => undefined,
 });
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();
    const [loggedIn, setLoggedIn] = useState(false);
-   const login = useCallback(() => {
-      setLoggedIn(true);
+   const login = useCallback((creds: credentialsType) => {
+      if (creds.email === 'foo@foo.com' && creds.password === 'bar') {
+         setLoggedIn(true);
+         return true;
+      } else {
+         return false;
+      }
    }, []);
    const logout = useCallback(() => {
       setLoggedIn(false);

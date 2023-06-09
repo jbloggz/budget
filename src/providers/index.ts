@@ -8,4 +8,4 @@
 
 export { ThemeContext, ThemeProvider } from './ThemeProvider';
 export { AuthContext, AuthProvider } from './AuthProvider';
-export type { themeContextType, authContextType } from './context.types';
+export type { themeContextType, authContextType, credentialsType } from './context.types';
