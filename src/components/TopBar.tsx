@@ -71,8 +71,8 @@ const TopBar = () => {
                      <Avatar name="Joe" size="sm" />
                   </MenuButton>
                   <MenuList>
-                     <MenuItem as={Link} to="settings">Settings</MenuItem>
-                     <MenuItem onClick={logout}>Logout</MenuItem>
+                     <MenuItem aria-label="Settings" as={Link} to="settings">Settings</MenuItem>
+                     <MenuItem aria-label="Logout" onClick={logout}>Logout</MenuItem>
                   </MenuList>
                </Menu>
             </Flex>

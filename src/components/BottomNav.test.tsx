@@ -6,7 +6,7 @@
  * BottomNav.test.tsx: This file contains the tests for the BottomNav component
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BottomNav } from '.';
 import { MemoryRouter } from 'react-router-dom';

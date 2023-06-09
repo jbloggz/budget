@@ -77,7 +77,7 @@ describe('NavList', () => {
       expect(sett_btn).toHaveAttribute('data-active');
    });
 
-   it('Clocking the logout button calls logout()', () => {
+   it('Clicking the logout button calls logout()', () => {
       const mockLogout = vi.fn();
       render(
          <MemoryRouter>

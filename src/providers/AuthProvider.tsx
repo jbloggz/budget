@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
    const logout = useCallback(() => {
       setLoggedIn(false);
       navigate('/');
-   }, []);
+   }, [navigate]);
 
    return <AuthContext.Provider value={{ login, logout }}>{loggedIn ? children : <Login />}</AuthContext.Provider>;
 };
