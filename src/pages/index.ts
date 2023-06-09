@@ -8,7 +8,7 @@
 
 import Login from './Login';
 import Settings from './Settings';
-import ErrorPage from './RouterError';
+import ErrorPage from './ErrorPage';
 import Dashboard from './Dashboard';
 import Allocations from './Allocations';
 import Transactions from './Transactions';

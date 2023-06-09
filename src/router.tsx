@@ -8,14 +8,13 @@
 
 import { createBrowserRouter } from 'react-router-dom';
 import { App } from './components';
-import RouterError from './pages/RouterError';
-import { Allocations, Dashboard, Settings, Transactions } from './pages';
+import { Allocations, Dashboard, ErrorPage, Settings, Transactions } from './pages';
 
 const router = createBrowserRouter([
    {
       path: '/',
       element: <App />,
-      errorElement: <RouterError />,
+      errorElement: <ErrorPage />,
       children: [
          {
             index: true,
