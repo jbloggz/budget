@@ -12,12 +12,14 @@ test:
 	rm -f backend/budget-test.db*
 	cd backend && DB_PATH="budget-test.db" python3 api.test.py
 	rm -f backend/budget-test.db*
+	node_modules/.bin/vitest run test
 
 coverage:
 	rm -f backend/budget-test.db*
 	cd backend && DB_PATH="budget-test.db" python3 -m coverage run --branch --source=. api.test.py
 	cd backend && python3 -m coverage report
 	rm -f backend/budget-test.db*
+	node_modules/.bin/vitest run --coverage
 
 coverage_html: coverage
 	cd backend && python3 -m coverage html
@@ -28,6 +30,11 @@ serve:
 clean:
 	rm -f backend/budget-test.db*
 	rm -f backend/.coverage
+	rm -rf coverage
 	rm -rf backend/htmlcov
 	rm -rf .mypy_cache
 	rm -rf dist
+
+clean-all: clean
+	rm -rf node_modules
+
