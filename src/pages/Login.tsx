@@ -6,7 +6,7 @@
  * Login.tsx: This file contains the login page component
  */
 
-import { useContext, useRef, useState } from 'react';
+import { FormEvent, useContext, useRef, useState } from 'react';
 import {
    Box,
    Button,
@@ -29,61 +29,48 @@ import {
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { AuthContext, authContextType, credentialsType } from '../providers';
+import { isNonEmptyString } from '../util';
 
 /* An interface for the login credentials */
 const Login = () => {
    const toast = useToast();
    const { login } = useContext<authContextType>(AuthContext);
-   const [invalidEmail, setInvalidEmail] = useState<boolean>(false);
-   const [invalidPassword, setInvalidPassword] = useState<boolean>(false);
    const passwordReveal = useDisclosure();
    const styles = useMultiStyleConfig('Login');
    const submit = useDisclosure();
 
    const form = useRef(null);
-   const validate_form = (): credentialsType | null => {
+   const validateForm = (): credentialsType | null => {
       if (form.current === null) {
          return null;
       }
-      let error = false;
-      const creds: credentialsType = {
-         email: form.current['email']['value'],
-         password: form.current['password']['value'],
-         remember: form.current['remember']['checked'],
-      };
-      if (creds.email === '') {
-         setInvalidEmail(true);
-         error = true;
-      }
-      if (creds.password === '') {
-         setInvalidPassword(true);
-         error = true;
-      }
-
-      if (error) {
+      const data = new FormData(form.current);
+      const email = data.get('email');
+      const password = data.get('password');
+      const remember = data.get('remember') === 'checked';
+      if (isNonEmptyString(email) && isNonEmptyString(password)) {
+         return { email, password, remember };
+      } else {
          return null;
       }
-
-      return creds;
    };
 
-   const authenticate = () => {
-      const creds = validate_form();
+   const submitForm = async (event: FormEvent) => {
+      event.preventDefault();
+      const creds = validateForm();
       if (creds === null) {
          return;
       }
-      setTimeout(() => {
-         if (!login(creds)) {
-            toast({
-               title: 'Error',
-               description: 'Invalid username/password',
-               status: 'error',
-               duration: 5000,
-            });
-         }
-         submit.onClose();
-      }, 2000);
       submit.onOpen();
+      if (!await login(creds)) {
+         toast({
+            title: 'Error',
+            description: 'Invalid username/password',
+            status: 'error',
+            duration: 5000,
+         });
+      }
+      submit.onClose();
    };
 
    return (
@@ -94,23 +81,23 @@ const Login = () => {
                <Heading size="lg">Budget Login</Heading>
             </Center>
             <Box __css={styles.card} py="8" px="10" boxShadow="md" borderRadius="xl">
-               <form ref={form}>
+               <form ref={form} onSubmit={submitForm}>
                   <Stack spacing="6">
                      <Stack spacing="5">
-                        <FormControl isInvalid={invalidEmail}>
+                        <FormControl>
                            <FormLabel htmlFor="email">Email</FormLabel>
-                           <Input name="email" type="email" onChange={() => setInvalidEmail(false)} isDisabled={submit.isOpen} required />
+                           <Input id="email" name="email" type="email" isDisabled={submit.isOpen} required />
                            <FormErrorMessage>Please enter an email address</FormErrorMessage>
                         </FormControl>
-                        <FormControl isInvalid={invalidPassword}>
+                        <FormControl>
                            <FormLabel htmlFor="password">Password</FormLabel>
                            <InputGroup>
                               <Input
+                                 id="password"
                                  name="password"
                                  isDisabled={submit.isOpen}
                                  type={passwordReveal.isOpen ? 'text' : 'password'}
                                  autoComplete="current-password"
-                                 onChange={() => setInvalidPassword(false)}
                                  required
                               />
                               <InputRightElement>
@@ -129,7 +116,7 @@ const Login = () => {
                      <Checkbox name="remember" value="checked" defaultChecked isDisabled={submit.isOpen}>
                         Remember me
                      </Checkbox>
-                     <Button type="submit" isLoading={submit.isOpen} onClick={authenticate} isDisabled={submit.isOpen}>
+                     <Button type="submit" isLoading={submit.isOpen} isDisabled={submit.isOpen}>
                         Sign in
                      </Button>
                   </Stack>
