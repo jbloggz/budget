@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();
    const [loggedIn, setLoggedIn] = useState(false);
    const login = useCallback((creds: credentialsType) => {
-      return new Promise((r) => setTimeout(r, 2000)).then(() => {
+      return new Promise((r) => setTimeout(r, 500)).then(() => {
          if (creds.email === 'foo@foo.com' && creds.password === 'bar') {
             setLoggedIn(true);
             return true;
