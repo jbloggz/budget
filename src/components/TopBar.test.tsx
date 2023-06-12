@@ -16,7 +16,9 @@ describe('TopBar', () => {
    it('Renders the TopBar', () => {
       render(
          <MemoryRouter initialEntries={['/']}>
-            <TopBar />
+            <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+               <TopBar />
+            </AuthContext.Provider>
          </MemoryRouter>
       );
       const settings_btn = screen.getByLabelText('Settings');

@@ -7,14 +7,14 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import { render } from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
-import { ThemeContext, ThemeProvider } from '.';
+import { ThemeContext, ThemeProvider, themeContextType, useContext } from '.';
 import { themeType } from '../theme';
 
 const TestingComponent = () => {
-   const { theme, setTheme } = useContext(ThemeContext);
+   const { theme, setTheme } = useContext<themeContextType>(ThemeContext);
    useEffect(() => {
       setTheme('red');
    }, [setTheme]);

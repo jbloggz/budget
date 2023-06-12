@@ -16,7 +16,9 @@ describe('NavList', () => {
    it('Highlights the dashboard button when page is active', () => {
       render(
          <MemoryRouter initialEntries={['/']}>
-            <NavList />
+            <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+               <NavList />
+            </AuthContext.Provider>
          </MemoryRouter>
       );
       const dash_btn = screen.getByLabelText('Dashboard');
@@ -32,7 +34,9 @@ describe('NavList', () => {
    it('Highlights the allocations button when page is active', () => {
       render(
          <MemoryRouter initialEntries={['/allocations']}>
-            <NavList />
+            <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+               <NavList />
+            </AuthContext.Provider>
          </MemoryRouter>
       );
       const dash_btn = screen.getByLabelText('Dashboard');
@@ -48,7 +52,9 @@ describe('NavList', () => {
    it('Highlights the transactions button when page is active', () => {
       render(
          <MemoryRouter initialEntries={['/transactions']}>
-            <NavList />
+            <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+               <NavList />
+            </AuthContext.Provider>
          </MemoryRouter>
       );
       const dash_btn = screen.getByLabelText('Dashboard');
@@ -64,7 +70,9 @@ describe('NavList', () => {
    it('Highlights the settings button when page is active', () => {
       render(
          <MemoryRouter initialEntries={['/settings']}>
-            <NavList />
+            <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+               <NavList />
+            </AuthContext.Provider>
          </MemoryRouter>
       );
       const dash_btn = screen.getByLabelText('Dashboard');

@@ -7,9 +7,8 @@
  */
 
 import { FormControl, FormLabel, Heading, Select } from '@chakra-ui/react';
-import { useContext } from 'react';
 import { themeType, themes } from '../theme';
-import { ThemeContext, themeContextType } from '../providers';
+import { ThemeContext, themeContextType, useContext } from '../providers';
 
 const Settings = () => {
    const { theme, setTheme } = useContext<themeContextType>(ThemeContext);

@@ -6,15 +6,13 @@
  * AuthProvider.tsx: This file contains the authentication context/provider for the app
  */
 
-import { PropsWithChildren, createContext, useCallback, useState } from 'react';
+import { PropsWithChildren, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authContextType, credentialsType } from './context.types';
 import { Login } from '../pages';
+import { createContext } from '.';
 
-export const AuthContext = createContext<authContextType>({
-   login: () => false,
-   logout: () => undefined,
-});
+export const AuthContext = createContext<authContextType>();
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();

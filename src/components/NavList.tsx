@@ -6,11 +6,10 @@
  * NavList.tsx: This file contains the navigation items list component
  */
 
-import { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarIcon, LockIcon, SettingsIcon, StarIcon, TimeIcon } from '@chakra-ui/icons';
 import { Button, List, ListItem } from '@chakra-ui/react';
-import { AuthContext, authContextType } from '../providers';
+import { AuthContext, authContextType, useContext } from '../providers';
 
 const NavList = () => {
    const location = useLocation();

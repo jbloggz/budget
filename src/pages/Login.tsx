@@ -6,7 +6,7 @@
  * Login.tsx: This file contains the login page component
  */
 
-import { FormEvent, useContext, useRef, useState } from 'react';
+import { FormEvent, useRef } from 'react';
 import {
    Box,
    Button,
@@ -28,7 +28,7 @@ import {
    useToast,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { AuthContext, authContextType, credentialsType } from '../providers';
+import { AuthContext, authContextType, credentialsType, useContext } from '../providers';
 import { isNonEmptyString } from '../util';
 
 /* An interface for the login credentials */

@@ -6,7 +6,6 @@
  * TopBar.tsx: This file contains the top bar component
  */
 
-import { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import {
    Avatar,
@@ -33,7 +32,7 @@ import {
 } from '@chakra-ui/react';
 import { ChevronDownIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { NavList } from '.';
-import { AuthContext, authContextType } from '../providers';
+import { AuthContext, authContextType, useContext } from '../providers';
 
 const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();

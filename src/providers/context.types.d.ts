@@ -17,6 +17,6 @@ export interface themeContextType {
 }
 
 export interface authContextType {
-   login: (creds: credentialsType) => boolean;
+   login: (creds: credentialsType) => Promise<boolean>;
    logout: () => void;
 }

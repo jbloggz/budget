@@ -6,15 +6,12 @@
  * ThemeProvider.tsx: This file contains the theme context/provider for the app
  */
 
-import { Dispatch, PropsWithChildren, SetStateAction, createContext, useCallback } from 'react';
+import { Dispatch, PropsWithChildren, SetStateAction, useCallback } from 'react';
 import { useColorMode } from '@chakra-ui/react';
 import { themeType } from '../theme';
-import { themeContextType } from '.';
+import { createContext, themeContextType } from '.';
 
-export const ThemeContext = createContext<themeContextType>({
-   theme: 'light',
-   setTheme: () => undefined,
-});
+export const ThemeContext = createContext<themeContextType>();
 
 interface ThemeProviderProps {
    theme: themeType;

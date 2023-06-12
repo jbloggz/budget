@@ -13,7 +13,11 @@ import { Login } from '.';
 
 describe('Login', () => {
    it('renders the login page', () => {
-      render(<Login />);
+      render(
+         <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+            <Login />
+         </AuthContext.Provider>
+      );
       const btn = screen.getByRole('button', { name: 'Sign in' });
       expect(btn).toBeInTheDocument();
    });
@@ -39,7 +43,7 @@ describe('Login', () => {
       );
       const login_btn = screen.getByRole('button', { name: 'Sign in' });
       const email = screen.getByLabelText('Email');
-      fireEvent.change(email, {target: {value: 'joe@test.com'}});
+      fireEvent.change(email, { target: { value: 'joe@test.com' } });
       login_btn.click();
       expect(mockLogin.mock.calls).toHaveLength(0);
    });
@@ -54,8 +58,8 @@ describe('Login', () => {
       const login_btn = screen.getByRole('button', { name: 'Sign in' });
       const email = screen.getByLabelText('Email');
       const pass = screen.getByLabelText('Password');
-      fireEvent.change(email, {target: {value: 'joe@test.com'}});
-      fireEvent.change(pass, {target: {value: 'foobar'}});
+      fireEvent.change(email, { target: { value: 'joe@test.com' } });
+      fireEvent.change(pass, { target: { value: 'foobar' } });
       login_btn.click();
       expect(mockLogin.mock.calls).toHaveLength(1);
    });
