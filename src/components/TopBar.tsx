@@ -6,7 +6,8 @@
  * TopBar.tsx: This file contains the top bar component
  */
 
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
    Avatar,
    Box,
@@ -38,6 +39,12 @@ const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
    const { logout } = useContext<authContextType>(AuthContext);
+
+   /* Close the drawer any time the location changes */
+   const location = useLocation();
+   useEffect(() => {
+      onClose();
+   }, [location, onClose]);
 
    return (
       <Box as="header" __css={styles} p="2">

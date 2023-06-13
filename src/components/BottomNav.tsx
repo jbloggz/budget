@@ -20,7 +20,6 @@ const BottomNav = () => {
             to="/"
             aria-label="Dashboard"
             flex="1"
-            borderRight="1px"
             borderTop="1px"
             borderRadius={0}
             icon={<StarIcon />}
@@ -42,7 +41,6 @@ const BottomNav = () => {
             to="transactions"
             aria-label="Transactions"
             flex="1"
-            borderLeft="1px"
             borderTop="1px"
             borderRadius={0}
             icon={<CalendarIcon />}
