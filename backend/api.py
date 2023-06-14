@@ -20,44 +20,44 @@ app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
 db = Database()
 
 
-@app.post('/transaction/', status_code=201, response_model=Transaction, dependencies=[Depends(validate_access_token)])
+@app.post('/api/transaction/', status_code=201, response_model=Transaction, dependencies=[Depends(validate_access_token)])
 def add_transaction(txn: Transaction) -> Transaction:
     with db:
         db.add_transaction(txn)
     return txn
 
 
-@app.get('/transaction/', response_model=List[Transaction], dependencies=[Depends(validate_access_token)])
+@app.get('/api/transaction/', response_model=List[Transaction], dependencies=[Depends(validate_access_token)])
 def get_transactions(query: str) -> List[Transaction]:
     with db:
         return db.get_transaction_list(query)
 
 
-@app.get('/allocation/', response_model=List[Allocation], dependencies=[Depends(validate_access_token)])
+@app.get('/api/allocation/', response_model=List[Allocation], dependencies=[Depends(validate_access_token)])
 def get_allocations(query: str) -> List[Allocation]:
     with db:
         return db.get_allocation_list(query)
 
 
-@app.put('/allocation/', dependencies=[Depends(validate_access_token)])
+@app.put('/api/allocation/', dependencies=[Depends(validate_access_token)])
 def update_allocation(alloc: Allocation) -> None:
     with db:
         db.update_allocation(alloc)
 
 
-@app.get('/allocation/split/', dependencies=[Depends(validate_access_token)])
+@app.get('/api/allocation/split/', dependencies=[Depends(validate_access_token)])
 def split_allocation(id: int, amount: int) -> Allocation:
     with db:
         return db.split_allocation(id, amount)
 
 
-@app.get('/allocation/merge/', dependencies=[Depends(validate_access_token)])
+@app.get('/api/allocation/merge/', dependencies=[Depends(validate_access_token)])
 def merge_allocation(ids: Annotated[List[int], Query()]) -> Allocation:
     with db:
         return db.merge_allocations(ids)
 
 
-@app.post('/oauth2/token/', response_model=Token)
+@app.post('/api/oauth2/token/', response_model=Token)
 def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
     if form_data.grant_type == 'refresh_token':
         username = validate_refresh_token(form_data.refresh_token)
