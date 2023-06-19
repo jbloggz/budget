@@ -31,6 +31,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-   /* Make sure test cleanup after they run */
+   /* Make sure tests cleanup after they run */
    cleanup();
 });
