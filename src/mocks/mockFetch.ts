@@ -10,46 +10,81 @@ import { vi } from 'vitest';
 import { mockFetchRequestType, mockFetchResponseType, mockFetchType } from '.';
 import { getReasonPhrase } from 'http-status-codes';
 
-export const mockFetch: mockFetchType = {
-   __internal: {
-      actual: globalThis.fetch,
-      mock: vi.fn(),
-      responses: [],
-   },
-   enabled: false,
-   setResponseIf: (fn, body, status, headers, isError) => {
-      mockFetch.__internal.responses.unshift({ fn, body, status: status || 200, headers: headers || {}, isError: !!isError });
-   },
-   setJSONResponseIf: (fn, body, status, headers, isError) => {
+class MockFetch {
+   /* Private variables */
+   #actual = globalThis.fetch;
+   #mock = vi.fn();
+   #responses: {
+      fn: (req: mockFetchRequestType) => boolean;
+      body: string;
+      status: number;
+      headers: { [key: string]: string };
+      isError: boolean;
+   }[] = [];
+   #enabled = false;
+   #calls: { request: mockFetchRequestType; response: mockFetchResponseType }[] = [];
+
+   setResponseIf(fn: (req: mockFetchRequestType) => boolean, body: string, status?: number, headers?: { [key: string]: string }, isError?: boolean) {
+      this.#responses.unshift({ fn, body, status: status || 200, headers: headers || {}, isError: !!isError });
+   }
+
+   setJSONResponseIf(
+      fn: (req: mockFetchRequestType) => boolean,
+      body: object,
+      status?: number,
+      headers?: { [key: string]: string },
+      isError?: boolean
+   ) {
       if (!headers) {
          headers = {};
       }
       if (!isError && !('Content-Type' in headers)) {
          headers['Content-Type'] = 'application/json';
       }
-      mockFetch.setResponseIf(fn, JSON.stringify(body), status, headers, isError);
-   },
-   setFailureIf: (fn, msg) => mockFetch.setResponseIf(fn, msg, -1, {}, true),
-   setResponse: (body, status, headers, isError) => mockFetch.setResponseIf(() => true, body, status, headers, isError),
-   setJSONResponse: (body, status, headers, isError) => mockFetch.setJSONResponseIf(() => true, body, status, headers, isError),
-   setFailure: (msg) => mockFetch.setFailureIf(() => true, msg),
-   calls: [],
-   reset: () => {
-      mockFetch.calls = [];
-      mockFetch.__internal.responses = [];
-   },
-   enable: () => {
-      if (!mockFetch.enabled) {
-         mockFetch.enabled = true;
-         globalThis.fetch = mockFetch.__internal.mock;
-         vi.mocked(mockFetch.__internal.mock).mockImplementation((url, params) => {
+      this.setResponseIf(fn, JSON.stringify(body), status, headers, isError);
+   }
+
+   setFailureIf(fn: (req: mockFetchRequestType) => boolean, msg: string) {
+      this.setResponseIf(fn, msg, -1, {}, true);
+   }
+
+   setResponse(body: string, status?: number, headers?: { [key: string]: string }, isError?: boolean) {
+      this.setResponseIf(() => true, body, status, headers, isError);
+   }
+
+   setJSONResponse(body: object, status?: number, headers?: { [key: string]: string }, isError?: boolean) {
+      this.setJSONResponseIf(() => true, body, status, headers, isError);
+   }
+
+   setFailure(msg: string) {
+      this.setFailureIf(() => true, msg);
+   }
+
+   reset() {
+      this.#calls = [];
+      this.#responses = [];
+   }
+
+   isEnabled() {
+      return this.#enabled;
+   }
+
+   calls() {
+      return this.#calls;
+   }
+
+   enable() {
+      if (!this.#enabled) {
+         this.#enabled = true;
+         globalThis.fetch = this.#mock;
+         vi.mocked(this.#mock).mockImplementation((url, params) => {
             const mockReq: mockFetchRequestType = {
                url: String(url),
                method: params?.method || 'GET',
                headers: (params?.headers as { [key: string]: string }) || {},
                body: JSON.parse(params?.body?.toString() || 'null'),
             };
-            for (const resp of mockFetch.__internal.responses) {
+            for (const resp of this.#responses) {
                if (!resp.fn(mockReq)) {
                   continue;
                }
@@ -61,7 +96,7 @@ export const mockFetch: mockFetchType = {
                   isError: resp.isError,
                };
 
-               mockFetch.calls.push({ request: mockReq, response: mockResp });
+               this.#calls.push({ request: mockReq, response: mockResp });
                return mockResp.isError
                   ? Promise.reject(new TypeError(mockResp.body))
                   : Promise.resolve({
@@ -82,15 +117,18 @@ export const mockFetch: mockFetchType = {
                headers: {},
                isError: true,
             };
-            mockFetch.calls.push({ request: mockReq, response: mockResp });
+            this.#calls.push({ request: mockReq, response: mockResp });
             return Promise.reject(new TypeError('No response implemented'));
          });
       }
-   },
-   disable: () => {
-      if (mockFetch.enabled) {
-         mockFetch.enabled = false;
-         globalThis.fetch = mockFetch.__internal.actual as typeof fetch;
+   }
+
+   disable() {
+      if (this.#enabled) {
+         this.#enabled = false;
+         globalThis.fetch = this.#actual as typeof fetch;
       }
-   },
-};
+   }
+}
+
+export const mockFetch = new MockFetch();
