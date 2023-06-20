@@ -6,6 +6,8 @@
  * context.types.d.ts: This file contains the type definitions for the contexts
  */
 
+import { apiResponseType } from '../hooks';
+
 export interface credentialsType {
    email: string;
    password: string;
@@ -17,6 +19,6 @@ export interface themeContextType {
 }
 
 export interface authContextType {
-   login: (creds: credentialsType) => Promise<boolean>;
+   login: (creds: credentialsType) => Promise<apiResponseType>;
    logout: () => void;
 }

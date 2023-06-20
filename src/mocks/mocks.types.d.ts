@@ -10,7 +10,7 @@ export interface mockFetchRequestType {
    url: string;
    method: string;
    headers: { [key: string]: string };
-   body: object | string;
+   body: string | null;
 }
 
 export interface mockFetchResponseType {

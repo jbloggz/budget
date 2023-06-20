@@ -20,6 +20,11 @@ export default defineConfig({
          all: true,
       },
       environment: 'jsdom',
-      setupFiles: './src/test/testSetup.ts',
-    },
+      setupFiles: './src/test/testSetup.ts'
+   },
+   server: {
+      proxy: {
+         '/api': 'http://localhost:8000',
+      },
+   },
 });

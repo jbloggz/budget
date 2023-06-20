@@ -11,22 +11,29 @@ import { useNavigate } from 'react-router-dom';
 import { authContextType, credentialsType } from './context.types';
 import { Login } from '../pages';
 import { createContext } from '.';
+import { useAPI } from '../hooks';
 
 export const AuthContext = createContext<authContextType>();
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();
    const [loggedIn, setLoggedIn] = useState(false);
-   const login = useCallback((creds: credentialsType) => {
-      return new Promise((r) => setTimeout(r, 500)).then(() => {
-         if (creds.email === 'foo@foo.com' && creds.password === 'bar') {
+   const api = useAPI();
+
+   const login = useCallback(
+      async (creds: credentialsType) => {
+         try {
+            await api.get_token(creds.email, creds.password);
             setLoggedIn(true);
-            return true;
-         } else {
-            return false;
+            return { success: true };
+         } catch (err) {
+            setLoggedIn(false);
+            return { success: false, errmsg: err instanceof Error ? err.message : String(err) };
          }
-      });
-   }, []);
+      },
+      [api]
+   );
+
    const logout = useCallback(() => {
       setLoggedIn(false);
       navigate('/');

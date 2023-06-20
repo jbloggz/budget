@@ -62,10 +62,11 @@ const Login = () => {
          return;
       }
       submit.onOpen();
-      if (!await login(creds)) {
+      const resp = await login(creds);
+      if (!resp.success) {
          toast({
             title: 'Error',
-            description: 'Invalid username/password',
+            description: resp.errmsg,
             status: 'error',
             duration: 5000,
          });

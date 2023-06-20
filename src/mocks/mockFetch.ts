@@ -7,7 +7,7 @@
  */
 
 import { vi } from 'vitest';
-import { mockFetchRequestType, mockFetchResponseType, mockFetchType } from '.';
+import { mockFetchRequestType, mockFetchResponseType } from '.';
 import { getReasonPhrase } from 'http-status-codes';
 
 class MockFetch {
@@ -63,6 +63,8 @@ class MockFetch {
    reset() {
       this.#calls = [];
       this.#responses = [];
+      this.disable();
+      this.enable();
    }
 
    isEnabled() {
@@ -82,7 +84,7 @@ class MockFetch {
                url: String(url),
                method: params?.method || 'GET',
                headers: (params?.headers as { [key: string]: string }) || {},
-               body: JSON.parse(params?.body?.toString() || 'null'),
+               body: params?.body?.toString() || null,
             };
             for (const resp of this.#responses) {
                if (!resp.fn(mockReq)) {

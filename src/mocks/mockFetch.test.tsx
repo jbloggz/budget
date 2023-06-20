@@ -99,7 +99,7 @@ describe('mockFetch', () => {
       expect(mockFetch.calls()[0].request.url).toBe('/qwerty');
       expect(mockFetch.calls()[0].request.method).toBe('POST');
       expect(mockFetch.calls()[0].request.headers).toStrictEqual({ asdf: 'foobar' });
-      expect(mockFetch.calls()[0].request.body).toStrictEqual([1, 2, 3]);
+      expect(mockFetch.calls()[0].request.body).toBe('[1,2,3]');
       expect(mockFetch.calls()[0].response.body).toStrictEqual('something');
       expect(mockFetch.calls()[0].response.headers).toStrictEqual({ foo: 'bar' });
       expect(mockFetch.calls()[0].response.status).toBe(201);
