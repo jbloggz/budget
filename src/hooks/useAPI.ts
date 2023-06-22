@@ -8,87 +8,126 @@
 
 import { useCallback, useState } from 'react';
 import { useLocalStorage } from 'react-use';
+import httpError from 'http-errors';
 import { apiResponseType, apiTokenType } from '.';
 import { isApiTokenType } from '../util';
 
 export const useAPI = () => {
    const [isLoading, setLoading] = useState(true);
-   const [accessToken, setAccessToken] = useLocalStorage('access_token');
-   const [, setRefreshToken] = useLocalStorage('refresh_token');
+   const [currentAccessToken, setCurrentAccessToken] = useLocalStorage<string>('access_token');
+   const [currentRefreshToken, setCurrentRefreshToken] = useLocalStorage<string>('refresh_token');
 
-   const runRequest = useCallback(
+   const runRawRequest = useCallback(
       async (
          method: 'GET' | 'POST' | 'PUT',
          url: string,
-         body?: URLSearchParams | string,
-         headers?: { [key: string]: string }
+         headers: { [key: string]: string },
+         body?: URLSearchParams | string
       ): Promise<apiResponseType> => {
+         let status = -1;
          try {
             setLoading(true);
-            if (!headers) {
-               headers = {
-                  Authorization: `Bearer ${accessToken}`,
-               };
-               if (method !== 'GET') {
-                  headers['Content-Type'] = 'application/json';
-               }
-            }
             const resp = await fetch(url, { method, headers, body });
+            status = resp.status;
             const data = await resp.json();
             if (!resp.ok) {
-               return { success: false, errmsg: data.detail };
+               return { success: false, errmsg: data.detail, status };
             }
-            return { success: true, data };
+            return { success: true, data, status };
          } catch (error) {
-            return { success: false, errmsg: error instanceof Error ? error.message : String(error) };
+            return { success: false, errmsg: error instanceof Error ? error.message : String(error), status };
          } finally {
             setLoading(false);
          }
       },
-      [accessToken]
+      []
    );
 
-   const get = useCallback(
-      async (url: string): Promise<apiResponseType> => {
-         return runRequest('GET', url);
-      },
-      [runRequest]
-   );
-
-   const post = useCallback(
-      async (url: string, body: unknown): Promise<apiResponseType> => {
-         return runRequest('POST', url, JSON.stringify(body));
-      },
-      [runRequest]
-   );
-
-   const put = useCallback(
-      async (url: string, body: unknown): Promise<apiResponseType> => {
-         return runRequest('PUT', url, JSON.stringify(body));
-      },
-      [runRequest]
-   );
-
-   const get_token = useCallback(
-      async (email: string, password: string): Promise<apiTokenType> => {
-         const creds = new URLSearchParams({
-            username: email,
-            password,
-            grant_type: 'password',
-         });
-         const resp = await runRequest('POST', '/api/oauth2/token/', creds, { 'Content-Type': 'application/x-www-form-urlencoded' });
+   const runTokenRequest = useCallback(
+      async (creds: URLSearchParams): Promise<apiTokenType> => {
+         const resp = await runRawRequest('POST', '/api/oauth2/token/', { 'Content-Type': 'application/x-www-form-urlencoded' }, creds);
          if (!resp.success) {
-            throw new Error(resp.errmsg);
+            throw httpError(resp.status, resp.errmsg || 'Unknown error');
          }
          if (!isApiTokenType(resp.data)) {
             throw new Error('Token data corrupt or missing in response');
          }
-         setAccessToken(resp.data.access_token);
-         setRefreshToken(resp.data.refresh_token);
+         setCurrentAccessToken(resp.data.access_token);
+         setCurrentRefreshToken(resp.data.refresh_token);
          return resp.data;
       },
-      [runRequest, setAccessToken, setRefreshToken]
+      [runRawRequest, setCurrentAccessToken, setCurrentRefreshToken]
    );
 
-   return { isLoading, get, post, put, get_token };
+   const getToken = useCallback(
+      async (email: string, password: string): Promise<apiTokenType> => {
+         return await runTokenRequest(
+            new URLSearchParams({
+               username: email,
+               password,
+               grant_type: 'password',
+            })
+         );
+      },
+      [runTokenRequest]
+   );
+
+   const runAPIRequest = useCallback(
+      async (
+         method: 'GET' | 'POST' | 'PUT',
+         url: string,
+         headers?: { [key: string]: string },
+         body?: URLSearchParams | string
+      ): Promise<apiResponseType> => {
+         if (!headers) {
+            headers = {
+               Authorization: `Bearer ${currentAccessToken}`,
+            };
+            if (method !== 'GET') {
+               headers['Content-Type'] = 'application/json';
+            }
+         }
+         let resp = await runRawRequest(method, url, headers, body);
+         if (resp.status === 401 && currentRefreshToken) {
+            /* Attempt a token refresh */
+            try {
+               const tokResp = await runTokenRequest(
+                  new URLSearchParams({
+                     refresh_token: currentRefreshToken || '',
+                     grant_type: 'refresh_token',
+                  })
+               );
+               headers.Authorization = `Bearer ${tokResp.access_token}`;
+               resp = await runRawRequest(method, url, headers, body);
+            } catch (e) {
+               /* Ignore any error */
+            }
+         }
+         return resp;
+      },
+      [runRawRequest, runTokenRequest, currentRefreshToken, currentAccessToken]
+   );
+
+   const get = useCallback(
+      async (url: string): Promise<apiResponseType> => {
+         return runAPIRequest('GET', url);
+      },
+      [runAPIRequest]
+   );
+
+   const post = useCallback(
+      async (url: string, body: unknown): Promise<apiResponseType> => {
+         return runAPIRequest('POST', url, undefined, JSON.stringify(body));
+      },
+      [runAPIRequest]
+   );
+
+   const put = useCallback(
+      async (url: string, body: unknown): Promise<apiResponseType> => {
+         return runAPIRequest('PUT', url, undefined, JSON.stringify(body));
+      },
+      [runAPIRequest]
+   );
+
+   return { isLoading, get, post, put, getToken };
 };
