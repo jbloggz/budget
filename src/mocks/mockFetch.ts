@@ -80,23 +80,23 @@ class MockFetch {
          this.#enabled = true;
          globalThis.fetch = this.#mock;
          vi.mocked(this.#mock).mockImplementation((url, params) => {
-            const mockReq: mockFetchRequestType = {
+            const mockReq: mockFetchRequestType = structuredClone({
                url: String(url),
                method: params?.method || 'GET',
                headers: (params?.headers as { [key: string]: string }) || {},
                body: params?.body?.toString() || null,
-            };
+            });
             for (const resp of this.#responses) {
                if (!resp.fn(mockReq)) {
                   continue;
                }
 
-               const mockResp: mockFetchResponseType = {
+               const mockResp: mockFetchResponseType = structuredClone({
                   body: resp.body,
                   status: resp.status,
                   headers: resp.headers,
                   isError: resp.isError,
-               };
+               });
 
                this.#calls.push({ request: mockReq, response: mockResp });
                return mockResp.isError
