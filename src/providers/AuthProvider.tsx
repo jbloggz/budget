@@ -8,6 +8,7 @@
 
 import { PropsWithChildren, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import httpError from 'http-errors';
 import { authContextType, credentialsType } from './context.types';
 import { Login } from '../pages';
 import { createContext } from '.';
@@ -23,12 +24,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
    const login = useCallback(
       async (creds: credentialsType) => {
          try {
-            await api.get_token(creds.email, creds.password);
+            await api.getToken(creds.email, creds.password);
             setLoggedIn(true);
-            return { success: true };
+            return { success: true, status: 200 };
          } catch (err) {
             setLoggedIn(false);
-            return { success: false, errmsg: err instanceof Error ? err.message : String(err) };
+            if (httpError.isHttpError(err)) {
+               return { success: false, errmsg: err.message, status: err.status };
+            }
+            return { success: false, errmsg: err instanceof Error ? err.message : String(err), status: -1 };
          }
       },
       [api]

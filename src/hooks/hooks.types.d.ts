@@ -16,4 +16,5 @@ export interface apiResponseType {
    data?: object;
    errmsg?: string;
    success: boolean;
+   status: number;
 }
