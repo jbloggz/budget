@@ -8,14 +8,13 @@
 
 import { useCallback, useState } from 'react';
 import { useLocalStorage } from 'react-use';
-import httpError from 'http-errors';
 import { apiResponseType, apiTokenType } from '.';
 import { isApiTokenType } from '../util';
 
 export const useAPI = () => {
    const [isLoading, setLoading] = useState(true);
-   const [currentAccessToken, setCurrentAccessToken] = useLocalStorage<string>('access_token');
-   const [currentRefreshToken, setCurrentRefreshToken] = useLocalStorage<string>('refresh_token');
+   const [currentAccessToken, setCurrentAccessToken, removeAccessToken] = useLocalStorage<string>('access_token');
+   const [currentRefreshToken, setCurrentRefreshToken, removeRefreshToken] = useLocalStorage<string>('refresh_token');
 
    const runRawRequest = useCallback(
       async (
@@ -29,11 +28,15 @@ export const useAPI = () => {
             setLoading(true);
             const resp = await fetch(url, { method, headers, body });
             status = resp.status;
+            if (status == 204) {
+               /* Success with no content */
+               return { success: true, status };
+            }
             const data = await resp.json();
             if (!resp.ok) {
                return { success: false, errmsg: data.detail, status };
             }
-            return { success: true, data, status };
+            return { success: status >= 200 && status < 300, data, status };
          } catch (error) {
             return { success: false, errmsg: error instanceof Error ? error.message : String(error), status };
          } finally {
@@ -47,7 +50,7 @@ export const useAPI = () => {
       async (creds: URLSearchParams): Promise<apiTokenType> => {
          const resp = await runRawRequest('POST', '/api/oauth2/token/', { 'Content-Type': 'application/x-www-form-urlencoded' }, creds);
          if (!resp.success) {
-            throw httpError(resp.status, resp.errmsg || 'Unknown error');
+            throw new Error('Invalid token');
          }
          if (!isApiTokenType(resp.data)) {
             throw new Error('Token data corrupt or missing in response');
@@ -71,6 +74,11 @@ export const useAPI = () => {
       },
       [runTokenRequest]
    );
+
+   const clearToken = useCallback(() => {
+      removeAccessToken();
+      removeRefreshToken();
+   }, [removeAccessToken, removeRefreshToken]);
 
    const runAPIRequest = useCallback(
       async (
@@ -129,5 +137,5 @@ export const useAPI = () => {
       [runAPIRequest]
    );
 
-   return { isLoading, get, post, put, getToken };
+   return { isLoading, get, post, put, getToken, clearToken };
 };

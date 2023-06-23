@@ -106,6 +106,31 @@ describe('useAPI', () => {
       expect(req.headers['Content-Type']).toBe('application/json');
    });
 
+   it('can clear a token', async () => {
+      mockFetch.setResponse('', 401);
+      mockFetch.setResponseIf((req) => req.headers.Authorization === 'Bearer good_access_token', '', 401);
+      mockFetch.setJSONResponse({ hello: 'world' });
+      localStorage.setItem('access_token', '"good_access_token"');
+      const TestComponenet = () => {
+         const { get, clearToken } = useAPI();
+         useEffect(() => {
+            const run = async () => {
+               const resp = await get('/foo/put/');
+               expect(resp.success).toBe(true);
+               expect(resp.status).toBe(200);
+               clearToken();
+               await waitFor(() => expect(localStorage.getItem('access_token')).toBe(null));
+               const resp2 = await get('/foo/put/');
+               expect(resp2.success).toBe(false);
+               expect(resp2.status).toBe(401);
+            };
+            run();
+         }, [get, clearToken]);
+         return <></>;
+      };
+      render(<TestComponenet />);
+   });
+
    it('can make a successful login request and receive a token', async () => {
       mockFetch.setResponse('', 401);
       mockFetch.setJSONResponseIf(
@@ -161,16 +186,40 @@ describe('useAPI', () => {
       expect(localStorage.getItem('refresh_token')).toBe('"dummy_refresh_token"');
    });
 
+   it('can check a valid access_token', async () => {
+      mockFetch.setResponseIf((req) => req.headers.Authorization === 'Bearer CheckToken', '', 204);
+      localStorage.setItem('access_token', '"CheckToken"');
+      const TestComponenet = () => {
+         const { get } = useAPI();
+         useEffect(() => {
+            const run = async () => {
+               const resp = await get('/api/oauth2/token/');
+               expect(resp.success).toBe(true);
+               expect(resp.status).toBe(204);
+            };
+            run();
+         }, [get]);
+         return <></>;
+      };
+      render(<TestComponenet />);
+      expect(mockFetch.calls().length).toEqual(1);
+      const req = mockFetch.calls()[0].request;
+      expect(req.url).toEqual('/api/oauth2/token/');
+      expect(req.method).toEqual('GET');
+      expect(req.body).toBe(null);
+      expect(req.headers['Authorization']).toBe('Bearer CheckToken');
+   });
+
    it('can refresh a token if a request is denied', async () => {
       const good_token = { access_token: 'new_access_token', refresh_token: 'new_refresh_token', token_type: 'bearer' };
       mockFetch.setResponseIf((req) => req.headers.Authorization === 'Bearer bad_access_token', '', 401);
       mockFetch.setJSONResponseIf((req) => {
          const params = new URLSearchParams(req.body || '');
          return (
-            params.get('method') === 'POST',
+            req.method === 'POST' &&
             params.get('refresh_token') === 'good_refresh_token' &&
-               params.get('grant_type') === 'refresh_token' &&
-               req.headers['Content-Type'] === 'application/x-www-form-urlencoded'
+            params.get('grant_type') === 'refresh_token' &&
+            req.headers['Content-Type'] === 'application/x-www-form-urlencoded'
          );
       }, good_token);
       mockFetch.setJSONResponseIf((req) => req.headers.Authorization === 'Bearer new_access_token', { foo: 'success' });
