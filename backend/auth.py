@@ -92,7 +92,7 @@ def validate_token(key: str, token: Annotated[str, Depends(oauth2_scheme)]) -> s
     except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Could not validate credentials',
+            detail='Invalid/expired access token',
             headers={'WWW-Authenticate': 'Bearer'},
         )
 

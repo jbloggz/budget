@@ -8,7 +8,7 @@
 
 # System imports
 from typing import List, Annotated
-from fastapi import FastAPI, Query, Depends, HTTPException, status
+from fastapi import FastAPI, Query, Depends, HTTPException, status, Response
 
 # Local imports
 from database import Database
@@ -70,3 +70,8 @@ def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
                 headers={'WWW-Authenticate': 'Bearer'},
             )
         return create_token(form_data.username)
+
+
+@app.get('/api/oauth2/token/', response_class=Response, dependencies=[Depends(validate_access_token)])
+def check_auth():
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

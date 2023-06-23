@@ -587,5 +587,16 @@ class TestAPI(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
+    def test_check_token_is_valid(self) -> None:
+        secrets['users']['foo'] = hash_password('bar')
+        self.client.headers.update({'Authorization': f'Bearer {create_token("foo").access_token}'})
+        resp = self.client.get(f'/api/oauth2/token/')
+        self.assertEqual(resp.status_code, 204)
+
+        self.client.headers.update({'Authorization': f'Bearer {create_token("qwerty").access_token}'})
+        resp = self.client.get(f'/api/oauth2/token/')
+        self.assertEqual(resp.status_code, 401)
+
+
 
 unittest.main()
