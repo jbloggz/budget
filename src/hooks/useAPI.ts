@@ -15,7 +15,7 @@ export const useAPI = () => {
    const [isLoading, setLoading] = useState(true);
    const [storageAccessToken, setStorageAccessToken, removeStorageAccessToken] = useLocalStorage<string>('access_token');
    const [storageRefreshToken, setStorageRefreshToken, removeStorageRefreshToken] = useLocalStorage<string>('refresh_token');
-   const [rememberMe, setRememberMe, removeRememberMe] = useLocalStorage<boolean>('rememeber_me');
+   const [rememberMe, setRememberMe, removeRememberMe] = useLocalStorage<boolean>('remember_me');
    const [accessToken, setAccessToken] = useState(storageAccessToken);
    const [refreshToken, setRefreshToken] = useState(storageRefreshToken);
 
@@ -122,8 +122,8 @@ export const useAPI = () => {
                const tokResp = await runTokenRequest(
                   new URLSearchParams({
                      refresh_token: refreshToken || '',
-                     grant_type: 'refresh_token',
                      remember: rememberMe ? 'true' : 'false',
+                     grant_type: 'refresh_token',
                   })
                );
                headers.Authorization = `Bearer ${tokResp.access_token}`;

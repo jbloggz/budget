@@ -118,7 +118,7 @@ describe('useAPI', () => {
       mockFetch.setResponseIf((req) => req.headers.Authorization === 'Bearer good_access_token', '[]', 200);
       localStorage.setItem('access_token', '"good_access_token"');
       let sent = false;
-      let failResp: apiResponseType = {success: true, status: 200};
+      let failResp: apiResponseType = { success: true, status: 200 };
 
       const TestComponenet = () => {
          const { get, clearToken, accessToken } = useAPI();
@@ -126,8 +126,8 @@ describe('useAPI', () => {
          useEffect(() => {
             const run = async () => {
                if (!sent) {
-                  await get('/foo/clear1/');
                   sent = true;
+                  await get('/foo/clear1/');
                }
                clearToken();
                await waitFor(() => expect(accessToken).toBeFalsy());
@@ -172,9 +172,9 @@ describe('useAPI', () => {
          useEffect(() => {
             const run = async () => {
                if (!sent) {
+                  sent = true;
                   const resp = await getToken('joe@foo.com', 'foobar', true);
                   setTokenType(resp.token_type);
-                  sent = true;
                }
                if (accessToken) {
                   await get('/foo/remember');
@@ -206,6 +206,7 @@ describe('useAPI', () => {
       expect(screen.getByRole('type').textContent).toBe('bearer');
       expect(localStorage.getItem('access_token')).toBe('"dummy_access_token"');
       expect(localStorage.getItem('refresh_token')).toBe('"dummy_refresh_token"');
+      expect(localStorage.getItem('remember_me')).toBe('true');
       expect(mockFetch.calls()[1].response.status).toBe(200);
    });
 
@@ -234,9 +235,9 @@ describe('useAPI', () => {
          useEffect(() => {
             const run = async () => {
                if (!sent) {
+                  sent = true;
                   const resp = await getToken('joe@foo.com', 'foobar', false);
                   setTokenType(resp.token_type);
-                  sent = true;
                }
                if (accessToken) {
                   await get('/foo/remember');
@@ -268,6 +269,7 @@ describe('useAPI', () => {
       expect(screen.getByRole('type').textContent).toBe('bearer');
       expect(localStorage.getItem('access_token')).toBe(null);
       expect(localStorage.getItem('refresh_token')).toBe(null);
+      expect(localStorage.getItem('remember_me')).toBe(null);
       expect(mockFetch.calls()[1].response.status).toBe(200);
    });
 
@@ -349,7 +351,7 @@ describe('useAPI', () => {
       resp = mockFetch.calls()[1].response;
       expect(req.url).toEqual('/api/oauth2/token/');
       expect(req.method).toEqual('POST');
-      expect(req.body).toBe('refresh_token=good_refresh_token&grant_type=refresh_token');
+      expect(req.body).toBe('refresh_token=good_refresh_token&remember=false&grant_type=refresh_token');
       expect(req.headers['Authorization']).not.toBeDefined();
       expect(req.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
       expect(resp.status).toBe(200);
@@ -369,7 +371,7 @@ describe('useAPI', () => {
       mockFetch.setResponse('', 401);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      let resp: apiResponseType = {success: true, status: 200};
+      let resp: apiResponseType = { success: true, status: 200 };
 
       const TestComponenet = () => {
          const { get } = useAPI();
@@ -388,5 +390,43 @@ describe('useAPI', () => {
       expect(mockFetch.calls().length).toBe(0);
       expect(resp.status).toBe(401);
       expect(resp.success).toBe(false);
+   });
+
+   it('removes tokens from local storage on unsucessful login', async () => {
+      mockFetch.setResponse('', 401);
+      localStorage.setItem('access_token', '"skeiufh"');
+      localStorage.setItem('refresh_token', '"seiufhsef"');
+      let sent = false;
+      const TestComponenet = () => {
+         const { get, getToken, accessToken } = useAPI();
+         const [done, setDone] = useState('no');
+         useEffect(() => {
+            const run = async () => {
+               if (!sent) {
+                  sent = true;
+                  try {
+                     await getToken('joe@foo.com', 'foobar', true);
+                  } catch {
+                     /* Ignore */
+                  }
+                  setDone('done');
+               }
+            };
+            run();
+         }, [accessToken, get, getToken]);
+         return <p>{done}</p>;
+      };
+      render(<TestComponenet />);
+      await waitFor(() => screen.getByText('done'));
+      expect(mockFetch.calls().length).toEqual(1);
+      const req = mockFetch.calls()[0].request;
+      expect(req.url).toEqual('/api/oauth2/token/');
+      expect(req.method).toEqual('POST');
+      expect(req.body).toBe('username=joe%40foo.com&password=foobar&remember=true&grant_type=password');
+      expect(req.headers['Authorization']).not.toBeDefined();
+      expect(req.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+      expect(localStorage.getItem('access_token')).toBe(null);
+      expect(localStorage.getItem('refresh_token')).toBe(null);
+      expect(localStorage.getItem('remember_me')).toBe(null);
    });
 });
