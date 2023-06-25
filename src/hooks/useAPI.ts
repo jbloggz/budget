@@ -15,8 +15,17 @@ export const useAPI = () => {
    const [isLoading, setLoading] = useState(true);
    const [storageAccessToken, setStorageAccessToken, removeStorageAccessToken] = useLocalStorage<string>('access_token');
    const [storageRefreshToken, setStorageRefreshToken, removeStorageRefreshToken] = useLocalStorage<string>('refresh_token');
+   const [rememberMe, setRememberMe, removeRememberMe] = useLocalStorage<boolean>('rememeber_me');
    const [accessToken, setAccessToken] = useState(storageAccessToken);
    const [refreshToken, setRefreshToken] = useState(storageRefreshToken);
+
+   const clearToken = useCallback(() => {
+      removeStorageAccessToken();
+      removeStorageRefreshToken();
+      removeRememberMe();
+      setAccessToken(undefined);
+      setRefreshToken(undefined);
+   }, [removeStorageAccessToken, removeStorageRefreshToken, removeRememberMe]);
 
    const runRawRequest = useCallback(
       async (
@@ -50,6 +59,7 @@ export const useAPI = () => {
 
    const runTokenRequest = useCallback(
       async (creds: URLSearchParams): Promise<apiTokenType> => {
+         clearToken();
          const resp = await runRawRequest('POST', '/api/oauth2/token/', { 'Content-Type': 'application/x-www-form-urlencoded' }, creds);
          if (!resp.success) {
             throw new Error('Invalid token');
@@ -62,10 +72,11 @@ export const useAPI = () => {
          if (creds.get('remember') === 'true') {
             setStorageAccessToken(resp.data.access_token);
             setStorageRefreshToken(resp.data.refresh_token);
+            setRememberMe(true);
          }
          return resp.data;
       },
-      [runRawRequest, setStorageAccessToken, setStorageRefreshToken]
+      [runRawRequest, setStorageAccessToken, setStorageRefreshToken, clearToken, setRememberMe]
    );
 
    const getToken = useCallback(
@@ -81,13 +92,6 @@ export const useAPI = () => {
       },
       [runTokenRequest]
    );
-
-   const clearToken = useCallback(() => {
-      removeStorageAccessToken();
-      removeStorageRefreshToken();
-      setAccessToken(undefined);
-      setRefreshToken(undefined);
-   }, [removeStorageAccessToken, removeStorageRefreshToken]);
 
    const runAPIRequest = useCallback(
       async (
@@ -119,6 +123,7 @@ export const useAPI = () => {
                   new URLSearchParams({
                      refresh_token: refreshToken || '',
                      grant_type: 'refresh_token',
+                     remember: rememberMe ? 'true' : 'false',
                   })
                );
                headers.Authorization = `Bearer ${tokResp.access_token}`;
@@ -129,7 +134,7 @@ export const useAPI = () => {
          }
          return resp;
       },
-      [runRawRequest, runTokenRequest, refreshToken, accessToken]
+      [runRawRequest, runTokenRequest, refreshToken, accessToken, rememberMe]
    );
 
    const get = useCallback(
