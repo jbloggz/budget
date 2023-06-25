@@ -13,8 +13,10 @@ import { isApiTokenType } from '../util';
 
 export const useAPI = () => {
    const [isLoading, setLoading] = useState(true);
-   const [currentAccessToken, setCurrentAccessToken, removeAccessToken] = useLocalStorage<string>('access_token');
-   const [currentRefreshToken, setCurrentRefreshToken, removeRefreshToken] = useLocalStorage<string>('refresh_token');
+   const [storageAccessToken, setStorageAccessToken, removeStorageAccessToken] = useLocalStorage<string>('access_token');
+   const [storageRefreshToken, setStorageRefreshToken, removeStorageRefreshToken] = useLocalStorage<string>('refresh_token');
+   const [accessToken, setAccessToken] = useState(storageAccessToken);
+   const [refreshToken, setRefreshToken] = useState(storageRefreshToken);
 
    const runRawRequest = useCallback(
       async (
@@ -55,19 +57,24 @@ export const useAPI = () => {
          if (!isApiTokenType(resp.data)) {
             throw new Error('Token data corrupt or missing in response');
          }
-         setCurrentAccessToken(resp.data.access_token);
-         setCurrentRefreshToken(resp.data.refresh_token);
+         setAccessToken(resp.data.access_token);
+         setRefreshToken(resp.data.refresh_token);
+         if (creds.get('remember') === 'true') {
+            setStorageAccessToken(resp.data.access_token);
+            setStorageRefreshToken(resp.data.refresh_token);
+         }
          return resp.data;
       },
-      [runRawRequest, setCurrentAccessToken, setCurrentRefreshToken]
+      [runRawRequest, setStorageAccessToken, setStorageRefreshToken]
    );
 
    const getToken = useCallback(
-      async (email: string, password: string): Promise<apiTokenType> => {
+      async (email: string, password: string, remember: boolean): Promise<apiTokenType> => {
          return await runTokenRequest(
             new URLSearchParams({
                username: email,
                password,
+               remember: remember ? 'true' : 'false',
                grant_type: 'password',
             })
          );
@@ -76,9 +83,11 @@ export const useAPI = () => {
    );
 
    const clearToken = useCallback(() => {
-      removeAccessToken();
-      removeRefreshToken();
-   }, [removeAccessToken, removeRefreshToken]);
+      removeStorageAccessToken();
+      removeStorageRefreshToken();
+      setAccessToken(undefined);
+      setRefreshToken(undefined);
+   }, [removeStorageAccessToken, removeStorageRefreshToken]);
 
    const runAPIRequest = useCallback(
       async (
@@ -87,21 +96,28 @@ export const useAPI = () => {
          headers?: { [key: string]: string },
          body?: URLSearchParams | string
       ): Promise<apiResponseType> => {
+         if (!accessToken) {
+            return {
+               status: 401,
+               success: false,
+               errmsg: 'Missing access token',
+            };
+         }
          if (!headers) {
             headers = {
-               Authorization: `Bearer ${currentAccessToken}`,
+               Authorization: `Bearer ${accessToken}`,
             };
             if (method !== 'GET') {
                headers['Content-Type'] = 'application/json';
             }
          }
          let resp = await runRawRequest(method, url, headers, body);
-         if (resp.status === 401 && currentRefreshToken) {
+         if (resp.status === 401 && refreshToken) {
             /* Attempt a token refresh */
             try {
                const tokResp = await runTokenRequest(
                   new URLSearchParams({
-                     refresh_token: currentRefreshToken || '',
+                     refresh_token: refreshToken || '',
                      grant_type: 'refresh_token',
                   })
                );
@@ -113,7 +129,7 @@ export const useAPI = () => {
          }
          return resp;
       },
-      [runRawRequest, runTokenRequest, currentRefreshToken, currentAccessToken]
+      [runRawRequest, runTokenRequest, refreshToken, accessToken]
    );
 
    const get = useCallback(
@@ -137,5 +153,5 @@ export const useAPI = () => {
       [runAPIRequest]
    );
 
-   return { isLoading, get, post, put, getToken, clearToken };
+   return { isLoading, get, post, put, getToken, clearToken, accessToken, refreshToken };
 };

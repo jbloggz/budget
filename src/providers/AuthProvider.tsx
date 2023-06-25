@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
    const login = useCallback(
       async (creds: credentialsType) => {
          try {
-            await getToken(creds.email, creds.password);
+            await getToken(creds.email, creds.password, creds.remember);
             setLoggedIn(true);
             return { success: true, status: 200 };
          } catch (err) {
