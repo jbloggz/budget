@@ -7,8 +7,10 @@
 #
 
 # System imports
+import os
 from typing import List, Annotated
 from fastapi import FastAPI, Query, Depends, HTTPException, status, Response
+from fastapi.staticfiles import StaticFiles
 
 # Local imports
 from database import Database
@@ -75,3 +77,8 @@ def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
 @app.get('/api/oauth2/token/', response_class=Response, dependencies=[Depends(validate_access_token)])
 def check_auth():
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+if os.environ.get('DIST_PATH'):
+    app.mount('/', StaticFiles(directory=os.environ.get('DIST_PATH'), html=True))
+
