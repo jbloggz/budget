@@ -18,18 +18,17 @@ export const AuthContext = createContext<authContextType>();
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();
-   const [loggedIn, setLoggedIn] = useState(false);
-   const [tokenChecked, setTokenChecked] = useState(false);
+   const [loggedInState, setLoggedInState] = useState('initialising');
    const { getToken, get, clearToken } = useAPI();
 
    const login = useCallback(
       async (creds: credentialsType) => {
          try {
             await getToken(creds.email, creds.password, creds.remember);
-            setLoggedIn(true);
+            setLoggedInState('loggedIn');
             return { success: true, status: 200 };
          } catch (err) {
-            setLoggedIn(false);
+            setLoggedInState('loggedOut');
             return { success: false, errmsg: err instanceof Error ? err.message : String(err), status: 401 };
          }
       },
@@ -37,7 +36,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
    );
 
    const logout = useCallback(() => {
-      setLoggedIn(false);
+      setLoggedInState('loggedOut');
       clearToken();
       navigate('/');
    }, [navigate, clearToken]);
@@ -46,23 +45,23 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       const run = async () => {
          const resp = await get('/api/oauth2/token/');
          if (resp.success) {
-            setLoggedIn(true);
+            setLoggedInState('loggedIn');
+         } else {
+            setLoggedInState('loggedOut');
          }
-         setTokenChecked(true);
       };
-      if (!tokenChecked) {
+      if (loggedInState === 'initialising') {
+         setLoggedInState('checking');
          run();
       }
-   }, [get, tokenChecked]);
+   }, [get, loggedInState]);
 
    return (
       <AuthContext.Provider value={{ login, logout }}>
-         {tokenChecked ? (
-            loggedIn ? (
-               children
-            ) : (
-               <Login />
-            )
+         {loggedInState === 'loggedIn' ? (
+            children
+         ) : loggedInState === 'loggedOut' ? (
+            <Login />
          ) : (
             <Center h="100vh">
                <Spinner />

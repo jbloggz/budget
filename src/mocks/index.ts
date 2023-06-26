@@ -7,4 +7,4 @@
  */
 
 export { mockFetch } from './mockFetch';
-export type { mockFetchRequestType, mockFetchResponseType, mockFetchType } from './mocks.types';
+export type { mockFetchRequestType, mockFetchResponseType } from './mocks.types';
