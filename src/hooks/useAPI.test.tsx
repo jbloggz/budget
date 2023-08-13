@@ -19,11 +19,11 @@ describe('useAPI', () => {
    });
 
    it('can call useAPI', () => {
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const api = useAPI();
          return <div role="test">{api ? 'yes' : 'no'}</div>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       const val = screen.getByRole('test');
       expect(val.textContent).toBe('yes');
    });
@@ -31,7 +31,7 @@ describe('useAPI', () => {
    it('can make a GET request with a valid token', async () => {
       mockFetch.setJSONResponse({ hello: 'world' });
       localStorage.setItem('access_token', '"GETToken"');
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const [done, setDone] = useState('no');
          const { get } = useAPI();
          useEffect(() => {
@@ -40,10 +40,10 @@ describe('useAPI', () => {
                setDone('done');
             };
             run();
-         }, []);
+         }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -60,7 +60,7 @@ describe('useAPI', () => {
    it('can make a POST request with a valid token', async () => {
       mockFetch.setJSONResponse({ hello: 'world' }, 201);
       localStorage.setItem('access_token', '"POSTToken"');
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { post } = useAPI();
          const [done, setDone] = useState('no');
          useEffect(() => {
@@ -69,10 +69,10 @@ describe('useAPI', () => {
                setDone('done');
             };
             run();
-         }, []);
+         }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -88,7 +88,7 @@ describe('useAPI', () => {
    it('can make a PUT request with a valid token', async () => {
       mockFetch.setJSONResponse({ hello: 'world' });
       localStorage.setItem('access_token', '"PUTToken"');
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { put } = useAPI();
          const [done, setDone] = useState('no');
          useEffect(() => {
@@ -97,10 +97,10 @@ describe('useAPI', () => {
                setDone('done');
             };
             run();
-         }, []);
+         }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -120,7 +120,7 @@ describe('useAPI', () => {
       let sent = false;
       let failResp: apiResponseType = { success: true, status: 200 };
 
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get, clearToken, accessToken } = useAPI();
          const [done, setDone] = useState('no');
          useEffect(() => {
@@ -138,7 +138,7 @@ describe('useAPI', () => {
          }, [accessToken, clearToken, get]);
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toBe(1);
       const resp = mockFetch.calls()[0].response;
@@ -165,7 +165,7 @@ describe('useAPI', () => {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       let sent = false;
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get, getToken, accessToken, refreshToken } = useAPI();
          const [tokenType, setTokenType] = useState<string | undefined>();
          const [ready, setReady] = useState<string>('no');
@@ -192,7 +192,7 @@ describe('useAPI', () => {
             </>
          );
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => expect(screen.getByRole('ready').textContent).toBe('yes'));
       expect(mockFetch.calls().length).toEqual(2);
       const req = mockFetch.calls()[0].request;
@@ -228,7 +228,7 @@ describe('useAPI', () => {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       let sent = false;
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get, getToken, accessToken, refreshToken } = useAPI();
          const [tokenType, setTokenType] = useState<string | undefined>();
          const [ready, setReady] = useState<string>('no');
@@ -255,7 +255,7 @@ describe('useAPI', () => {
             </>
          );
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => expect(screen.getByRole('ready').textContent).toBe('yes'));
       expect(mockFetch.calls().length).toEqual(2);
       const req = mockFetch.calls()[0].request;
@@ -276,7 +276,7 @@ describe('useAPI', () => {
    it('can check a valid access_token', async () => {
       mockFetch.setResponseIf((req) => req.headers.Authorization === 'Bearer CheckToken', '', 204);
       localStorage.setItem('access_token', '"CheckToken"');
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get } = useAPI();
          const [done, setDone] = useState('no');
          useEffect(() => {
@@ -285,10 +285,10 @@ describe('useAPI', () => {
                setDone('done');
             };
             run();
-         }, []);
+         }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -316,7 +316,7 @@ describe('useAPI', () => {
       localStorage.setItem('access_token', '"bad_access_token"');
       localStorage.setItem('refresh_token', '"good_refresh_token"');
 
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get } = useAPI();
          const [success, setSuccess] = useState<string>('');
          useEffect(() => {
@@ -328,14 +328,14 @@ describe('useAPI', () => {
             if (success === '') {
                run();
             }
-         }, []);
+         }, []); // eslint-disable-line
          return (
             <>
                <div role="status">{success}</div>
             </>
          );
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => expect(screen.getByRole('status').textContent).not.toBe(''));
       expect(mockFetch.calls().length).toBeGreaterThan(0);
       let req = mockFetch.calls()[0].request;
@@ -373,7 +373,7 @@ describe('useAPI', () => {
       localStorage.removeItem('refresh_token');
       let resp: apiResponseType = { success: true, status: 200 };
 
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get } = useAPI();
          const [done, setDone] = useState('no');
          useEffect(() => {
@@ -385,7 +385,7 @@ describe('useAPI', () => {
          }, [get]);
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toBe(0);
       expect(resp.status).toBe(401);
@@ -397,7 +397,7 @@ describe('useAPI', () => {
       localStorage.setItem('access_token', '"skeiufh"');
       localStorage.setItem('refresh_token', '"seiufhsef"');
       let sent = false;
-      const TestComponenet = () => {
+      const TestComponent = () => {
          const { get, getToken, accessToken } = useAPI();
          const [done, setDone] = useState('no');
          useEffect(() => {
@@ -416,7 +416,7 @@ describe('useAPI', () => {
          }, [accessToken, get, getToken]);
          return <p>{done}</p>;
       };
-      render(<TestComponenet />);
+      render(<TestComponent />);
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
