@@ -62,7 +62,7 @@ export const useAPI = () => {
          clearToken();
          const resp = await runRawRequest('POST', '/api/oauth2/token/', { 'Content-Type': 'application/x-www-form-urlencoded' }, creds);
          if (!resp.success) {
-            throw new Error('Invalid token');
+            throw new Error('Invalid credentials');
          }
          if (!isApiTokenType(resp.data)) {
             throw new Error('Token data corrupt or missing in response');
