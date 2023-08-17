@@ -46,11 +46,15 @@ await sleep(20398);
 const element = await page.waitForSelector('#creditCardsSubPanel img', { visible: true });
 await element.click();
 
+let seen = false;
 page.on('response', async (response) => {
    const request = response.request();
    if (request.url().includes('hold') && request.url().includes('functionCode=transaction_history')) {
       const text = await response.text();
-      console.log(text);
+      if (!seen) {
+         console.log(text);
+         seen = true;
+      }
    }
 });
 
