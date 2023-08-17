@@ -367,7 +367,7 @@ describe('useAPI', () => {
       expect(resp.status).toBe(200);
    });
 
-   it('doesnt make a request if there is no accesss token', async () => {
+   it("doesn't make a request if there is no access token", async () => {
       mockFetch.setResponse('', 401);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
@@ -392,10 +392,10 @@ describe('useAPI', () => {
       expect(resp.success).toBe(false);
    });
 
-   it('removes tokens from local storage on unsucessful login', async () => {
+   it('removes tokens from local storage on unsuccessful login', async () => {
       mockFetch.setResponse('', 401);
-      localStorage.setItem('access_token', '"skeiufh"');
-      localStorage.setItem('refresh_token', '"seiufhsef"');
+      localStorage.setItem('access_token', '"testAccessToken"');
+      localStorage.setItem('refresh_token', '"testRefreshToken"');
       let sent = false;
       const TestComponent = () => {
          const { get, getToken, accessToken } = useAPI();
