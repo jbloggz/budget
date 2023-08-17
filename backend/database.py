@@ -202,6 +202,35 @@ class Database:
             ))
         return res
 
+    def get_txn_allocations(self, txn_id: int) -> List[Allocation]:
+        '''
+        Get list of allocations for a transaction
+
+        Args:
+            txn_id: The id of a transaction
+
+        Returns:
+            A list of allocations
+        '''
+        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.time as time, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
+                            FROM allocation
+                            LEFT JOIN category ON category_id = category.id
+                            LEFT JOIN location ON location_id = location.id
+                            LEFT JOIN txn ON txn_id = txn.id
+                            WHERE txn_id = ?''', (txn_id, ))
+        res = []
+        for row in self.db:
+            res.append(Allocation(
+                id=row[0],
+                txn_id=row[1],
+                time=row[2],
+                amount=row[3],
+                category=row[4],
+                location=row[5],
+                note=row[6],
+            ))
+        return res
+
     def get_allocation(self, alloc_id: int) -> Optional[Allocation]:
         '''
         Get an existing allocation

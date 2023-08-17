@@ -238,6 +238,17 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(alloc_list[new_idx].category, 'Unknown')
             self.assertEqual(alloc_list[new_idx].location, 'Unknown')
 
+    def test_get_transaction_allocations(self) -> None:
+        with db:
+            txn = db.add_transaction(Transaction(time=1684670194, amount=18743, description='FooBar Enterprises', source='Bank of Foo'))
+            assert txn.id is not None
+            alloc_list = db.get_txn_allocations(txn.id)
+            self.assertEqual(len(alloc_list), 1)
+            assert alloc_list[0].id is not None
+            db.split_allocation(alloc_list[0].id, 8272)
+            alloc_list = db.get_txn_allocations(txn.id)
+            self.assertEqual(len(alloc_list), 2)
+
     def test_throws_if_split_invalid_allocation(self) -> None:
         with db:
             with self.assertRaises(ValueError):
@@ -445,7 +456,7 @@ class TestAPI(unittest.TestCase):
             'time': 1685019387,
             'amount': 9932,
             'description': 'test_merge_an_allocation',
-            'source': 'coescijsoeicj',
+            'source': 'FooBar Bank',
         })
         self.assertEqual(txn_response.status_code, 201)
         alloc_list = self.client.get(f'/api/allocation/?query=description=\'test_merge_an_allocation\'')

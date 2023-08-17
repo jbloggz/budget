@@ -39,7 +39,7 @@ class Token(BaseModel):
 class OAuth2RequestForm:
     '''
     This is a dependency class to use with FastAPI for token authorization. Use
-    this insead of OAuth2PasswordRequestForm as the latter doesn't handle
+    this instead of OAuth2PasswordRequestForm as the latter doesn't handle
     refresh tokens.
     '''
 
