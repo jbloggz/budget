@@ -103,7 +103,7 @@ class Database:
         Returns:
             The transaction with the ID filled in
         '''
-        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (txn.time, txn.amount, txn.description, txn.source))
+        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (txn.date, txn.amount, txn.description, txn.source))
         txn.id = self.db.lastrowid
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
         return txn
@@ -140,12 +140,12 @@ class Database:
         Returns:
             A list of transactions that match the filter
         '''
-        self.db.execute(f'SELECT id, time, amount, description, source FROM txn WHERE {expr}')
+        self.db.execute(f'SELECT id, date, amount, description, source FROM txn WHERE {expr}')
         res = []
         for row in self.db:
             res.append(Transaction(
                 id=row[0],
-                time=row[1],
+                date=row[1],
                 amount=row[2],
                 description=row[3],
                 source=row[4],
@@ -205,7 +205,7 @@ class Database:
         Returns:
             A list of allocations that match the filter
         '''
-        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.time as time, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
+        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.date as date, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
                             FROM allocation
                             LEFT JOIN category ON category_id = category.id
                             LEFT JOIN location ON location_id = location.id
@@ -216,7 +216,7 @@ class Database:
             res.append(Allocation(
                 id=row[0],
                 txn_id=row[1],
-                time=row[2],
+                date=row[2],
                 amount=row[3],
                 category=row[4],
                 location=row[5],
@@ -234,7 +234,7 @@ class Database:
         Returns:
             A list of allocations
         '''
-        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.time as time, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
+        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.date as date, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
                             FROM allocation
                             LEFT JOIN category ON category_id = category.id
                             LEFT JOIN location ON location_id = location.id
@@ -245,7 +245,7 @@ class Database:
             res.append(Allocation(
                 id=row[0],
                 txn_id=row[1],
-                time=row[2],
+                date=row[2],
                 amount=row[3],
                 category=row[4],
                 location=row[5],

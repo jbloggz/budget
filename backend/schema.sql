@@ -22,12 +22,12 @@ CREATE TABLE IF NOT EXISTS token (
 /* A table to store the raw transactions scaped from the accounts */
 CREATE TABLE IF NOT EXISTS txn (
    id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
-   time            INTEGER  NOT NULL,     /* The time of the transaction as a unix timestamp */
+   date            TEXT     NOT NULL,     /* The date of the transaction in YYYY-MM-DD */
    amount          INTEGER  NOT NULL,     /* The amount of the transaction in cents */
    description     TEXT     NOT NULL,     /* The description scraped from the transaction history */
    source          TEXT     NOT NULL      /* The source of the transaction (ie. which account) */
 );
-CREATE INDEX IF NOT exists txn_time_idx ON txn(time);
+CREATE INDEX IF NOT exists txn_date_idx ON txn(date);
 CREATE INDEX IF NOT EXISTS txn_description_idx ON txn(description);
 
 /* A table to store the categories */

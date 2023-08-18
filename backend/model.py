@@ -14,7 +14,7 @@ from fastapi.param_functions import Form
 
 class Transaction(BaseModel):
     id: int | None = None
-    time: int
+    date: str
     amount: int
     description: str
     source: str
@@ -23,7 +23,7 @@ class Transaction(BaseModel):
 class Allocation(BaseModel):
     id: int | None = None
     txn_id: int
-    time: int
+    date: str
     amount: int
     category: str
     location: str

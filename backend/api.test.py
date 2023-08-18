@@ -36,7 +36,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_txn_fields(self) -> None:
         with db:
-            self.assertEqual(set(db.get_fields('txn')), {'id', 'time', 'amount', 'description', 'source'})
+            self.assertEqual(set(db.get_fields('txn')), {'id', 'date', 'amount', 'description', 'source'})
 
     def test_category_fields(self) -> None:
         with db:
@@ -95,13 +95,13 @@ class TestDatabase(unittest.TestCase):
 
     def test_add_transaction(self) -> None:
         with db:
-            added_txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            added_txn = db.add_transaction(Transaction(date='2023-07-03', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             assert added_txn.id is not None
             txn = db.get_transaction(added_txn.id)
             self.assertIsNotNone(txn)
             assert txn is not None
             self.assertEqual(txn.id, added_txn.id)
-            self.assertEqual(txn.time, 1684670193)
+            self.assertEqual(txn.date, '2023-07-03')
             self.assertEqual(txn.amount, 3456)
             self.assertEqual(txn.description, 'FooBar Enterprises')
             self.assertEqual(txn.source, 'Bank of Foo')
@@ -113,16 +113,16 @@ class TestDatabase(unittest.TestCase):
 
     def test_get_transaction_list(self) -> None:
         with db:
-            db.add_transaction(Transaction(time=1684670193, amount=3456, description='Joe Pty Ltd', source='Bank of Foo'))
-            db.add_transaction(Transaction(time=1684680193, amount=12334, description='Qwerty Inc', source='Bank of Foo'))
-            db.add_transaction(Transaction(time=1684690193, amount=938230, description='Joe Pty Ltd', source='Bank of Foo'))
-            db.add_transaction(Transaction(time=1684700193, amount=29120, description='Joe Pty Ltd', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-04', amount=3456, description='Joe Pty Ltd', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-04', amount=12334, description='Qwerty Inc', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-04', amount=938230, description='Joe Pty Ltd', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-04', amount=29120, description='Joe Pty Ltd', source='Bank of Foo'))
             txn_list = db.get_transaction_list('description = \'Joe Pty Ltd\'')
             self.assertEqual(len(txn_list), 3)
 
     def test_default_allocation_added_when_transaction_added(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-09', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             self.assertEqual(alloc_list[0].amount, 3456)
@@ -142,7 +142,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_update_allocation(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-10', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
@@ -184,7 +184,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_update_allocation_note(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-11', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
@@ -201,7 +201,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_refuses_to_update_allocation_txn_id_and_amount(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
@@ -218,7 +218,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_split_allocation(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
@@ -240,7 +240,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_get_transaction_allocations(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670194, amount=18743, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-16', amount=18743, description='FooBar Enterprises', source='Bank of Foo'))
             assert txn.id is not None
             alloc_list = db.get_txn_allocations(txn.id)
             self.assertEqual(len(alloc_list), 1)
@@ -256,7 +256,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_throws_if_split_to_much(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
@@ -265,7 +265,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_merge_allocations(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             assert alloc_list[0].id is not None
@@ -289,7 +289,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_no_op_if_merge_single_allocation(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             alloc_list = db.get_allocation_list(f'txn_id = {txn.id}')
             self.assertEqual(len(alloc_list), 1)
             self.assertEqual(alloc_list[0].amount, 3456)
@@ -301,8 +301,8 @@ class TestDatabase(unittest.TestCase):
 
     def test_throws_if_merge_invalid_allocations(self) -> None:
         with db:
-            txn1 = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
-            txn2 = db.add_transaction(Transaction(time=1684671193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn1 = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn2 = db.add_transaction(Transaction(date='2023-07-16', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
             assert txn1.id is not None
             assert txn2.id is not None
             alloc_list = db.get_allocation_list(f'txn_id IN ({txn1.id},{txn2.id})')
@@ -325,7 +325,7 @@ class TestAPI(unittest.TestCase):
 
     def test_add_a_transaction(self) -> None:
         response = self.client.post('/api/transaction/', json={
-            'time': 1684670193,
+            'date': '2023-05-02',
             'amount': 3456,
             'description': 'FooBar Enterprises',
             'source': 'Bank of Foo',
@@ -335,7 +335,7 @@ class TestAPI(unittest.TestCase):
 
     def test_get_existing_transactions(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1684670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
         response = self.client.get(f'/api/transaction/?query=id={txn.id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 1)
@@ -356,10 +356,10 @@ class TestAPI(unittest.TestCase):
 
     def test_get_existing_allocations(self) -> None:
         with db:
-            txn = db.add_transaction(Transaction(time=1584670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
-            db.add_transaction(Transaction(time=1584671193, amount=125, description='123 Inc', source='Bank of Bar'))
-            db.add_transaction(Transaction(time=1584672193, amount=13305, description='Qwerty Corp', source='Bank of Foo'))
-        response = self.client.get(f'/api/allocation/?query=time<1584672000')
+            txn = db.add_transaction(Transaction(date='2021-07-18', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2021-07-17', amount=125, description='123 Inc', source='Bank of Bar'))
+            db.add_transaction(Transaction(date='2021-07-20', amount=13305, description='Qwerty Corp', source='Bank of Foo'))
+        response = self.client.get(f"/api/allocation/?query=date<'2021-07-19'")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 2)
         for resp in response.json():
@@ -368,15 +368,15 @@ class TestAPI(unittest.TestCase):
             self.assertEqual(resp['category'], 'Unknown')
             self.assertEqual(resp['location'], 'Unknown')
             if resp['txn_id'] == txn.id:
-                self.assertEqual(resp['time'], 1584670193)
+                self.assertEqual(resp['date'], '2021-07-18')
                 self.assertEqual(resp['amount'], 3456)
             else:
-                self.assertEqual(resp['time'], 1584671193)
+                self.assertEqual(resp['date'], '2021-07-17')
                 self.assertEqual(resp['amount'], 125)
 
     def test_update_an_allocation_category(self) -> None:
         txn_response = self.client.post('/api/transaction/', json={
-            'time': 1685019387,
+            'date': '2023-05-23',
             'amount': 9932,
             'description': 'test_update_an_allocation_category',
             'source': 'coescijsoeicj',
@@ -398,7 +398,7 @@ class TestAPI(unittest.TestCase):
 
     def test_update_an_allocation_location(self) -> None:
         txn_response = self.client.post('/api/transaction/', json={
-            'time': 1685019387,
+            'date': '2023-05-13',
             'amount': 9932,
             'description': 'test_update_an_allocation_location',
             'source': 'coescijsoeicj',
@@ -420,7 +420,7 @@ class TestAPI(unittest.TestCase):
 
     def test_update_an_allocation_note(self) -> None:
         txn_response = self.client.post('/api/transaction/', json={
-            'time': 1685019387,
+            'date': '2023-05-19',
             'amount': 9932,
             'description': 'test_update_an_allocation_note',
             'source': 'coescijsoeicj',
@@ -442,7 +442,7 @@ class TestAPI(unittest.TestCase):
 
     def test_split_an_allocation(self) -> None:
         txn_response = self.client.post('/api/transaction/', json={
-            'time': 1685019387,
+            'date': '2023-05-01',
             'amount': 9932,
             'description': 'test_split_an_allocation',
             'source': 'coescijsoeicj',
@@ -463,7 +463,7 @@ class TestAPI(unittest.TestCase):
 
     def test_merge_allocations(self) -> None:
         txn_response = self.client.post('/api/transaction/', json={
-            'time': 1685019387,
+            'date': '2023-06-01',
             'amount': 9932,
             'description': 'test_merge_an_allocation',
             'source': 'FooBar Bank',
