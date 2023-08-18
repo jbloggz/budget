@@ -30,9 +30,9 @@ def add_transaction(txn: Transaction) -> Transaction:
 
 
 @app.get('/api/transaction/', response_model=List[Transaction], dependencies=[Depends(validate_access_token)])
-def get_transactions(query: str) -> List[Transaction]:
+def get_transactions(query: str | None = None) -> List[Transaction]:
     with db:
-        return db.get_transaction_list(query)
+        return db.get_transaction_list(query) if query else db.get_all_transactions()
 
 
 @app.get('/api/allocation/', response_model=List[Allocation], dependencies=[Depends(validate_access_token)])

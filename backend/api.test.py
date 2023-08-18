@@ -344,6 +344,16 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.json()[0]['description'], 'FooBar Enterprises')
         self.assertEqual(response.json()[0]['source'], 'Bank of Foo')
 
+    def test_get_all_transactions(self) -> None:
+        with db:
+            db.add_transaction(Transaction(date='2023-07-15', amount=3556, description='FooBar Enterprises1', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-16', amount=3656, description='FooBar Enterprises2', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-17', amount=3756, description='FooBar Enterprises3', source='Bank of Foo'))
+            db.add_transaction(Transaction(date='2023-07-18', amount=3856, description='FooBar Enterprises4', source='Bank of Foo'))
+        response = self.client.get(f'/api/transaction/')
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.json()), 4)
+
     def test_get_existing_allocations(self) -> None:
         with db:
             txn = db.add_transaction(Transaction(time=1584670193, amount=3456, description='FooBar Enterprises', source='Bank of Foo'))

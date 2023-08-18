@@ -108,6 +108,28 @@ class Database:
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
         return txn
 
+    def get_all_transactions(self) -> List[Transaction]:
+        '''
+        Get list of transaction based on a filter expression
+
+        Args:
+            filter: An SQL filter expression
+
+        Returns:
+            A list of transactions that match the filter
+        '''
+        self.db.execute(f'SELECT id, date, amount, description, source FROM txn')
+        res = []
+        for row in self.db:
+            res.append(Transaction(
+                id=row[0],
+                date=row[1],
+                amount=row[2],
+                description=row[3],
+                source=row[4],
+            ))
+        return res
+
     def get_transaction_list(self, expr: str) -> List[Transaction]:
         '''
         Get list of transaction based on a filter expression
