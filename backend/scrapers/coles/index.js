@@ -8,10 +8,11 @@
 
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import fs from 'fs';
 
 puppeteer.use(StealthPlugin());
 
-const [user, pass] = process.argv.slice(-2);
+const { user, password } = JSON.parse(fs.readFileSync('config.json', { encoding: 'utf8', flag: 'r' }));
 
 const sleep = (ms) => {
    return new Promise((resolve) => setTimeout(resolve, ms));
@@ -38,7 +39,7 @@ await page.focus('input[name="username"]');
 await page.keyboard.type(user);
 await sleep(938);
 await page.focus('input[name="password"]');
-await page.keyboard.type(pass);
+await page.keyboard.type(password);
 await sleep(1227);
 await page.keyboard.press('Enter');
 
@@ -50,9 +51,22 @@ let seen = false;
 page.on('response', async (response) => {
    const request = response.request();
    if (request.url().includes('hold') && request.url().includes('functionCode=transaction_history')) {
-      const text = await response.text();
+      const data = await response.json();
       if (!seen) {
-         console.log(text);
+         const output = {
+            raw: data.transaction,
+            transactions: [],
+         };
+         for (const transaction of data.transaction) {
+            output.transactions.push({
+               date: transaction.transactionDate,
+               description: transaction.transactionDescription,
+               amount: transaction.transactionAmount,
+               source: 'coles',
+            });
+         }
+
+         console.log(JSON.stringify(output));
          seen = true;
       }
    }
