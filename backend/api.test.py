@@ -119,6 +119,8 @@ class TestDatabase(unittest.TestCase):
             db.add_transaction(Transaction(date='2023-07-04', amount=29120, description='Joe Pty Ltd', source='Bank of Foo'))
             txn_list = db.get_transaction_list('description = \'Joe Pty Ltd\'')
             self.assertEqual(len(txn_list), 3)
+            txn_list = db.get_transaction_list('description = ?', ('Joe Pty Ltd',))
+            self.assertEqual(len(txn_list), 3)
 
     def test_default_allocation_added_when_transaction_added(self) -> None:
         with db:
@@ -532,7 +534,6 @@ class TestAPI(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-
     def test_refresh_token(self) -> None:
         secrets['users']['foo'] = hash_password('bar')
         form_data = {
@@ -565,7 +566,6 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result['token_type'], 'bearer')
         self.assertTrue(result['access_token'])
         self.assertTrue(result['refresh_token'])
-
 
     def test_refresh_token_can_be_used_only_once(self) -> None:
         secrets['users']['foo'] = hash_password('bar')
@@ -617,7 +617,6 @@ class TestAPI(unittest.TestCase):
         self.client.headers.update({'Authorization': f'Bearer {create_token("qwerty").access_token}'})
         resp = self.client.get(f'/api/oauth2/token/')
         self.assertEqual(resp.status_code, 401)
-
 
 
 unittest.main()

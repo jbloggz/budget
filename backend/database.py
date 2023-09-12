@@ -9,7 +9,7 @@
 # System imports
 import os
 import sqlite3
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import time
 
 # Local imports
@@ -23,6 +23,13 @@ class Database:
     DB_PATH = os.environ.get('DB_PATH') or './budget.db'
 
     def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def open(self):
         self.con = sqlite3.connect(Database.DB_PATH)
         self.db = self.con.cursor()
         with open('schema.sql') as fp:
@@ -30,7 +37,7 @@ class Database:
             self.db.executescript(schema)
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def close(self):
         self.db.close()
         self.con.commit()
         self.con.close()
@@ -108,6 +115,16 @@ class Database:
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
         return txn
 
+    def update_transaction(self, txn_id: int, txn: Transaction):
+        '''
+        Updates an existing transaction
+
+        Args:
+            id:  The id to update
+            txn: The new details
+        '''
+        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ? WHERE id = ?', (txn.date, txn.amount, txn.description, txn.source, txn_id))
+
     def get_all_transactions(self) -> List[Transaction]:
         '''
         Get list of transaction based on a filter expression
@@ -130,17 +147,18 @@ class Database:
             ))
         return res
 
-    def get_transaction_list(self, expr: str) -> List[Transaction]:
+    def get_transaction_list(self, expr: str, params: Optional[Tuple] = ()) -> List[Transaction]:
         '''
         Get list of transaction based on a filter expression
 
         Args:
-            filter: An SQL filter expression
+            expr:   An SQL filter expression
+            params: Optional parameters to the expression
 
         Returns:
             A list of transactions that match the filter
         '''
-        self.db.execute(f'SELECT id, date, amount, description, source FROM txn WHERE {expr}')
+        self.db.execute(f'SELECT id, date, amount, description, source FROM txn WHERE {expr}', params)
         res = []
         for row in self.db:
             res.append(Transaction(
