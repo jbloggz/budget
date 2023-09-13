@@ -9,8 +9,7 @@
 
 # System imports
 import unittest
-import time
-from typing import List, Dict
+from typing import List
 
 # Local imports
 from insert_transactions import insert_transactions
