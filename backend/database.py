@@ -115,7 +115,7 @@ class Database:
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
         return txn
 
-    def update_transaction(self, txn_id: int, txn: Transaction):
+    def update_transaction(self, txn_id: int, txn: Transaction) -> None:
         '''
         Updates an existing transaction
 

@@ -12,6 +12,7 @@ import sys
 import argparse
 import os
 import json
+import logging
 from typing import List, Dict
 from difflib import get_close_matches
 
@@ -19,7 +20,8 @@ from difflib import get_close_matches
 from model import Transaction
 from database import Database
 
-TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, int]]]]
+
+TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
 
 
 def build_txn_map(transactions: List[Transaction]) -> TxnMapType:
@@ -42,33 +44,49 @@ def build_txn_map(transactions: List[Transaction]) -> TxnMapType:
         if txn.amount not in txn_map[txn.source][txn.date]:
             txn_map[txn.source][txn.date][txn.amount] = {}
         if txn.description not in txn_map[txn.source][txn.date][txn.amount]:
-            txn_map[txn.source][txn.date][txn.amount][txn.description] = 0
-        txn_map[txn.source][txn.date][txn.amount][txn.description] += 1
+            txn_map[txn.source][txn.date][txn.amount][txn.description] = []
+        txn_map[txn.source][txn.date][txn.amount][txn.description].append(txn.id)
     return txn_map
 
 
-def prune_existing_transactions(txn_map: TxnMapType, existing_transactions: List[Transaction]) -> List[Transaction]:
+def prune_existing_transactions(transactions: List[Transaction], db) -> List[Transaction]:
     '''
-    Prune existing transactions that are in both the new and existing lists
+    Prune existing transactions from the list of new transactions
 
     Args:
-        txn_map:                New transaction map
-        existing_transactions:  Existing transaction list
+        transactions:  New transaction list
 
     Returns:
-        The remaining existing transactions after pruning
+        The remaining transactions after pruning
     '''
-    for txn in existing_transactions:
+    existing_txn_map = build_txn_map(db.get_all_transactions())
+
+    # First prune any exact matches
+    for txn in transactions:
         try:
-            amount_entry = txn_map[txn.source][txn.date][txn.amount]
-            if amount_entry[txn.description] > 0:
-                amount_entry[txn.description] -= 1
-                txn.id = None
+            amount_entry = existing_txn_map[txn.source][txn.date][txn.amount]
+            if amount_entry[txn.description]:
+                existing_id = amount_entry[txn.description].pop()
+                logging.info('Pruning existing transaction: %d, %s, %s, %s, "%s"', existing_id, txn.source, txn.date, txn.amount, txn.description)
+                txn.date = ''
         except:
             # Entry not found, so ignore
             pass
 
-    return [txn for txn in existing_transactions if txn.id is not None]
+    transactions = [txn for txn in transactions if txn.date]
+
+    # Now check for matching entries with a slightly changed description.
+    # Pending credit card transactions can do this sometimes when they are posted
+    for txn in transactions:
+        match = find_matching_transaction(txn, existing_txn_map)
+        if match is not None:
+            # Found a match, update the existing transaction
+            db.update_transaction(match.id, txn)
+            logging.info('Updated existing transaction: %d, %s, %s, %s, "%s" -> "%s"', match.id, txn.source, txn.date, txn.amount, match.description, txn.description)
+            txn.date = ''
+
+    # Anything leftover must be a new transaction
+    return [txn for txn in transactions if txn.date]
 
 
 def find_matching_transaction(txn: Transaction, txn_map: TxnMapType):
@@ -77,17 +95,16 @@ def find_matching_transaction(txn: Transaction, txn_map: TxnMapType):
 
     Args:
         txn:     The transaction to find
-        txn_map: New transaction map
+        txn_map: Existing transaction map
     '''
     try:
         entries = txn_map[txn.source][txn.date][txn.amount]
-        possible_descriptions = [key for key, val in entries.items() if val > 0]
+        possible_descriptions = [key for key, arr in entries.items() if arr]
         matches = get_close_matches(txn.description, possible_descriptions, cutoff=0.75)
         if not matches:
             return None
-        entries[matches[0]] -= 1
         return Transaction(
-            id=txn.id,
+            id=entries[matches[0]].pop(),
             source=txn.source,
             date=txn.date,
             amount=txn.amount,
@@ -104,24 +121,12 @@ def insert_transactions(transactions: List[Transaction], db):
     Args:
         transactions: The list of transactions to insert
     '''
-    txn_map = build_txn_map(transactions)
-    existing_transactions = prune_existing_transactions(txn_map, db.get_all_transactions())
-
-    # Any leftover existing transactions have likely changed description. Find
-    # the closest match in the new transactions and update the description
-    for txn in existing_transactions:
-        match = find_matching_transaction(txn, txn_map)
-        if match is None:
-            raise ValueError(f'Unable to find matching transactions for {txn}')
-        db.update_transaction(match.id, match)
+    transactions = prune_existing_transactions(transactions, db)
 
     # Any remaining new transactions are indeed new and need to be inserted
-    for source in txn_map:
-        for date in txn_map[source]:
-            for amount in txn_map[source][date]:
-                for description in txn_map[source][date][amount]:
-                    for _ in range(txn_map[source][date][amount][description]):
-                        db.add_transaction(Transaction(source=source, date=date, amount=amount, description=description))
+    for txn in transactions:
+        new_txn = db.add_transaction(txn)
+        logging.info('Inserted new transaction: %d, %s, %s, %s, "%s"', new_txn.id, new_txn.source, new_txn.date, new_txn.amount, new_txn.description)
 
 
 def parse_args() -> List[Dict]:  # pragma: no cover
@@ -130,15 +135,22 @@ def parse_args() -> List[Dict]:  # pragma: no cover
     '''
     parser = argparse.ArgumentParser(description='Process a list of transactions and insert into the database')
     parser.add_argument('--transactions', required=True, help='Path to the JSON transaction list')
+    parser.add_argument('--log-file', required=True, help='Path to the log file')
 
     args = parser.parse_args()
 
     if not os.path.isfile(args.transactions):
         parser.error('--transactions JSON file must exist')
 
+    logging.basicConfig(filename=args.log_file,
+                        filemode='a',
+                        format='%(asctime)s | %(levelname)-8s | %(message)s',
+                        datefmt='%Y/%m/%d %H:%M:%S',
+                        level=logging.DEBUG)
+
     try:
         with open(args.transactions) as fp:
-            return json.load(fp)
+            return json.load(fp)['transactions']
     except:
         parser.error('--transactions JSON file must contain valid JSON')
 
@@ -154,7 +166,9 @@ def main():  # pragma: no cover
     db = Database()
 
     with db:
+        logging.info('Processing %d transactions', len(transactions))
         insert_transactions([Transaction(**txn) for txn in transactions], db)
+        logging.info('Complete')
 
     return 0
 

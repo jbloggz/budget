@@ -65,7 +65,7 @@ puppeteer.launch({ headless: false, executablePath: '/usr/bin/google-chrome-stab
          date: `${r[3]}-${r[2]}-${r[1]}`,
          description: out.Description,
          amount: out.Debit != 0 ? -out.Debit : out.Credit,
-         source: 'St George',
+         source: 'St George Bank',
       });
    }
 

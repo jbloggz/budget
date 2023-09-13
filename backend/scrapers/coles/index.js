@@ -62,7 +62,7 @@ page.on('response', async (response) => {
                date: transaction.transactionDate,
                description: transaction.transactionDescription,
                amount: transaction.transactionAmount,
-               source: 'coles',
+               source: 'Coles Credit Card',
             });
          }
 

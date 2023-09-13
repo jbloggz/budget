@@ -183,21 +183,9 @@ class TestInsertTransactions(unittest.TestCase):
         self.db.add_transaction(txn)
         assert txn.id is not None
 
-        with self.assertRaises(ValueError):
-            insert_transactions(self.dummy_data, self.db)
-
-    def test_missing_trnasaction(self) -> None:
-        txn = Transaction(
-            date='2023-08-12',
-            description='Missing Transaction',
-            amount=-2341,
-            source='bank of foo'
-        )
-        self.db.add_transaction(txn)
-        assert txn.id is not None
-
-        with self.assertRaises(ValueError):
-            insert_transactions(self.dummy_data, self.db)
+        insert_transactions(self.dummy_data, self.db)
+        txn_list = self.db.get_all_transactions()
+        self.assertEqual(len(txn_list), len(self.dummy_data) + 1)
 
 
 unittest.main()
