@@ -14,7 +14,7 @@ const { user, security_number, password } = JSON.parse(fs.readFileSync('config.j
 
 puppeteer.use(StealthPlugin());
 
-puppeteer.launch({ headless: false, executablePath: '/usr/bin/google-chrome-stable' }).then(async (browser) => {
+puppeteer.launch({ headless: true, executablePath: '/usr/bin/google-chrome-stable' }).then(async (browser) => {
    const page = await browser.newPage();
    await page.goto('https://ibanking.stgeorge.com.au/ibank/loginPage.action');
    await page.waitForSelector('input[name=userId]');
@@ -64,7 +64,7 @@ puppeteer.launch({ headless: false, executablePath: '/usr/bin/google-chrome-stab
       res.transactions.push({
          date: `${r[3]}-${r[2]}-${r[1]}`,
          description: out.Description,
-         amount: out.Debit != 0 ? -out.Debit : out.Credit,
+         amount: Math.round((out.Debit != 0 ? -out.Debit : out.Credit) * 100),
          source: 'St George Bank',
       });
    }

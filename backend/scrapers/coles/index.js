@@ -61,7 +61,7 @@ page.on('response', async (response) => {
             output.transactions.push({
                date: transaction.transactionDate,
                description: transaction.transactionDescription,
-               amount: transaction.transactionAmount,
+               amount: Math.round(transaction.transactionAmount * 100),
                source: 'Coles Credit Card',
             });
          }
