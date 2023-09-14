@@ -45,6 +45,12 @@ class TestInsertTransactions(unittest.TestCase):
                 source='bank of foo'
             ),
             Transaction(
+                date='2023-08-03',
+                description='QWERTY FACES PTY LT   FOOVILLE     AU',
+                amount=-97420,
+                source='bank of foo'
+            ),
+            Transaction(
                 date='2023-08-05',
                 description='FASTFOOD DT 0398        QWERTY FOOAU XXXX-XXXX-XXXX-2837',
                 amount=-7745,
@@ -183,6 +189,29 @@ class TestInsertTransactions(unittest.TestCase):
         assert txn.id is not None
 
         insert_transactions(self.dummy_data, self.db)
+        txn_list = self.db.get_all_transactions()
+        self.assertEqual(len(txn_list), len(self.dummy_data) + 1)
+
+    def test_already_existing_multiple_identcal(self) -> None:
+        insert_transactions(self.dummy_data, self.db)
+        txn_list = self.db.get_all_transactions()
+        self.assertEqual(len(txn_list), len(self.dummy_data))
+
+        txn = Transaction(
+            date='2023-08-03',
+            description='QWERTY FACES PTY LT   FOOVILLE     AU',
+            amount=-97420,
+            source='bank of foo'
+        )
+        insert_transactions([txn.copy()], self.db)
+        txn_list = self.db.get_all_transactions()
+        self.assertEqual(len(txn_list), len(self.dummy_data))
+
+        insert_transactions([txn.copy(), txn.copy()], self.db)
+        txn_list = self.db.get_all_transactions()
+        self.assertEqual(len(txn_list), len(self.dummy_data))
+
+        insert_transactions([txn.copy(), txn.copy(), txn.copy()], self.db)
         txn_list = self.db.get_all_transactions()
         self.assertEqual(len(txn_list), len(self.dummy_data) + 1)
 

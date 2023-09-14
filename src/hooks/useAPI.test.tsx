@@ -145,6 +145,7 @@ describe('useAPI', () => {
       expect(resp.status).toBe(200);
       expect(failResp.status).toBe(401);
       expect(failResp.success).toBe(false);
+      expect(failResp.errmsg).toBe('Missing access token');
    });
 
    it('can make a successful "remember" login request and receive a token', async () => {

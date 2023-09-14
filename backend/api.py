@@ -79,6 +79,6 @@ def check_auth():
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-if os.environ.get('DIST_PATH'):
+if os.environ.get('DIST_PATH'):  # pragma: no cover
     app.mount('/', StaticFiles(directory=os.environ.get('DIST_PATH'), html=True))
 

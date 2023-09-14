@@ -24,7 +24,7 @@ from database import Database
 TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
 
 
-def run_scraper(node: str, secrets: str, path: str) -> List[Transaction]:
+def run_scraper(node: str, secrets: str, path: str) -> List[Transaction]:  # pragma: no cover
     '''
     Run a scraper file
 
