@@ -3,15 +3,15 @@
 #
 # Copyright (c) 2023 Josef Barnes
 #
-# insert_transactions.py: This file takes a batch of transactions in a JSON
-# file and inserts them into the database
+# insert_transactions.py: This file processes the scrapers and inserts the
+# transactions into the database
 #
 
 # System imports
 import sys
 import argparse
-import os
 import json
+import subprocess
 import logging
 from typing import List, Dict
 from difflib import get_close_matches
@@ -22,6 +22,27 @@ from database import Database
 
 
 TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
+
+
+def run_scraper(node: str, secrets: str, path: str) -> List[Transaction]:
+    '''
+    Run a scraper file
+
+    Args:
+        node:    path to the node binary
+        secrets: path to the secrets file
+        path:    the scraper JS file
+
+    Returns:
+        The list of transactions
+    '''
+    result = subprocess.run([node, path, secrets], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
+    if result.stdout is None:
+        return []
+
+    data = json.loads(result.stdout)
+
+    return [Transaction(**txn) for txn in data['transactions']]
 
 
 def build_txn_map(transactions: List[Transaction]) -> TxnMapType:
@@ -82,7 +103,8 @@ def prune_existing_transactions(transactions: List[Transaction], db) -> List[Tra
         if match is not None:
             # Found a match, update the existing transaction
             db.update_transaction(match.id, txn)
-            logging.info('Updated existing transaction: %d, %s, %s, %s, "%s" -> "%s"', match.id, txn.source, txn.date, txn.amount, match.description, txn.description)
+            logging.info('Updated existing transaction: %d, %s, %s, %s, "%s" -> "%s"', match.id,
+                         txn.source, txn.date, txn.amount, match.description, txn.description)
             txn.date = ''
 
     # Anything leftover must be a new transaction
@@ -121,6 +143,7 @@ def insert_transactions(transactions: List[Transaction], db):
     Args:
         transactions: The list of transactions to insert
     '''
+    logging.info('Processing %d transactions', len(transactions))
     transactions = prune_existing_transactions(transactions, db)
 
     # Any remaining new transactions are indeed new and need to be inserted
@@ -128,50 +151,46 @@ def insert_transactions(transactions: List[Transaction], db):
         new_txn = db.add_transaction(txn)
         logging.info('Inserted new transaction: %d, %s, %s, %s, "%s"', new_txn.id, new_txn.source, new_txn.date, new_txn.amount, new_txn.description)
 
+    logging.info('Complete')
 
-def parse_args() -> List[Dict]:  # pragma: no cover
+
+def parse_args():  # pragma: no cover
     '''
     Defines arguments to be parsed from the command line.
     '''
     parser = argparse.ArgumentParser(description='Process a list of transactions and insert into the database')
-    parser.add_argument('--transactions', required=True, help='Path to the JSON transaction list')
-    parser.add_argument('--log-file', required=True, help='Path to the log file')
+    parser.add_argument('--log',     required=True, help='Path to the log file')
+    parser.add_argument('--node',    required=True, help='Path to node binary')
+    parser.add_argument('--secrets', required=True, help='Path to th secrets file')
+    parser.add_argument('scrapers',  nargs='+', help='List of JS scraper files')
 
     args = parser.parse_args()
 
-    if not os.path.isfile(args.transactions):
-        parser.error('--transactions JSON file must exist')
-
-    logging.basicConfig(filename=args.log_file,
+    logging.basicConfig(filename=args.log,
                         filemode='a',
                         format='%(asctime)s | %(levelname)-8s | %(message)s',
                         datefmt='%Y/%m/%d %H:%M:%S',
                         level=logging.DEBUG)
 
-    try:
-        with open(args.transactions) as fp:
-            return json.load(fp)['transactions']
-    except:
-        parser.error('--transactions JSON file must contain valid JSON')
+    return args
 
 
-def main():  # pragma: no cover
+def main(args):  # pragma: no cover
     '''
     The main function
 
     Returns:
         code to use as the exit status
     '''
-    transactions = parse_args()
-    db = Database()
-
-    with db:
-        logging.info('Processing %d transactions', len(transactions))
-        insert_transactions([Transaction(**txn) for txn in transactions], db)
-        logging.info('Complete')
+    with Database() as db:
+        for scraper in args.scrapers:
+            insert_transactions(run_scraper(args.node, args.secrets, scraper), db)
 
     return 0
 
 
 if __name__ == '__main__':  # pragma: no cover
-    sys.exit(main())
+    try:
+        sys.exit(main(parse_args()))
+    except Exception as exc:
+        logging.exception(exc, exc_info=True)

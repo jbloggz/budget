@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2023 Josef Barnes
  *
- * stgeorge.js: This file contains an example scraper for Coles Credit Card
+ * coles.js: This file contains an example scraper for Coles Credit Card
  */
 
 import puppeteer from 'puppeteer-extra';
@@ -12,7 +12,8 @@ import fs from 'fs';
 
 puppeteer.use(StealthPlugin());
 
-const { user, password } = JSON.parse(fs.readFileSync('config.json', { encoding: 'utf8', flag: 'r' }));
+const secrets = JSON.parse(fs.readFileSync(process.argv[2], { encoding: 'utf8', flag: 'r' }));
+const { user, password } = secrets.scrapers.coles;
 
 const sleep = (ms) => {
    return new Promise((resolve) => setTimeout(resolve, ms));

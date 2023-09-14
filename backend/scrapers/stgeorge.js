@@ -10,7 +10,9 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
 
-const { user, security_number, password } = JSON.parse(fs.readFileSync('config.json', { encoding: 'utf8', flag: 'r' }));
+
+const secrets = JSON.parse(fs.readFileSync(process.argv[2], { encoding: 'utf8', flag: 'r' }));
+const { user, security_number, password } = secrets.scrapers.stgeorge;
 
 puppeteer.use(StealthPlugin());
 
