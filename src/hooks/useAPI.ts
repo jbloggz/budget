@@ -8,8 +8,10 @@
 
 import { useCallback, useState } from 'react';
 import { useLocalStorage } from 'react-use';
+import jwt_decode from "jwt-decode";
 import { apiResponseType, apiTokenType } from '.';
 import { isApiTokenType } from '../util';
+import { apiJWTType } from './hooks.types';
 
 export const useAPI = () => {
    const [isLoading, setLoading] = useState(true);
@@ -26,6 +28,14 @@ export const useAPI = () => {
       setAccessToken(undefined);
       setRefreshToken(undefined);
    }, [removeStorageAccessToken, removeStorageRefreshToken, removeRememberMe]);
+
+   const getLoggedInUser = useCallback(() => {
+      if (!accessToken) {
+         return '';
+      }
+      const jwt = jwt_decode<apiJWTType>(accessToken);
+      return jwt.sub;
+   }, [accessToken]);
 
    const runRawRequest = useCallback(
       async (
@@ -158,5 +168,5 @@ export const useAPI = () => {
       [runAPIRequest]
    );
 
-   return { isLoading, get, post, put, getToken, clearToken, accessToken, refreshToken };
+   return { isLoading, get, post, put, getToken, clearToken, accessToken, refreshToken, getLoggedInUser };
 };

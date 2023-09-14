@@ -18,3 +18,9 @@ export interface apiResponseType {
    success: boolean;
    status: number;
 }
+
+export interface apiJWTType {
+   sub: string;
+   exp: number;
+   iat: number;
+}

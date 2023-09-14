@@ -25,6 +25,7 @@ import {
    Image,
    Menu,
    MenuButton,
+   MenuGroup,
    MenuItem,
    MenuList,
    Show,
@@ -34,11 +35,14 @@ import {
 import { ChevronDownIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { NavList } from '.';
 import { AuthContext, authContextType, useContext } from '../providers';
+import { useAPI } from '../hooks';
 
 const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
    const { logout } = useContext<authContextType>(AuthContext);
+   const { getLoggedInUser } = useAPI();
+   const user = getLoggedInUser();
 
    /* Close the drawer any time the location changes */
    const location = useLocation();
@@ -74,11 +78,17 @@ const TopBar = () => {
             <Flex flex="1" justify="right" alignItems="center">
                <Menu>
                   <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                     <Avatar name="Joe" size="sm" />
+                     <Avatar name={user} size="sm" />
                   </MenuButton>
                   <MenuList>
-                     <MenuItem aria-label="Settings" as={Link} to="settings">Settings</MenuItem>
-                     <MenuItem aria-label="Logout" onClick={logout}>Logout</MenuItem>
+                     <MenuGroup color="gray.500" title={user}>
+                        <MenuItem aria-label="Settings" as={Link} to="settings">
+                           Settings
+                        </MenuItem>
+                        <MenuItem aria-label="Logout" onClick={logout}>
+                           Logout
+                        </MenuItem>
+                     </MenuGroup>
                   </MenuList>
                </Menu>
             </Flex>

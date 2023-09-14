@@ -430,4 +430,19 @@ describe('useAPI', () => {
       expect(localStorage.getItem('refresh_token')).toBe(null);
       expect(localStorage.getItem('remember_me')).toBe(null);
    });
+
+   it('can get username', async () => {
+      localStorage.setItem(
+         'access_token',
+         '"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmb29iYXJAZXhhbXBsZS5jb20iLCJleHAiOjE2OTQ3MjUyMjMsImlhdCI6MTY5NDcyNDkyM30.NtK0JSmd66FZhs0-ON7OEneE1Qects-nGjsAcMXKAus"'
+      );
+      const TestComponent = () => {
+         const { getLoggedInUser } = useAPI();
+         const user = getLoggedInUser();
+         return <p role="test">{user}</p>;
+      };
+      render(<TestComponent />);
+      const val = screen.getByRole('test');
+      expect(val.textContent).toBe('foobar@example.com');
+   });
 });
