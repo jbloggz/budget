@@ -161,7 +161,7 @@ def parse_args():  # pragma: no cover
     parser = argparse.ArgumentParser(description='Process a list of transactions and insert into the database')
     parser.add_argument('--log',     required=True, help='Path to the log file')
     parser.add_argument('--node',    required=True, help='Path to node binary')
-    parser.add_argument('--secrets', required=True, help='Path to th secrets file')
+    parser.add_argument('--secrets', required=True, help='Path to the secrets file')
     parser.add_argument('scrapers',  nargs='+', help='List of JS scraper files')
 
     args = parser.parse_args()
