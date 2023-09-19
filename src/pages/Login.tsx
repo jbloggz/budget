@@ -30,14 +30,13 @@ import {
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { AuthContext, authContextType, credentialsType, useContext } from '../providers';
 import { isNonEmptyString } from '../util';
+import { APIError } from '../hooks';
 
-/* An interface for the login credentials */
-const Login = () => {
+const Login = ({ isLoading }: { isLoading: boolean }) => {
    const toast = useToast();
    const { login } = useContext<authContextType>(AuthContext);
    const passwordReveal = useDisclosure();
    const styles = useMultiStyleConfig('Login');
-   const submit = useDisclosure();
 
    const form = useRef(null);
    const validateForm = (): credentialsType | null => {
@@ -61,17 +60,16 @@ const Login = () => {
       if (creds === null) {
          return;
       }
-      submit.onOpen();
-      const resp = await login(creds);
-      if (!resp.success) {
+      try {
+         await login(creds);
+      } catch (err) {
          toast({
             title: 'Error',
-            description: resp.errmsg,
+            description: err instanceof APIError ? err.message : 'Unknown error',
             status: 'error',
             duration: 5000,
          });
       }
-      submit.onClose();
    };
 
    return (
@@ -87,7 +85,7 @@ const Login = () => {
                      <Stack spacing="5">
                         <FormControl>
                            <FormLabel htmlFor="email">Email</FormLabel>
-                           <Input id="email" name="email" type="email" isDisabled={submit.isOpen} required />
+                           <Input id="email" name="email" type="email" isDisabled={isLoading} required />
                            <FormErrorMessage>Please enter an email address</FormErrorMessage>
                         </FormControl>
                         <FormControl>
@@ -96,7 +94,7 @@ const Login = () => {
                               <Input
                                  id="password"
                                  name="password"
-                                 isDisabled={submit.isOpen}
+                                 isDisabled={isLoading}
                                  type={passwordReveal.isOpen ? 'text' : 'password'}
                                  autoComplete="current-password"
                                  required
@@ -114,10 +112,10 @@ const Login = () => {
                            <FormErrorMessage>Please enter a password</FormErrorMessage>
                         </FormControl>
                      </Stack>
-                     <Checkbox name="remember" value="checked" defaultChecked isDisabled={submit.isOpen}>
+                     <Checkbox name="remember" value="checked" defaultChecked isDisabled={isLoading}>
                         Remember me
                      </Checkbox>
-                     <Button type="submit" isLoading={submit.isOpen} isDisabled={submit.isOpen}>
+                     <Button type="submit" isLoading={isLoading} isDisabled={isLoading}>
                         Sign in
                      </Button>
                   </Stack>

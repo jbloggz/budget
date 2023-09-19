@@ -6,5 +6,5 @@
  * index.ts: This file exports all the hooks
  */
 
-export { useAPI } from './useAPI';
-export type { apiResponseType, apiTokenType } from './hooks.types';
+export { useAPI, APIError } from './useAPI';
+export type { apiResponseType, apiTokenType, apiCredentialsType, apiRequestType } from './hooks.types';

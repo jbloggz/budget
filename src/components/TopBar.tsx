@@ -41,8 +41,7 @@ const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
    const { logout } = useContext<authContextType>(AuthContext);
-   const { getLoggedInUser } = useAPI();
-   const user = getLoggedInUser();
+   const user = useAPI().tokenData().sub;
 
    /* Close the drawer any time the location changes */
    const location = useLocation();

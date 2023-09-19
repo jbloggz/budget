@@ -3,10 +3,10 @@
  *
  * Copyright (c) 2023 Josef Barnes
  *
- * util.ts: This file contians any utility functions used in the app
+ * util.ts: This file contains any utility functions used in the app
  */
 
-import { apiTokenType } from './hooks';
+import { apiCredentialsType } from './hooks';
 
 /**
  * Type predicate for a non-empty string
@@ -21,7 +21,7 @@ export const isNonEmptyString = (val: any): val is string => {
 };
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export const isApiTokenType = (val: any): val is apiTokenType => {
+export const isApiCredentialsType = (val: any): val is apiCredentialsType => {
    try {
       return typeof val.access_token === 'string' && typeof val.refresh_token === 'string' && val.token_type === 'bearer';
    } catch {

@@ -7,93 +7,118 @@
  */
 
 import { useCallback, useState } from 'react';
-import { useLocalStorage } from 'react-use';
-import jwt_decode from "jwt-decode";
-import { apiResponseType, apiTokenType } from '.';
-import { isApiTokenType } from '../util';
-import { apiJWTType } from './hooks.types';
+import jwt_decode from 'jwt-decode';
+import useLocalStorageState from 'use-local-storage-state';
+import useSessionStorageState from 'use-session-storage-state';
+import { apiResponseType, apiTokenType, apiRequestType, apiCredentialsType } from '.';
+import { isApiCredentialsType } from '../util';
+
+export class APIError extends Error {
+   code: number;
+
+   constructor(errmsg: string, code: number) {
+      super(errmsg);
+      this.name = 'APIError';
+      this.code = code;
+   }
+}
 
 export const useAPI = () => {
-   const [isLoading, setLoading] = useState(true);
-   const [storageAccessToken, setStorageAccessToken, removeStorageAccessToken] = useLocalStorage<string>('access_token');
-   const [storageRefreshToken, setStorageRefreshToken, removeStorageRefreshToken] = useLocalStorage<string>('refresh_token');
-   const [rememberMe, setRememberMe, removeRememberMe] = useLocalStorage<boolean>('remember_me');
-   const [accessToken, setAccessToken] = useState(storageAccessToken);
-   const [refreshToken, setRefreshToken] = useState(storageRefreshToken);
+   const opts = { serializer: { stringify: String, parse: String } };
+   const [accessTokenLS, setAccessTokenLS, { removeItem: removeAccessTokenLS }] = useLocalStorageState<string>('access_token', opts);
+   const [refreshTokenLS, setRefreshTokenLS, { removeItem: removeRefreshTokenLS }] = useLocalStorageState<string>('refresh_token', opts);
+   const [accessTokenSS, setAccessTokenSS, { removeItem: removeAccessTokenSS }] = useSessionStorageState<string>('access_token', opts);
+   const [refreshTokenSS, setRefreshTokenSS, { removeItem: removeRefreshTokenSS }] = useSessionStorageState<string>('refresh_token', opts);
 
-   const clearToken = useCallback(() => {
-      removeStorageAccessToken();
-      removeStorageRefreshToken();
-      removeRememberMe();
-      setAccessToken(undefined);
-      setRefreshToken(undefined);
-   }, [removeStorageAccessToken, removeStorageRefreshToken, removeRememberMe]);
+   const [accessToken, setAccessToken] = useState<string | undefined>(accessTokenLS || accessTokenSS);
+   const [refreshToken, setRefreshToken] = useState<string | undefined>(refreshTokenLS || refreshTokenSS);
 
-   const getLoggedInUser = useCallback(() => {
-      if (!accessToken) {
-         return '';
+   const tokenData = useCallback(() => {
+      try {
+         return jwt_decode<apiTokenType>(accessToken || '');
+      } catch (e) {
+         /* Any error we just return empty data */
+         return {
+            sub: '',
+            iat: 0,
+            exp: 0,
+         } as apiTokenType;
       }
-      const jwt = jwt_decode<apiJWTType>(accessToken);
-      return jwt.sub;
    }, [accessToken]);
 
    const runRawRequest = useCallback(
-      async (
-         method: 'GET' | 'POST' | 'PUT',
-         url: string,
-         headers: { [key: string]: string },
-         body?: URLSearchParams | string
-      ): Promise<apiResponseType> => {
-         let status = -1;
+      async <T>(options: apiRequestType<T>): Promise<apiResponseType<T>> => {
+         let code = -1;
          try {
-            setLoading(true);
-            const resp = await fetch(url, { method, headers, body });
-            status = resp.status;
-            if (status == 204) {
-               /* Success with no content */
-               return { success: true, status };
+            const resp = await fetch(options.url, { method: options.method, headers: options.headers, body: options.body });
+            code = resp.status;
+            let data;
+            if (code == 204 && options.url === '/api/oauth2/token/') {
+               /* Successfully validated credentials */
+               data = {
+                  access_token: accessToken || '',
+                  refresh_token: refreshToken || '',
+                  token_type: 'bearer',
+               };
+            } else {
+               data = await resp.json();
+               if (!resp.ok) {
+                  throw new APIError(data.detail, code);
+               }
             }
-            const data = await resp.json();
-            if (!resp.ok) {
-               return { success: false, errmsg: data.detail, status };
+
+            if (options.validate && !options.validate(data)) {
+               throw new APIError('Response validation failed', code);
             }
-            return { success: status >= 200 && status < 300, data, status };
+            if (code >= 400) {
+               throw new APIError(resp.statusText, code);
+            }
+            return { data: data as T, code };
          } catch (error) {
-            return { success: false, errmsg: error instanceof Error ? error.message : String(error), status };
-         } finally {
-            setLoading(false);
+            throw new APIError(error instanceof Error ? error.message : String(error), code);
          }
       },
-      []
+      [accessToken, refreshToken]
    );
 
+   const logout = useCallback(() => {
+      setAccessToken(undefined);
+      setRefreshToken(undefined);
+      removeAccessTokenLS();
+      removeRefreshTokenLS();
+      removeAccessTokenSS();
+      removeRefreshTokenSS();
+   }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS, setAccessToken, setRefreshToken]);
+
    const runTokenRequest = useCallback(
-      async (creds: URLSearchParams): Promise<apiTokenType> => {
-         clearToken();
-         const resp = await runRawRequest('POST', '/api/oauth2/token/', { 'Content-Type': 'application/x-www-form-urlencoded' }, creds);
-         if (!resp.success) {
-            throw new Error('Invalid credentials');
-         }
-         if (!isApiTokenType(resp.data)) {
-            throw new Error('Token data corrupt or missing in response');
-         }
+      async (creds: URLSearchParams): Promise<apiCredentialsType> => {
+         logout();
+         const resp = await runRawRequest<apiCredentialsType>({
+            method: 'POST',
+            url: '/api/oauth2/token/',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: creds,
+            validate: isApiCredentialsType,
+         });
          setAccessToken(resp.data.access_token);
          setRefreshToken(resp.data.refresh_token);
          if (creds.get('remember') === 'true') {
-            setStorageAccessToken(resp.data.access_token);
-            setStorageRefreshToken(resp.data.refresh_token);
-            setRememberMe(true);
+            setAccessTokenLS(resp.data.access_token);
+            setRefreshTokenLS(resp.data.refresh_token);
+         } else {
+            setAccessTokenSS(resp.data.access_token);
+            setRefreshTokenSS(resp.data.refresh_token);
          }
          return resp.data;
       },
-      [runRawRequest, setStorageAccessToken, setStorageRefreshToken, clearToken, setRememberMe]
+      [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, logout, setAccessToken, setRefreshToken]
    );
 
-   const getToken = useCallback(
-      async (email: string, password: string, remember: boolean): Promise<apiTokenType> => {
-         return await runTokenRequest(
+   const login = useCallback(
+      async (user: string, password: string, remember: boolean) => {
+         await runTokenRequest(
             new URLSearchParams({
-               username: email,
+               username: user,
                password,
                remember: remember ? 'true' : 'false',
                grant_type: 'password',
@@ -103,70 +128,43 @@ export const useAPI = () => {
       [runTokenRequest]
    );
 
-   const runAPIRequest = useCallback(
-      async (
-         method: 'GET' | 'POST' | 'PUT',
-         url: string,
-         headers?: { [key: string]: string },
-         body?: URLSearchParams | string
-      ): Promise<apiResponseType> => {
+   const request = useCallback(
+      async <T>(options: apiRequestType<T>): Promise<apiResponseType<T>> => {
          if (!accessToken) {
-            return {
-               status: 401,
-               success: false,
-               errmsg: 'Missing access token',
-            };
+            throw new APIError('Missing access token', 401);
          }
-         if (!headers) {
-            headers = {
+         if (!options.headers) {
+            options.headers = {
                Authorization: `Bearer ${accessToken}`,
             };
-            if (method !== 'GET') {
-               headers['Content-Type'] = 'application/json';
+            if (options.method !== 'GET') {
+               options.headers['Content-Type'] = 'application/json';
             }
          }
-         let resp = await runRawRequest(method, url, headers, body);
-         if (resp.status === 401 && refreshToken) {
-            /* Attempt a token refresh */
-            try {
+         try {
+            return await runRawRequest<T>(options);
+         } catch (error) {
+            if (error instanceof APIError && error.code === 401 && refreshToken) {
+               /* Attempt a token refresh */
                const tokResp = await runTokenRequest(
                   new URLSearchParams({
-                     refresh_token: refreshToken || '',
-                     remember: rememberMe ? 'true' : 'false',
+                     refresh_token: refreshToken,
+                     remember: accessTokenLS ? 'true' : 'false',
                      grant_type: 'refresh_token',
                   })
                );
-               headers.Authorization = `Bearer ${tokResp.access_token}`;
-               resp = await runRawRequest(method, url, headers, body);
-            } catch (e) {
-               /* Ignore any error */
+
+               /* Re-run the query with the new token */
+               options.headers.Authorization = `Bearer ${tokResp.access_token}`;
+               return await runRawRequest<T>(options);
             }
+
+            /* Rethrow */
+            throw error;
          }
-         return resp;
       },
-      [runRawRequest, runTokenRequest, refreshToken, accessToken, rememberMe]
+      [runRawRequest, runTokenRequest, refreshToken, accessToken, accessTokenLS]
    );
 
-   const get = useCallback(
-      async (url: string): Promise<apiResponseType> => {
-         return runAPIRequest('GET', url);
-      },
-      [runAPIRequest]
-   );
-
-   const post = useCallback(
-      async (url: string, body: unknown): Promise<apiResponseType> => {
-         return runAPIRequest('POST', url, undefined, JSON.stringify(body));
-      },
-      [runAPIRequest]
-   );
-
-   const put = useCallback(
-      async (url: string, body: unknown): Promise<apiResponseType> => {
-         return runAPIRequest('PUT', url, undefined, JSON.stringify(body));
-      },
-      [runAPIRequest]
-   );
-
-   return { isLoading, get, post, put, getToken, clearToken, accessToken, refreshToken, getLoggedInUser };
+   return { request, login, logout, tokenData };
 };
