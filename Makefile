@@ -6,7 +6,9 @@
 # Makefile: The recipies for building the budget app
 #
 
-.PHONY: test coverage coverage_html serve clean
+.PHONY: default test coverage coverage_html serve clean
+
+default: build
 
 test:
 	rm -f backend/budget-test.db*
@@ -23,6 +25,9 @@ coverage:
 	cd backend && python3 -m coverage html
 	rm -f backend/budget-test.db*
 	node_modules/.bin/vitest run --coverage
+
+build:
+	npm run build
 
 serve:
 	node_modules/.bin/concurrently "cd backend && uvicorn api:app --reload" "node_modules/.bin/vite --host"
