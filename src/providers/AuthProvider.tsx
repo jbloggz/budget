@@ -9,19 +9,19 @@
 import { PropsWithChildren, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Center, Spinner } from '@chakra-ui/react';
-import { authContextType, credentialsType } from './context.types';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Login } from '../pages';
 import { createContext } from '.';
 import { useAPI } from '../hooks';
+import { LoginCredentials } from '../app.types';
 
-export const AuthContext = createContext<authContextType>();
+export const AuthContext = createContext<{ login: (creds: LoginCredentials) => Promise<void>; logout: () => void }>();
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();
    const api = useAPI();
    const loginQuery = useMutation({
-      mutationFn: useCallback((creds: credentialsType) => api.login(creds.email, creds.password, creds.remember), [api]),
+      mutationFn: useCallback((creds: LoginCredentials) => api.login(creds.email, creds.password, creds.remember), [api]),
    });
    const tokenCheckQuery = useQuery({
       queryKey: ['tokenCheck'],
@@ -29,9 +29,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       staleTime: Infinity,
       cacheTime: Infinity,
       retry: 0,
-      enabled: api.tokenData().exp > 0,
+      enabled: api.expiry > 0,
    });
-   const login = async (creds: credentialsType) => loginQuery.mutateAsync(creds);
+   const login = async (creds: LoginCredentials) => loginQuery.mutateAsync(creds);
    const logout = useCallback(() => {
       api.logout();
       navigate('/');

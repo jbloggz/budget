@@ -15,7 +15,7 @@ describe('Login', () => {
    it('renders the login page', () => {
       render(
          <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
-            <Login />
+            <Login isLoading={false} />
          </AuthContext.Provider>
       );
       const btn = screen.getByRole('button', { name: 'Sign in' });
@@ -26,7 +26,7 @@ describe('Login', () => {
       const mockLogin = vi.fn();
       render(
          <AuthContext.Provider value={{ login: mockLogin, logout: vi.fn() }}>
-            <Login />
+            <Login isLoading={false} />
          </AuthContext.Provider>
       );
       const login_btn = screen.getByRole('button', { name: 'Sign in' });
@@ -38,7 +38,7 @@ describe('Login', () => {
       const mockLogin = vi.fn();
       render(
          <AuthContext.Provider value={{ login: mockLogin, logout: vi.fn() }}>
-            <Login />
+            <Login isLoading={false} />
          </AuthContext.Provider>
       );
       const login_btn = screen.getByRole('button', { name: 'Sign in' });
@@ -53,7 +53,7 @@ describe('Login', () => {
       mockLogin.mockReturnValue(Promise.resolve({success: true}));
       render(
          <AuthContext.Provider value={{ login: mockLogin, logout: vi.fn() }}>
-            <Login />
+            <Login isLoading={false} />
          </AuthContext.Provider>
       );
       const login_btn = screen.getByRole('button', { name: 'Sign in' });

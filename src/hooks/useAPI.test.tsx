@@ -223,7 +223,7 @@ describe('useAPI', () => {
             };
             run();
          }, []); // eslint-disable-line
-         return <p>{api.tokenData().sub}</p>;
+         return <p>{api.user}</p>;
       };
 
       render(<LoginComponent />);
@@ -285,7 +285,7 @@ describe('useAPI', () => {
             };
             run();
          }, []); // eslint-disable-line
-         return <p>{api.tokenData().sub}</p>;
+         return <p>{api.user}</p>;
       };
 
       render(<LoginComponent />);
@@ -489,8 +489,7 @@ describe('useAPI', () => {
       localStorage.setItem('access_token', accessToken);
       const TestComponent = () => {
          const api = useAPI();
-         const data = api.tokenData();
-         return <p role="test">{data.sub}</p>;
+         return <p role="test">{api.user}</p>;
       };
       render(<TestComponent />);
       const val = screen.getByRole('test');
@@ -503,11 +502,15 @@ describe('useAPI', () => {
       mockFetch.setJSONResponse({ hello: 1 });
       localStorage.setItem('access_token', accessToken);
 
-      interface resultType {
+      interface Result {
          hello: string;
       }
-      const validate = (data: object): data is resultType => {
-         return typeof (data as resultType).hello === 'string';
+      const validate = (data: unknown): data is Result => {
+         try {
+            return typeof (data as Result).hello === 'string';
+         } catch {
+            return false;
+         }
       };
 
       const TestComponent = () => {
@@ -538,11 +541,15 @@ describe('useAPI', () => {
       mockFetch.setJSONResponse({ hello: 'world' });
       localStorage.setItem('access_token', accessToken);
 
-      interface resultType {
+      interface Result {
          hello: string;
       }
-      const validate = (data: object): data is resultType => {
-         return typeof (data as resultType).hello === 'string';
+      const validate = (data: unknown): data is Result => {
+         try {
+            return typeof (data as Result).hello === 'string';
+         } catch {
+            return false;
+         }
       };
 
       const TestComponent = () => {

@@ -9,11 +9,12 @@
 import { useLocalStorage } from 'react-use';
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom';
 import { Flex, Box, Heading, Text, ChakraProvider } from '@chakra-ui/react';
-import { themeConfig, themeType } from '../theme';
+import { themeConfig } from '../theme';
 import { ThemeProvider } from '../providers';
+import { Theme } from '../app.types';
 
 const ErrorPage = () => {
-   const [theme, setTheme] = useLocalStorage<themeType>('theme', 'light');
+   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
    const error = useRouteError();
    let status, msg;
    if (isRouteErrorResponse(error)) {

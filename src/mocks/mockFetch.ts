@@ -7,34 +7,41 @@
  */
 
 import { vi } from 'vitest';
-import { mockFetchRequestType, mockFetchResponseType } from '.';
 import { getReasonPhrase } from 'http-status-codes';
+
+export interface MockFetchRequest {
+   url: string;
+   method: string;
+   headers: { [key: string]: string };
+   body: string | null;
+}
+
+export interface MockFetchResponse {
+   body: string;
+   status: number;
+   headers: { [key: string]: string };
+   isError: boolean;
+}
 
 class MockFetch {
    /* Private variables */
    #actual = globalThis.fetch;
    #mock = vi.fn();
    #responses: {
-      fn: (req: mockFetchRequestType) => boolean;
+      fn: (req: MockFetchRequest) => boolean;
       body: string;
       status: number;
       headers: { [key: string]: string };
       isError: boolean;
    }[] = [];
    #enabled = false;
-   #calls: { request: mockFetchRequestType; response: mockFetchResponseType }[] = [];
+   #calls: { request: MockFetchRequest; response: MockFetchResponse }[] = [];
 
-   setResponseIf(fn: (req: mockFetchRequestType) => boolean, body: string, status?: number, headers?: { [key: string]: string }, isError?: boolean) {
+   setResponseIf(fn: (req: MockFetchRequest) => boolean, body: string, status?: number, headers?: { [key: string]: string }, isError?: boolean) {
       this.#responses.unshift({ fn, body, status: status || 200, headers: headers || {}, isError: !!isError });
    }
 
-   setJSONResponseIf(
-      fn: (req: mockFetchRequestType) => boolean,
-      body: object,
-      status?: number,
-      headers?: { [key: string]: string },
-      isError?: boolean
-   ) {
+   setJSONResponseIf(fn: (req: MockFetchRequest) => boolean, body: object, status?: number, headers?: { [key: string]: string }, isError?: boolean) {
       if (!headers) {
          headers = {};
       }
@@ -44,7 +51,7 @@ class MockFetch {
       this.setResponseIf(fn, JSON.stringify(body), status, headers, isError);
    }
 
-   setFailureIf(fn: (req: mockFetchRequestType) => boolean, msg: string) {
+   setFailureIf(fn: (req: MockFetchRequest) => boolean, msg: string) {
       this.setResponseIf(fn, msg, -1, {}, true);
    }
 
@@ -80,7 +87,7 @@ class MockFetch {
          this.#enabled = true;
          globalThis.fetch = this.#mock;
          vi.mocked(this.#mock).mockImplementation((url, params) => {
-            const mockReq: mockFetchRequestType = structuredClone({
+            const mockReq: MockFetchRequest = structuredClone({
                url: String(url),
                method: params?.method || 'GET',
                headers: (params?.headers as { [key: string]: string }) || {},
@@ -91,7 +98,7 @@ class MockFetch {
                   continue;
                }
 
-               const mockResp: mockFetchResponseType = structuredClone({
+               const mockResp: MockFetchResponse = structuredClone({
                   body: resp.body,
                   status: resp.status,
                   headers: resp.headers,
@@ -113,7 +120,7 @@ class MockFetch {
                     } as Response);
             }
 
-            const mockResp: mockFetchResponseType = {
+            const mockResp: MockFetchResponse = {
                body: 'No response implemented',
                status: -1,
                headers: {},

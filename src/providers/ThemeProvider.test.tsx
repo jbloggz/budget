@@ -10,11 +10,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { useEffect } from 'react';
 import { render } from '@testing-library/react';
 import { ChakraProvider } from '@chakra-ui/react';
-import { ThemeContext, ThemeProvider, themeContextType, useContext } from '.';
-import { themeType } from '../theme';
+import { ThemeContext, ThemeProvider, useContext } from '.';
+import { Theme } from '../app.types';
 
 const TestingComponent = () => {
-   const { theme, setTheme } = useContext<themeContextType>(ThemeContext);
+   const { theme, setTheme } = useContext(ThemeContext);
    useEffect(() => {
       setTheme('red');
    }, [setTheme]);
@@ -23,13 +23,13 @@ const TestingComponent = () => {
 
 describe('ThemeProvider', () => {
    it('can render the ThemeProvider', () => {
-      const theme: themeType = 'dark';
+      const theme: Theme = 'dark';
       const setTheme = vi.fn();
       render(<ThemeProvider theme={theme} setTheme={setTheme}></ThemeProvider>);
    });
 
    it('can update the theme', () => {
-      const theme: themeType = 'dark';
+      const theme: Theme = 'dark';
       const setTheme = vi.fn();
       render(
          <ChakraProvider>

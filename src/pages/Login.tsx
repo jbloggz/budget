@@ -28,18 +28,18 @@ import {
    useToast,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
-import { AuthContext, authContextType, credentialsType, useContext } from '../providers';
-import { isNonEmptyString } from '../util';
+import { AuthContext, useContext } from '../providers';
 import { APIError } from '../hooks';
+import { LoginCredentials, isNonEmptyString } from '../app.types';
 
 const Login = ({ isLoading }: { isLoading: boolean }) => {
    const toast = useToast();
-   const { login } = useContext<authContextType>(AuthContext);
+   const { login } = useContext(AuthContext);
    const passwordReveal = useDisclosure();
    const styles = useMultiStyleConfig('Login');
 
    const form = useRef(null);
-   const validateForm = (): credentialsType | null => {
+   const validateForm = (): LoginCredentials | null => {
       if (form.current === null) {
          return null;
       }

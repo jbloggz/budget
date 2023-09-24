@@ -9,11 +9,11 @@
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { Avatar, Button, Center, Heading, Spinner, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
-import { APIError, apiResponseType, useAPI } from '../hooks';
-import { transactionType } from '../app.types';
+import { APIError, useAPI } from '../hooks';
 import { useCallback } from 'react';
+import { APIResponse, APITransactionsList, Transaction } from '../app.types';
 
-const TransactionsTable = (props: { transactions: transactionType[] }) => {
+const TransactionsTable = (props: { transactions: Transaction[] }) => {
    return (
       <TableContainer>
          <Table variant="striped" size={{ base: 'sm', md: 'md' }} whiteSpace="normal">
@@ -66,9 +66,9 @@ const TransactionsTable = (props: { transactions: transactionType[] }) => {
 const Transactions = () => {
    const api = useAPI();
    const toast = useToast();
-   const query = useQuery<apiResponseType<transactionType[]>, APIError>(
+   const query = useQuery<APIResponse<APITransactionsList>, APIError>(
       ['transactions'],
-      useCallback(() => api.request<transactionType[]>({method: 'GET', url: '/api/transaction/'}), [api])
+      useCallback(() => api.request<APITransactionsList>({ method: 'GET', url: '/api/transaction/' }), [api])
    );
 
    if (query.isError) {
@@ -91,7 +91,7 @@ const Transactions = () => {
                <Spinner />
             </Center>
          ) : (
-            <TransactionsTable transactions={query.data ? query.data.data : []} />
+            <TransactionsTable transactions={[]} />
          )}
       </>
    );

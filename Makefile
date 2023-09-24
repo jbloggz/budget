@@ -6,7 +6,7 @@
 # Makefile: The recipies for building the budget app
 #
 
-.PHONY: default test coverage coverage_html serve clean
+.PHONY: default test build lint coverage coverage_html serve clean
 
 default: build
 
@@ -28,6 +28,9 @@ coverage:
 
 build:
 	npm run build
+
+lint:
+	npm run lint
 
 serve:
 	node_modules/.bin/concurrently "cd backend && uvicorn api:app --reload" "node_modules/.bin/vite --host"

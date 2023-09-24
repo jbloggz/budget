@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isNonEmptyString } from './util';
+import { isNonEmptyString } from './app.types';
 
 describe('isNonEmptyString', () => {
    it('correctly checks a non-empty string', () => {

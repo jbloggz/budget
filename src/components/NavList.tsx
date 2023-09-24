@@ -9,11 +9,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarIcon, LockIcon, SettingsIcon, StarIcon, TimeIcon } from '@chakra-ui/icons';
 import { Button, List, ListItem } from '@chakra-ui/react';
-import { AuthContext, authContextType, useContext } from '../providers';
+import { AuthContext, useContext } from '../providers';
 
 const NavList = () => {
    const location = useLocation();
-   const { logout } = useContext<authContextType>(AuthContext);
+   const { logout } = useContext(AuthContext);
    return (
       <List>
          <ListItem>

@@ -7,4 +7,3 @@
  */
 
 export { useAPI, APIError } from './useAPI';
-export type { apiResponseType, apiTokenType, apiCredentialsType, apiRequestType } from './hooks.types';

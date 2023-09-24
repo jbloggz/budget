@@ -9,9 +9,8 @@
 import { extendTheme, withDefaultColorScheme, type ThemeConfig } from '@chakra-ui/react';
 import styles from './styles';
 import { components } from './components';
-import type { themeType } from './theme.types';
+import { Theme } from '../app.types';
 
-export type { themeType } from './theme.types';
 export const themes = ['light', 'dark', 'red', 'orange', 'yellow', 'green', 'blue', 'teal', 'cyan', 'purple', 'pink'] as const;
 
 /* Some global config settings for the theme */
@@ -21,7 +20,7 @@ const config: ThemeConfig = {
    cssVarPrefix: 'jbloggz-budget',
 };
 
-export const themeConfig = (theme: themeType) => {
+export const themeConfig = (theme: Theme) => {
    const colorScheme = theme === 'light' || theme === 'dark' ? 'gray' : theme;
    return extendTheme(
       {

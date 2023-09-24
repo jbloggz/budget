@@ -12,15 +12,16 @@ import { Box, Container, Flex, Show } from '@chakra-ui/react';
 import { ChakraProvider } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { themeConfig, themeType } from '../theme';
+import { themeConfig } from '../theme';
 import { ThemeProvider, AuthProvider } from '../providers';
+import { Theme } from '../app.types';
 import { TopBar, SideBar, BottomNav } from '.';
 
 // The react-query client to inject into the app
 const queryClient = new QueryClient();
 
 export const App = () => {
-   const [theme, setTheme] = useLocalStorage<themeType>('theme', 'light');
+   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
    return (
       <QueryClientProvider client={queryClient}>
          <ChakraProvider theme={themeConfig(theme)}>

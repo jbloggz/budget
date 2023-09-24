@@ -8,21 +8,21 @@
 
 import { Dispatch, PropsWithChildren, SetStateAction, useCallback } from 'react';
 import { useColorMode } from '@chakra-ui/react';
-import { themeType } from '../theme';
-import { createContext, themeContextType } from '.';
+import { Theme } from '../app.types';
+import { createContext } from '.';
 
-export const ThemeContext = createContext<themeContextType>();
+export const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void }>();
 
 interface ThemeProviderProps {
-   theme: themeType;
-   setTheme: Dispatch<SetStateAction<themeType>>;
+   theme: Theme;
+   setTheme: Dispatch<SetStateAction<Theme>>;
 }
 
 export const ThemeProvider = ({ theme, setTheme, children }: PropsWithChildren<ThemeProviderProps>) => {
    const { setColorMode } = useColorMode();
 
    const setAppTheme = useCallback(
-      (newTheme: themeType) => {
+      (newTheme: Theme) => {
          setTheme(newTheme);
          setColorMode(newTheme == 'dark' ? 'dark' : 'light');
       },

@@ -33,15 +33,15 @@ import {
    useStyleConfig,
 } from '@chakra-ui/react';
 import { ChevronDownIcon, HamburgerIcon } from '@chakra-ui/icons';
-import { NavList } from '.';
-import { AuthContext, authContextType, useContext } from '../providers';
+import { AuthContext, useContext } from '../providers';
 import { useAPI } from '../hooks';
+import { NavList } from '.';
 
 const TopBar = () => {
    const { isOpen, onOpen, onClose } = useDisclosure();
    const styles = useStyleConfig('TopBar');
-   const { logout } = useContext<authContextType>(AuthContext);
-   const user = useAPI().tokenData().sub;
+   const { logout } = useContext(AuthContext);
+   const api = useAPI();
 
    /* Close the drawer any time the location changes */
    const location = useLocation();
@@ -77,10 +77,10 @@ const TopBar = () => {
             <Flex flex="1" justify="right" alignItems="center">
                <Menu>
                   <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                     <Avatar name={user} size="sm" />
+                     <Avatar name={api.user} size="sm" />
                   </MenuButton>
                   <MenuList>
-                     <MenuGroup color="gray.500" title={user}>
+                     <MenuGroup color="gray.500" title={api.user}>
                         <MenuItem aria-label="Settings" as={Link} to="settings">
                            Settings
                         </MenuItem>

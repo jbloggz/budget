@@ -6,12 +6,17 @@
  * useAPI.ts: This file contains the useAPI custom hook
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import useLocalStorageState from 'use-local-storage-state';
 import useSessionStorageState from 'use-session-storage-state';
-import { apiResponseType, apiTokenType, apiRequestType, apiCredentialsType } from '.';
-import { isApiCredentialsType } from '../util';
+import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens } from '../app.types';
+
+interface TokenData {
+   sub: string;
+   iat: number;
+   exp: number;
+}
 
 export class APIError extends Error {
    code: number;
@@ -33,21 +38,24 @@ export const useAPI = () => {
    const [accessToken, setAccessToken] = useState<string | undefined>(accessTokenLS || accessTokenSS);
    const [refreshToken, setRefreshToken] = useState<string | undefined>(refreshTokenLS || refreshTokenSS);
 
-   const tokenData = useCallback(() => {
-      try {
-         return jwt_decode<apiTokenType>(accessToken || '');
-      } catch (e) {
-         /* Any error we just return empty data */
-         return {
-            sub: '',
-            iat: 0,
-            exp: 0,
-         } as apiTokenType;
+   const [tokenData, setTokenData] = useState<TokenData>({ sub: '', iat: 0, exp: 0 });
+
+   useEffect(() => {
+      if (accessToken) {
+         try {
+            const decoded = jwt_decode<TokenData>(accessToken);
+            setTokenData(decoded);
+            return;
+         } catch (e) {
+            /* Ignore */
+         }
       }
+
+      setTokenData({ sub: '', iat: 0, exp: 0 });
    }, [accessToken]);
 
    const runRawRequest = useCallback(
-      async <T>(options: apiRequestType<T>): Promise<apiResponseType<T>> => {
+      async <T>(options: APIRequest<T>): Promise<APIResponse<T>> => {
          let code = -1;
          try {
             const resp = await fetch(options.url, { method: options.method, headers: options.headers, body: options.body });
@@ -91,14 +99,14 @@ export const useAPI = () => {
    }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS, setAccessToken, setRefreshToken]);
 
    const runTokenRequest = useCallback(
-      async (creds: URLSearchParams): Promise<apiCredentialsType> => {
+      async (creds: URLSearchParams): Promise<APIAuthTokens> => {
          logout();
-         const resp = await runRawRequest<apiCredentialsType>({
+         const resp = await runRawRequest<APIAuthTokens>({
             method: 'POST',
             url: '/api/oauth2/token/',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: creds,
-            validate: isApiCredentialsType,
+            validate: isAPIAuthTokens,
          });
          setAccessToken(resp.data.access_token);
          setRefreshToken(resp.data.refresh_token);
@@ -109,6 +117,7 @@ export const useAPI = () => {
             setAccessTokenSS(resp.data.access_token);
             setRefreshTokenSS(resp.data.refresh_token);
          }
+
          return resp.data;
       },
       [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, logout, setAccessToken, setRefreshToken]
@@ -129,7 +138,7 @@ export const useAPI = () => {
    );
 
    const request = useCallback(
-      async <T>(options: apiRequestType<T>): Promise<apiResponseType<T>> => {
+      async <T>(options: APIRequest<T>): Promise<APIResponse<T>> => {
          if (!accessToken) {
             throw new APIError('Missing access token', 401);
          }
@@ -166,5 +175,5 @@ export const useAPI = () => {
       [runRawRequest, runTokenRequest, refreshToken, accessToken, accessTokenLS]
    );
 
-   return { request, login, logout, tokenData };
+   return { request, login, logout, user: tokenData.sub, expiry: tokenData.exp };
 };

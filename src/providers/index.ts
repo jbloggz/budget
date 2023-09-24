@@ -9,4 +9,3 @@
 export { createContext, useContext } from './context';
 export { ThemeContext, ThemeProvider } from './ThemeProvider';
 export { AuthContext, AuthProvider } from './AuthProvider';
-export type { themeContextType, authContextType, credentialsType } from './context.types';
