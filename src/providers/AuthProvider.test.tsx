@@ -54,8 +54,8 @@ describe('AuthProvider', () => {
    it('is logged in initially with valid token', async () => {
       const queryClient = new QueryClient();
       const now = Math.floor(Date.now() / 1000);
-      const accessToken = jwtEncode({sub: 'joe@example.com', iat: now - 300, exp: now + 300}, 'secret');
-      const refreshToken = jwtEncode({sub: 'joe@example.com', iat: now - 300, exp: now + 3000}, 'secret');
+      const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 300, exp: now + 300 }, 'secret');
+      const refreshToken = jwtEncode({ sub: 'joe@example.com', iat: now - 300, exp: now + 3000 }, 'secret');
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
       mockFetch.setResponseIf(
@@ -81,10 +81,10 @@ describe('AuthProvider', () => {
    it('is logged in initially with valid refresh token', async () => {
       const queryClient = new QueryClient();
       const now = Math.floor(Date.now() / 1000);
-      const oldAccessToken = jwtEncode({sub: 'joe@example.com', iat: now - 600, exp: now - 300}, 'secret');
-      const oldRefreshToken = jwtEncode({sub: 'joe@example.com', iat: now - 600, exp: now + 3000}, 'secret');
-      const newAccessToken = jwtEncode({sub: 'joe@example.com', iat: now, exp: now + 300}, 'secret');
-      const newRefreshToken = jwtEncode({sub: 'joe@example.com', iat: now, exp: now + 3000}, 'secret');
+      const oldAccessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 600, exp: now - 300 }, 'secret');
+      const oldRefreshToken = jwtEncode({ sub: 'joe@example.com', iat: now - 600, exp: now + 3000 }, 'secret');
+      const newAccessToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now + 300 }, 'secret');
+      const newRefreshToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now + 3000 }, 'secret');
       localStorage.setItem('access_token', oldAccessToken);
       localStorage.setItem('refresh_token', oldRefreshToken);
 

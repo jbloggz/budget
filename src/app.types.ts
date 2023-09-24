@@ -14,7 +14,7 @@ export type Theme = (typeof themes)[number] | undefined;
 
 /* A single transaction */
 export interface Transaction {
-   id?: number,
+   id?: number;
    date: string;
    amount: number;
    description: string;

@@ -50,7 +50,7 @@ describe('Login', () => {
 
    it('Do attempt to login if user/password is filled in', () => {
       const mockLogin = vi.fn();
-      mockLogin.mockReturnValue(Promise.resolve({success: true}));
+      mockLogin.mockReturnValue(Promise.resolve({ success: true }));
       render(
          <AuthContext.Provider value={{ login: mockLogin, logout: vi.fn() }}>
             <Login isLoading={false} />

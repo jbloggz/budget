@@ -15,7 +15,9 @@ const Settings = () => {
    const { theme, setTheme } = useContext(ThemeContext);
    return (
       <>
-         <Heading pb="8" size="lg">Settings</Heading>
+         <Heading pb="8" size="lg">
+            Settings
+         </Heading>
          <FormControl>
             <FormLabel htmlFor="theme">Theme</FormLabel>
             <Select placeholder="Select theme..." value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
