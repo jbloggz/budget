@@ -13,16 +13,17 @@ import { useAPI } from '../hooks';
 import { useCallback, useEffect, useState } from 'react';
 
 type SortColumn = 'date' | 'description' | 'amount';
+type SortOrder = 'asc' | 'desc';
 
 interface TransactionsTableProps {
    transactions: Transaction[];
    sortColumn: SortColumn;
-   sortAscending: boolean;
-   setSort: (col: SortColumn, asc: boolean) => void;
+   sortOrder: SortOrder;
+   setSort: (col: SortColumn, order: SortOrder) => void;
 }
 
 const TransactionsTable = (props: TransactionsTableProps) => {
-   const sortIcon = props.sortAscending ? <ChevronUpIcon /> : <ChevronDownIcon />;
+   const sortIcon = props.sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />;
    return (
       <TableContainer>
          <Table variant="striped" size={{ base: 'sm', md: 'md' }} whiteSpace="normal">
@@ -33,7 +34,7 @@ const TransactionsTable = (props: TransactionsTableProps) => {
                      <Button
                         variant={'ghost'}
                         size={'sm'}
-                        onClick={() => props.setSort('date', props.sortColumn === 'date' ? !props.sortAscending : true)}
+                        onClick={() => props.setSort('date', props.sortColumn === 'date' && props.sortOrder === 'desc' ? 'asc' : 'desc')}
                      >
                         Date {props.sortColumn === 'date' ? sortIcon : ''}
                      </Button>
@@ -42,7 +43,9 @@ const TransactionsTable = (props: TransactionsTableProps) => {
                      <Button
                         variant={'ghost'}
                         size={'sm'}
-                        onClick={() => props.setSort('description', props.sortColumn === 'description' ? !props.sortAscending : true)}
+                        onClick={() =>
+                           props.setSort('description', props.sortColumn === 'description' && props.sortOrder === 'desc' ? 'asc' : 'desc')
+                        }
                      >
                         Description {props.sortColumn === 'description' ? sortIcon : ''}
                      </Button>
@@ -51,7 +54,7 @@ const TransactionsTable = (props: TransactionsTableProps) => {
                      <Button
                         variant={'ghost'}
                         size={'sm'}
-                        onClick={() => props.setSort('amount', props.sortColumn === 'amount' ? !props.sortAscending : true)}
+                        onClick={() => props.setSort('amount', props.sortColumn === 'amount' && props.sortOrder === 'desc' ? 'asc' : 'desc')}
                      >
                         Amount {props.sortColumn === 'amount' ? sortIcon : ''}
                      </Button>
@@ -87,9 +90,13 @@ const TransactionsTable = (props: TransactionsTableProps) => {
 const Transactions = () => {
    const toast = useToast();
    const api = useAPI();
-   const query = api.useQuery<TransactionList>({ method: 'GET', url: '/api/transaction/', validate: isTransactionList });
    const [sortColumn, setSortColumn] = useState<SortColumn>('date');
-   const [sortAscending, setSortAscending] = useState(false);
+   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+   const query = api.useQuery<TransactionList>({
+      method: 'GET',
+      url: '/api/transaction/',
+      validate: isTransactionList,
+   });
 
    useEffect(() => {
       if (query.isError) {
@@ -103,11 +110,11 @@ const Transactions = () => {
    }, [query, toast]);
 
    const setSort = useCallback(
-      (col: SortColumn, asc: boolean) => {
+      (col: SortColumn, order: SortOrder) => {
          setSortColumn(col);
-         setSortAscending(asc);
+         setSortOrder(order);
       },
-      [setSortColumn, setSortAscending]
+      [setSortColumn, setSortOrder]
    );
 
    return (
@@ -122,7 +129,7 @@ const Transactions = () => {
          ) : (
             <TransactionsTable
                transactions={query.data ? query.data.data.transactions : []}
-               sortAscending={sortAscending}
+               sortOrder={sortOrder}
                sortColumn={sortColumn}
                setSort={setSort}
             />
