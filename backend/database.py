@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 import time
 
 # Local imports
-from model import Transaction, Allocation
+from model import Transaction, TransactionList, Allocation
 
 
 class Database:
@@ -125,29 +125,7 @@ class Database:
         '''
         self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ? WHERE id = ?', (txn.date, txn.amount, txn.description, txn.source, txn_id))
 
-    def get_all_transactions(self) -> List[Transaction]:
-        '''
-        Get list of transaction based on a filter expression
-
-        Args:
-            filter: An SQL filter expression
-
-        Returns:
-            A list of transactions that match the filter
-        '''
-        self.db.execute(f'SELECT id, date, amount, description, source FROM txn')
-        res = []
-        for row in self.db:
-            res.append(Transaction(
-                id=row[0],
-                date=row[1],
-                amount=row[2],
-                description=row[3],
-                source=row[4],
-            ))
-        return res
-
-    def get_transaction_list(self, expr: str, params: Optional[Tuple] = ()) -> List[Transaction]:
+    def get_transaction_list(self, expr: Optional[str] = None, params: Optional[Tuple] = ()) -> TransactionList:
         '''
         Get list of transaction based on a filter expression
 
@@ -158,10 +136,14 @@ class Database:
         Returns:
             A list of transactions that match the filter
         '''
-        self.db.execute(f'SELECT id, date, amount, description, source FROM txn WHERE {expr}', params)
-        res = []
+        if expr:
+            self.db.execute(f'SELECT id, date, amount, description, source FROM txn WHERE {expr}', params)
+        else:
+            self.db.execute(f'SELECT id, date, amount, description, source FROM txn')
+        res = TransactionList(total=0, transactions=[])
         for row in self.db:
-            res.append(Transaction(
+            res.total += 1
+            res.transactions.append(Transaction(
                 id=row[0],
                 date=row[1],
                 amount=row[2],
@@ -181,7 +163,7 @@ class Database:
             The transaction, or None if the id is invalid
         '''
         txn_list = self.get_transaction_list(f'id = {txn_id}')
-        return txn_list[0] if txn_list else None
+        return txn_list.transactions[0] if txn_list.transactions else None
 
     def get_category_id(self, name: str) -> int:
         '''

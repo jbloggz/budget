@@ -8,10 +8,9 @@
 
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { Avatar, Button, Center, Heading, Spinner, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from '@chakra-ui/react';
-import { useQuery } from '@tanstack/react-query';
-import { APIError, useAPI } from '../hooks';
-import { useCallback } from 'react';
-import { APIResponse, APITransactionsList, Transaction } from '../app.types';
+import { TransactionList, Transaction, isTransactionList } from '../app.types';
+import { useAPI } from '../hooks';
+import { useEffect } from 'react';
 
 const TransactionsTable = (props: { transactions: Transaction[] }) => {
    return (
@@ -39,7 +38,7 @@ const TransactionsTable = (props: { transactions: Transaction[] }) => {
             </Thead>
             <Tbody>
                {props.transactions.map((txn) => (
-                  <Tr>
+                  <Tr key={txn.id}>
                      <td>
                         <Avatar
                            src={'/' + txn.source.replaceAll(' ', '') + '.png'}
@@ -64,22 +63,20 @@ const TransactionsTable = (props: { transactions: Transaction[] }) => {
 };
 
 const Transactions = () => {
-   const api = useAPI();
    const toast = useToast();
-   const query = useQuery<APIResponse<APITransactionsList>, APIError>(
-      ['transactions'],
-      useCallback(() => api.request<APITransactionsList>({ method: 'GET', url: '/api/transaction/' }), [api])
-   );
+   const api = useAPI();
+   const query = api.useQuery<TransactionList>({ method: 'GET', url: '/api/transaction/', validate: isTransactionList });
 
-   if (query.isError) {
-      toast.closeAll();
-      toast({
-         title: 'Error',
-         description: query.error.message,
-         status: 'error',
-         duration: 5000,
-      });
-   }
+   useEffect(() => {
+      if (query.isError) {
+         toast({
+            title: 'Error',
+            description: query.error.message,
+            status: 'error',
+            duration: 5000,
+         });
+      }
+   }, [query, toast]);
 
    return (
       <>
@@ -91,7 +88,7 @@ const Transactions = () => {
                <Spinner />
             </Center>
          ) : (
-            <TransactionsTable transactions={[]} />
+            <TransactionsTable transactions={query.data ? query.data.data.transactions : []} />
          )}
       </>
    );

@@ -11,6 +11,7 @@ import jwt_decode from 'jwt-decode';
 import useLocalStorageState from 'use-local-storage-state';
 import useSessionStorageState from 'use-session-storage-state';
 import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens } from '../app.types';
+import { UseMutationOptions, UseQueryOptions, useQuery as useReactQuery, useMutation as useReactMutation } from '@tanstack/react-query';
 
 interface TokenData {
    sub: string;
@@ -96,10 +97,11 @@ export const useAPI = () => {
       removeRefreshTokenLS();
       removeAccessTokenSS();
       removeRefreshTokenSS();
+      return Promise.resolve({code: 200} as APIResponse<void>);
    }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS, setAccessToken, setRefreshToken]);
 
    const runTokenRequest = useCallback(
-      async (creds: URLSearchParams): Promise<APIAuthTokens> => {
+      async (creds: URLSearchParams): Promise<APIResponse<APIAuthTokens>> => {
          logout();
          const resp = await runRawRequest<APIAuthTokens>({
             method: 'POST',
@@ -118,14 +120,14 @@ export const useAPI = () => {
             setRefreshTokenSS(resp.data.refresh_token);
          }
 
-         return resp.data;
+         return resp;
       },
       [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, logout, setAccessToken, setRefreshToken]
    );
 
    const login = useCallback(
       async (user: string, password: string, remember: boolean) => {
-         await runTokenRequest(
+         return await runTokenRequest(
             new URLSearchParams({
                username: user,
                password,
@@ -164,7 +166,7 @@ export const useAPI = () => {
                );
 
                /* Re-run the query with the new token */
-               options.headers.Authorization = `Bearer ${tokResp.access_token}`;
+               options.headers.Authorization = `Bearer ${tokResp.data.access_token}`;
                return await runRawRequest<T>(options);
             }
 
@@ -175,5 +177,28 @@ export const useAPI = () => {
       [runRawRequest, runTokenRequest, refreshToken, accessToken, accessTokenLS]
    );
 
-   return { request, login, logout, user: tokenData.sub, expiry: tokenData.exp };
+   const useQuery = <T>(apiOpts: APIRequest<T>, queryOpts?: UseQueryOptions<APIResponse<T>, APIError>) => {
+      if (!queryOpts) {
+         queryOpts = {};
+      }
+      if (!queryOpts.queryKey) {
+         queryOpts.queryKey = [apiOpts.method, apiOpts.url];
+      }
+      return useReactQuery<APIResponse<T>, APIError>({
+         ...queryOpts,
+         queryFn: useCallback(() => request<T>(apiOpts), [apiOpts]),
+      });
+   };
+
+   const useMutation = <TOutput, TInput = void>(fn: (data: TInput) => Promise<APIResponse<TOutput>>, mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>) => {
+      if (!mutationOpts) {
+         mutationOpts = {};
+      }
+      return useReactMutation<APIResponse<TOutput>, APIError, TInput>({
+         ...mutationOpts,
+         mutationFn: fn,
+      });
+   };
+
+   return { request, login, logout, useQuery, useMutation, user: tokenData.sub, expiry: tokenData.exp };
 };

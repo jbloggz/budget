@@ -17,7 +17,7 @@ from typing import List, Dict
 from difflib import get_close_matches
 
 # Local imports
-from model import Transaction
+from model import Transaction, TransactionList
 from database import Database
 
 
@@ -45,7 +45,7 @@ def run_scraper(node: str, secrets: str, path: str) -> List[Transaction]:  # pra
     return [Transaction(**txn) for txn in data['transactions']]
 
 
-def build_txn_map(transactions: List[Transaction]) -> TxnMapType:
+def build_txn_map(txn_list: TransactionList) -> TxnMapType:
     '''
     Converts a list of transactions to a map of:
         source -> date -> amount -> description -> count
@@ -57,7 +57,7 @@ def build_txn_map(transactions: List[Transaction]) -> TxnMapType:
         the mapping of transactions
     '''
     txn_map: Dict = {}
-    for txn in transactions:
+    for txn in txn_list.transactions:
         if txn.source not in txn_map:
             txn_map[txn.source] = {}
         if txn.date not in txn_map[txn.source]:
@@ -80,7 +80,7 @@ def prune_existing_transactions(transactions: List[Transaction], db) -> List[Tra
     Returns:
         The remaining transactions after pruning
     '''
-    existing_txn_map = build_txn_map(db.get_all_transactions())
+    existing_txn_map = build_txn_map(db.get_transaction_list())
 
     # First prune any exact matches
     for txn in transactions:

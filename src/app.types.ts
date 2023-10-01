@@ -22,7 +22,7 @@ export interface Transaction {
 }
 
 /* A list of transactions */
-export type APITransactionsList = {
+export type TransactionList = {
    total: number;
    transactions: Transaction[];
 };
@@ -66,6 +66,37 @@ export const isAPIAuthTokens = (val: unknown): val is APIAuthTokens => {
    try {
       const test = val as APIAuthTokens;
       return typeof test.access_token === 'string' && typeof test.refresh_token === 'string' && test.token_type === 'bearer';
+   } catch {
+      return false;
+   }
+};
+
+/* Type predicate for APITransaction */
+export const isTransaction = (val: unknown): val is Transaction => {
+   try {
+      const test = val as Transaction;
+      return (
+         (typeof test.id === 'undefined' || typeof test.id === 'number') &&
+         typeof test.date === 'string' &&
+         typeof test.amount === 'number' &&
+         typeof test.description === 'string' &&
+         typeof test.source === 'string'
+      );
+   } catch {
+      return false;
+   }
+};
+
+/* Type predicate for TransactionList */
+export const isTransactionList = (val: unknown): val is TransactionList => {
+   try {
+      const test = val as TransactionList;
+      return (
+         typeof test.total === 'number' &&
+         Array.isArray(test.transactions) &&
+         test.transactions.every((t) => isTransaction(t)) &&
+         test.total >= test.transactions.length
+      );
    } catch {
       return false;
    }

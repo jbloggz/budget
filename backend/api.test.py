@@ -118,9 +118,11 @@ class TestDatabase(unittest.TestCase):
             db.add_transaction(Transaction(date='2023-07-04', amount=938230, description='Joe Pty Ltd', source='Bank of Foo'))
             db.add_transaction(Transaction(date='2023-07-04', amount=29120, description='Joe Pty Ltd', source='Bank of Foo'))
             txn_list = db.get_transaction_list('description = \'Joe Pty Ltd\'')
-            self.assertEqual(len(txn_list), 3)
+            self.assertEqual(txn_list.total, 3)
+            self.assertEqual(len(txn_list.transactions), 3)
             txn_list = db.get_transaction_list('description = ?', ('Joe Pty Ltd',))
-            self.assertEqual(len(txn_list), 3)
+            self.assertEqual(txn_list.total, 3)
+            self.assertEqual(len(txn_list.transactions), 3)
 
     def test_default_allocation_added_when_transaction_added(self) -> None:
         with db:
@@ -340,11 +342,13 @@ class TestAPI(unittest.TestCase):
             txn = db.add_transaction(Transaction(date='2023-07-15', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
         response = self.client.get(f'/api/transaction/?query=id={txn.id}')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()), 1)
-        self.assertEqual(response.json()[0]['id'], txn.id)
-        self.assertEqual(response.json()[0]['amount'], 3456)
-        self.assertEqual(response.json()[0]['description'], 'FooBar Enterprises')
-        self.assertEqual(response.json()[0]['source'], 'Bank of Foo')
+        self.assertEqual(response.json()['total'], 1)
+        transactions = response.json()['transactions']
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual(transactions[0]['id'], txn.id)
+        self.assertEqual(transactions[0]['amount'], 3456)
+        self.assertEqual(transactions[0]['description'], 'FooBar Enterprises')
+        self.assertEqual(transactions[0]['source'], 'Bank of Foo')
 
     def test_get_all_transactions(self) -> None:
         with db:
@@ -354,7 +358,8 @@ class TestAPI(unittest.TestCase):
             db.add_transaction(Transaction(date='2023-07-18', amount=3856, description='FooBar Enterprises4', source='Bank of Foo'))
         response = self.client.get(f'/api/transaction/')
         self.assertEqual(response.status_code, 200)
-        self.assertGreaterEqual(len(response.json()), 4)
+        self.assertGreaterEqual(response.json()['total'], 4)
+        self.assertGreaterEqual(len(response.json()['transactions']), 4)
 
     def test_get_existing_allocations(self) -> None:
         with db:

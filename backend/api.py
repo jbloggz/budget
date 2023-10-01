@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 # Local imports
 from database import Database
-from model import Transaction, Allocation, Token, OAuth2RequestForm
+from model import Transaction, TransactionList, Allocation, Token, OAuth2RequestForm
 from auth import create_token, verify_user, validate_access_token, validate_refresh_token
 
 
@@ -29,10 +29,10 @@ def add_transaction(txn: Transaction) -> Transaction:
     return txn
 
 
-@app.get('/api/transaction/', response_model=List[Transaction], dependencies=[Depends(validate_access_token)])
-def get_transactions(query: str | None = None) -> List[Transaction]:
+@app.get('/api/transaction/', response_model=TransactionList, dependencies=[Depends(validate_access_token)])
+def get_transactions(query: str | None = None) -> TransactionList:
     with db:
-        return db.get_transaction_list(query) if query else db.get_all_transactions()
+        return db.get_transaction_list(query)
 
 
 @app.get('/api/allocation/', response_model=List[Allocation], dependencies=[Depends(validate_access_token)])

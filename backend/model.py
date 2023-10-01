@@ -7,7 +7,7 @@
 #
 
 # System imports
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 from fastapi.param_functions import Form
 
@@ -18,6 +18,11 @@ class Transaction(BaseModel):
     amount: int
     description: str
     source: str
+
+
+class TransactionList(BaseModel):
+    total: int
+    transactions: List[Transaction]
 
 
 class Allocation(BaseModel):

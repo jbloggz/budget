@@ -9,34 +9,36 @@
 import { PropsWithChildren, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Center, Spinner } from '@chakra-ui/react';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { Login } from '../pages';
 import { createContext } from '.';
 import { useAPI } from '../hooks';
-import { LoginCredentials } from '../app.types';
+import { APIAuthTokens, APIResponse, LoginCredentials } from '../app.types';
 
-export const AuthContext = createContext<{ login: (creds: LoginCredentials) => Promise<void>; logout: () => void }>();
+export const AuthContext = createContext<{ login: (creds: LoginCredentials) => Promise<APIResponse<APIAuthTokens>>; logout: () => void }>();
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
    const navigate = useNavigate();
    const api = useAPI();
-   const loginQuery = useMutation({
-      mutationFn: useCallback((creds: LoginCredentials) => api.login(creds.email, creds.password, creds.remember), [api]),
-   });
-   const tokenCheckQuery = useQuery({
-      queryKey: ['tokenCheck'],
-      queryFn: useCallback(() => api.request({ method: 'GET', url: '/api/oauth2/token/' }), [api]),
-      staleTime: Infinity,
-      cacheTime: Infinity,
-      retry: 0,
-      enabled: api.expiry > 0,
-   });
+   const loginQuery = api.useMutation(useCallback((creds: LoginCredentials) => api.login(creds.email, creds.password, creds.remember), [api]));
+   const logoutQuery = api.useMutation(useCallback(() => api.logout(), [api]));
+   const tokenCheckQuery = api.useQuery(
+      {
+         method: 'GET',
+         url: '/api/oauth2/token/',
+      },
+      {
+         staleTime: Infinity,
+         cacheTime: Infinity,
+         retry: 0,
+         enabled: api.expiry > 0,
+      }
+   );
    const login = async (creds: LoginCredentials) => loginQuery.mutateAsync(creds);
    const logout = useCallback(() => {
-      api.logout();
+      logoutQuery.mutateAsync();
       navigate('/');
       window.location.reload();
-   }, [navigate, api]);
+   }, [navigate, logoutQuery]);
 
    return (
       <AuthContext.Provider value={{ login, logout }}>
