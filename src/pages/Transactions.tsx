@@ -91,10 +91,14 @@ const Transactions = () => {
    const toast = useToast();
    const api = useAPI();
    const [sortColumn, setSortColumn] = useState<SortColumn>('date');
-   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
    const query = api.useQuery<TransactionList>({
       method: 'GET',
       url: '/api/transaction/',
+      params: new URLSearchParams({
+         sort_column: sortColumn,
+         sort_order: sortOrder,
+      }),
       validate: isTransactionList,
    });
 
@@ -122,7 +126,7 @@ const Transactions = () => {
          <Heading pb="8" size="lg">
             Transactions
          </Heading>
-         {query.isLoading ? (
+         {query.isFetching ? (
             <Center>
                <Spinner />
             </Center>

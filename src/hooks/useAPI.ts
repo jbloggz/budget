@@ -59,7 +59,11 @@ export const useAPI = () => {
       async <T>(options: APIRequest<T>): Promise<APIResponse<T>> => {
          let code = -1;
          try {
-            const resp = await fetch(options.url, { method: options.method, headers: options.headers, body: options.body });
+            let url = options.url;
+            if (options.params) {
+               url += '?' + options.params.toString();
+            }
+            const resp = await fetch(url, { method: options.method, headers: options.headers, body: options.body });
             code = resp.status;
             let data;
             if (code == 204 && options.url === '/api/oauth2/token/') {
@@ -97,7 +101,7 @@ export const useAPI = () => {
       removeRefreshTokenLS();
       removeAccessTokenSS();
       removeRefreshTokenSS();
-      return Promise.resolve({code: 200} as APIResponse<void>);
+      return Promise.resolve({ code: 200 } as APIResponse<void>);
    }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS, setAccessToken, setRefreshToken]);
 
    const runTokenRequest = useCallback(
@@ -107,7 +111,7 @@ export const useAPI = () => {
             method: 'POST',
             url: '/api/oauth2/token/',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: creds,
+            body: creds.toString(),
             validate: isAPIAuthTokens,
          });
          setAccessToken(resp.data.access_token);
@@ -182,7 +186,14 @@ export const useAPI = () => {
          queryOpts = {};
       }
       if (!queryOpts.queryKey) {
-         queryOpts.queryKey = [apiOpts.method, apiOpts.url];
+         const queryKey = [apiOpts.method, apiOpts.url];
+         if (apiOpts.params) {
+            for (const [key, value] of apiOpts.params) {
+               queryKey.push(key);
+               queryKey.push(value);
+            }
+         }
+         queryOpts.queryKey = queryKey;
       }
       return useReactQuery<APIResponse<T>, APIError>({
          ...queryOpts,
@@ -190,7 +201,10 @@ export const useAPI = () => {
       });
    };
 
-   const useMutation = <TOutput, TInput = void>(fn: (data: TInput) => Promise<APIResponse<TOutput>>, mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>) => {
+   const useMutation = <TOutput, TInput = void>(
+      fn: (data: TInput) => Promise<APIResponse<TOutput>>,
+      mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>
+   ) => {
       if (!mutationOpts) {
          mutationOpts = {};
       }

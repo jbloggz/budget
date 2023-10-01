@@ -8,7 +8,7 @@
 
 # System imports
 import os
-from typing import List, Annotated
+from typing import List, Annotated,Optional
 from fastapi import FastAPI, Query, Depends, HTTPException, status, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -30,9 +30,11 @@ def add_transaction(txn: Transaction) -> Transaction:
 
 
 @app.get('/api/transaction/', response_model=TransactionList, dependencies=[Depends(validate_access_token)])
-def get_transactions(query: str | None = None) -> TransactionList:
+def get_transactions(query: Optional[str] = None, sort_column: str = 'date', sort_order: str = 'desc') -> TransactionList:
     with db:
-        return db.get_transaction_list(query)
+        if not query:
+            query = '1'
+        return db.get_transaction_list(f'{query} ORDER BY {sort_column} {sort_order}')
 
 
 @app.get('/api/allocation/', response_model=List[Allocation], dependencies=[Depends(validate_access_token)])

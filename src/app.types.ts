@@ -32,7 +32,8 @@ export interface APIRequest<T> {
    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
    url: string;
    headers?: { [key: string]: string };
-   body?: URLSearchParams | string;
+   params?: URLSearchParams;
+   body?: string;
    validate?: (data: unknown) => data is T;
 }
 

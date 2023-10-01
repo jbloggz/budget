@@ -60,6 +60,41 @@ describe('useAPI', () => {
       expect(resp.body).toBe('{"hello":"world"}');
    });
 
+   it('can make a GET request with parameters', async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 300, exp: now + 300 }, 'secret');
+      mockFetch.setJSONResponse({ hello: 'world' });
+      localStorage.setItem('access_token', accessToken);
+      const TestComponent = () => {
+         const [value, setValue] = useState('');
+         const api = useAPI();
+         useEffect(() => {
+            const run = async () => {
+               const resp = await api.request<{ hello: string }>({
+                  method: 'GET',
+                  url: '/foo/get/',
+                  params: new URLSearchParams({ foo: 'bar', hello: 'world' }),
+               });
+               setValue(resp.data.hello);
+            };
+            run();
+         }, []); // eslint-disable-line
+         return <p>{value}</p>;
+      };
+      render(<TestComponent />);
+      await waitFor(() => screen.getByText('world'));
+      expect(mockFetch.calls().length).toEqual(1);
+      const req = mockFetch.calls()[0].request;
+      const resp = mockFetch.calls()[0].response;
+      expect(req.url).toEqual('/foo/get/?foo=bar&hello=world');
+      expect(req.method).toEqual('GET');
+      expect(req.body).toBeNull();
+      expect(req.headers['Authorization']).toEqual('Bearer ' + accessToken);
+      expect(req.headers['Content-Type']).not.toBeDefined();
+      expect(resp.status).toBe(200);
+      expect(resp.body).toBe('{"hello":"world"}');
+   });
+
    it('can make a POST request with a valid token', async () => {
       const now = Math.floor(Date.now() / 1000);
       const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 300, exp: now + 300 }, 'secret');
