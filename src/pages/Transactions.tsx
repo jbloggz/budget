@@ -6,13 +6,23 @@
  * Transactions.tsx: This file contains the transactions page component
  */
 
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { Avatar, Button, Center, Heading, Spinner, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from '@chakra-ui/react';
 import { TransactionList, Transaction, isTransactionList } from '../app.types';
 import { useAPI } from '../hooks';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-const TransactionsTable = (props: { transactions: Transaction[] }) => {
+type SortColumn = 'date' | 'description' | 'amount';
+
+interface TransactionsTableProps {
+   transactions: Transaction[];
+   sortColumn: SortColumn;
+   sortAscending: boolean;
+   setSort: (col: SortColumn, asc: boolean) => void;
+}
+
+const TransactionsTable = (props: TransactionsTableProps) => {
+   const sortIcon = props.sortAscending ? <ChevronUpIcon /> : <ChevronDownIcon />;
    return (
       <TableContainer>
          <Table variant="striped" size={{ base: 'sm', md: 'md' }} whiteSpace="normal">
@@ -20,18 +30,30 @@ const TransactionsTable = (props: { transactions: Transaction[] }) => {
                <Tr>
                   <Th></Th>
                   <Th>
-                     <Button variant={'ghost'} size={'sm'}>
-                        Date <ChevronDownIcon />
+                     <Button
+                        variant={'ghost'}
+                        size={'sm'}
+                        onClick={() => props.setSort('date', props.sortColumn === 'date' ? !props.sortAscending : true)}
+                     >
+                        Date {props.sortColumn === 'date' ? sortIcon : ''}
                      </Button>
                   </Th>
                   <Th>
-                     <Button variant={'ghost'} size={'sm'}>
-                        Description
+                     <Button
+                        variant={'ghost'}
+                        size={'sm'}
+                        onClick={() => props.setSort('description', props.sortColumn === 'description' ? !props.sortAscending : true)}
+                     >
+                        Description {props.sortColumn === 'description' ? sortIcon : ''}
                      </Button>
                   </Th>
                   <Th>
-                     <Button variant={'ghost'} size={'sm'}>
-                        Amount
+                     <Button
+                        variant={'ghost'}
+                        size={'sm'}
+                        onClick={() => props.setSort('amount', props.sortColumn === 'amount' ? !props.sortAscending : true)}
+                     >
+                        Amount {props.sortColumn === 'amount' ? sortIcon : ''}
                      </Button>
                   </Th>
                </Tr>
@@ -66,6 +88,8 @@ const Transactions = () => {
    const toast = useToast();
    const api = useAPI();
    const query = api.useQuery<TransactionList>({ method: 'GET', url: '/api/transaction/', validate: isTransactionList });
+   const [sortColumn, setSortColumn] = useState<SortColumn>('date');
+   const [sortAscending, setSortAscending] = useState(false);
 
    useEffect(() => {
       if (query.isError) {
@@ -78,6 +102,14 @@ const Transactions = () => {
       }
    }, [query, toast]);
 
+   const setSort = useCallback(
+      (col: SortColumn, asc: boolean) => {
+         setSortColumn(col);
+         setSortAscending(asc);
+      },
+      [setSortColumn, setSortAscending]
+   );
+
    return (
       <>
          <Heading pb="8" size="lg">
@@ -88,7 +120,12 @@ const Transactions = () => {
                <Spinner />
             </Center>
          ) : (
-            <TransactionsTable transactions={query.data ? query.data.data.transactions : []} />
+            <TransactionsTable
+               transactions={query.data ? query.data.data.transactions : []}
+               sortAscending={sortAscending}
+               sortColumn={sortColumn}
+               setSort={setSort}
+            />
          )}
       </>
    );
