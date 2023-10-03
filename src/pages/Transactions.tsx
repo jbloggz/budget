@@ -6,11 +6,36 @@
  * Transactions.tsx: This file contains the transactions page component
  */
 
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
-import { Avatar, Button, Center, Heading, Spinner, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from '@chakra-ui/react';
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronDownIcon, ChevronUpIcon, SearchIcon } from '@chakra-ui/icons';
+import {
+   Avatar,
+   Button,
+   Center,
+   Divider,
+   FormControl,
+   FormHelperText,
+   FormLabel,
+   HStack,
+   Heading,
+   Input,
+   InputGroup,
+   InputLeftElement,
+   Spinner,
+   Stack,
+   Table,
+   TableContainer,
+   Tbody,
+   Td,
+   Text,
+   Th,
+   Thead,
+   Tr,
+   useToast,
+} from '@chakra-ui/react';
 import { TransactionList, Transaction, isTransactionList } from '../app.types';
 import { useAPI } from '../hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { DateRangePicker } from '../components';
 
 type SortColumn = 'date' | 'description' | 'amount';
 type SortOrder = 'asc' | 'desc';
@@ -21,6 +46,31 @@ interface TransactionsTableProps {
    sortOrder: SortOrder;
    setSort: (col: SortColumn, order: SortOrder) => void;
 }
+
+const TransactionsTableFilters = () => {
+   const [dates, setDates] = useState<Date[]>([new Date(), new Date()]);
+   const onDateChange = (dates: Date[]) => {
+      console.log(dates);
+      setDates(dates);
+   };
+   return (
+      <Stack direction={{base: 'column', md: 'row'}}>
+         <FormControl>
+            <FormLabel>Date Range</FormLabel>
+            <DateRangePicker dates={dates} onDateChange={onDateChange} />
+         </FormControl>
+         <FormControl>
+            <FormLabel>Search</FormLabel>
+            <InputGroup>
+               <InputLeftElement pointerEvents="none">
+                  <SearchIcon />
+               </InputLeftElement>
+               <Input type="text" />
+            </InputGroup>
+         </FormControl>
+      </Stack>
+   );
+};
 
 const TransactionsTable = (props: TransactionsTableProps) => {
    const sortIcon = props.sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />;
@@ -131,12 +181,16 @@ const Transactions = () => {
                <Spinner />
             </Center>
          ) : (
-            <TransactionsTable
-               transactions={query.data ? query.data.data.transactions : []}
-               sortOrder={sortOrder}
-               sortColumn={sortColumn}
-               setSort={setSort}
-            />
+            <>
+               <TransactionsTableFilters />
+               <Divider marginBottom={2} marginTop={5}/>
+               <TransactionsTable
+                  transactions={query.data ? query.data.data.transactions : []}
+                  sortOrder={sortOrder}
+                  sortColumn={sortColumn}
+                  setSort={setSort}
+               />
+            </>
          )}
       </>
    );
