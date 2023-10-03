@@ -18,7 +18,13 @@ import { Theme } from '../app.types';
 import { TopBar, SideBar, BottomNav } from '.';
 
 // The react-query client to inject into the app
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+   defaultOptions: {
+      queries: {
+         refetchOnWindowFocus: false
+      },
+   },
+});
 
 export const App = () => {
    const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
