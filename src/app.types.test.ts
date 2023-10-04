@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2023 Josef Barnes
  *
- * util.ts: This file contains the tests for the util functions
+ * app.types.test.ts: This file contains the tests for the types guards
  */
 
 import { describe, it, expect } from 'vitest';

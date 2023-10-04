@@ -6,17 +6,15 @@
  * Transactions.tsx: This file contains the transactions page component
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { Dispatch, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, SearchIcon } from '@chakra-ui/icons';
 import {
+   AbsoluteCenter,
    Avatar,
    Button,
-   Center,
    Divider,
    FormControl,
-   FormHelperText,
    FormLabel,
-   HStack,
    Heading,
    Input,
    InputGroup,
@@ -36,6 +34,7 @@ import {
 import { TransactionList, Transaction, isTransactionList } from '../app.types';
 import { useAPI } from '../hooks';
 import { DateRangePicker } from '../components';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 
 type SortColumn = 'date' | 'description' | 'amount';
 type SortOrder = 'asc' | 'desc';
@@ -47,17 +46,34 @@ interface TransactionsTableProps {
    setSort: (col: SortColumn, order: SortOrder) => void;
 }
 
-const TransactionsTableFilters = () => {
-   const [dates, setDates] = useState<Date[]>([new Date(), new Date()]);
-   const onDateChange = (dates: Date[]) => {
-      console.log(dates);
-      setDates(dates);
+interface TransactionsTableFiltersProps {
+   filters: {
+      dates: Date[];
+      setDates: Dispatch<React.SetStateAction<Date[]>>;
+      textFilter: string;
+      setTextFilter: Dispatch<React.SetStateAction<string>>;
    };
+}
+
+const TransactionsTableFilters = ({ filters }: TransactionsTableFiltersProps) => {
+   const [filterQuery, setFilterQuery] = useState<string>(filters.textFilter);
+
+   const onBlur = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFilterQuery(e.currentTarget.value);
+      filters.setTextFilter(e.currentTarget.value);
+   };
+
+   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+         filters.setTextFilter(filterQuery);
+      }
+   };
+
    return (
-      <Stack direction={{base: 'column', md: 'row'}}>
+      <Stack direction={{ base: 'column', md: 'row' }}>
          <FormControl>
             <FormLabel>Date Range</FormLabel>
-            <DateRangePicker dates={dates} onDateChange={onDateChange} />
+            <DateRangePicker dates={filters.dates} onDateChange={filters.setDates} />
          </FormControl>
          <FormControl>
             <FormLabel>Search</FormLabel>
@@ -65,7 +81,14 @@ const TransactionsTableFilters = () => {
                <InputLeftElement pointerEvents="none">
                   <SearchIcon />
                </InputLeftElement>
-               <Input type="text" />
+               <Input
+                  type="text"
+                  placeholder="Enter a regex"
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.currentTarget.value)}
+                  onBlur={onBlur}
+                  onKeyDown={onKeyDown}
+               />
             </InputGroup>
          </FormControl>
       </Stack>
@@ -142,10 +165,24 @@ const Transactions = () => {
    const api = useAPI();
    const [sortColumn, setSortColumn] = useState<SortColumn>('date');
    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+   const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
+   const [textFilter, setTextFilter] = useState<string>('');
+   const queryFilter = useMemo(() => {
+      const start = format(dates[0], 'yyyy-MM-dd');
+      const end = format(dates[1], 'yyyy-MM-dd');
+      let q = `date BETWEEN '${start}' AND '${end}'`;
+      const filter = textFilter.replaceAll("'", "''");
+      if (textFilter !== '') {
+         q += ` AND description REGEXP '${filter}'`;
+      }
+      return q;
+   }, [dates, textFilter]);
+
    const query = api.useQuery<TransactionList>({
       method: 'GET',
       url: '/api/transaction/',
       params: new URLSearchParams({
+         query: queryFilter,
          sort_column: sortColumn,
          sort_order: sortOrder,
       }),
@@ -176,14 +213,21 @@ const Transactions = () => {
          <Heading pb="8" size="lg">
             Transactions
          </Heading>
+         <TransactionsTableFilters
+            filters={{
+               dates,
+               setDates,
+               textFilter,
+               setTextFilter,
+            }}
+         />
+         <Divider marginBottom={2} marginTop={5} />
          {query.isFetching ? (
-            <Center>
+            <AbsoluteCenter>
                <Spinner />
-            </Center>
+            </AbsoluteCenter>
          ) : (
             <>
-               <TransactionsTableFilters />
-               <Divider marginBottom={2} marginTop={5}/>
                <TransactionsTable
                   transactions={query.data ? query.data.data.transactions : []}
                   sortOrder={sortOrder}
