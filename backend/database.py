@@ -8,6 +8,7 @@
 
 # System imports
 import os
+import re
 import sqlite3
 from typing import List, Optional, Tuple
 import time
@@ -31,6 +32,7 @@ class Database:
 
     def open(self):
         self.con = sqlite3.connect(Database.DB_PATH)
+        self.con.create_function('REGEXP', 2, lambda x, y: 1 if re.search(x,y) else 0)
         self.db = self.con.cursor()
         with open('schema.sql') as fp:
             schema = fp.read()
@@ -289,7 +291,7 @@ class Database:
         '''
         alloc = self.get_allocation(alloc_id)
         if alloc is None:
-            raise ValueError('Invalid allocaction')
+            raise ValueError('Invalid allocation')
         if amount >= alloc.amount or amount <= 0:
             raise ValueError('Invalid amount to split from allocation')
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (amount, alloc.txn_id))
@@ -301,7 +303,7 @@ class Database:
 
     def merge_allocations(self, id_list: List[int]) -> Allocation:
         '''
-        Merge multiple allocations into a singel allocation by adding all the ammounts to the first
+        Merge multiple allocations into a single allocation by adding all the amounts to the first
 
         Args:
             id_list: The list of allocation IDs
