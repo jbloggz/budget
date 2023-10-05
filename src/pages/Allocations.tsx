@@ -10,9 +10,11 @@ import { Heading } from '@chakra-ui/react';
 
 const Allocations = () => {
    return (
-      <Heading pb="8" size="lg">
-         Allocations
-      </Heading>
+      <>
+         <Heading pb="8" size="lg">
+            Allocations
+         </Heading>
+      </>
    );
 };
 

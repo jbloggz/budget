@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple
 import time
 
 # Local imports
-from model import Transaction, TransactionList, Allocation
+from model import Transaction, TransactionList, Allocation, AllocationList
 
 
 class Database:
@@ -32,7 +32,7 @@ class Database:
 
     def open(self):
         self.con = sqlite3.connect(Database.DB_PATH)
-        self.con.create_function('REGEXP', 2, lambda x, y: 1 if re.search(x,y) else 0)
+        self.con.create_function('REGEXP', 2, lambda x, y: 1 if re.search(x, y, re.IGNORECASE) else 0)
         self.db = self.con.cursor()
         with open('schema.sql') as fp:
             schema = fp.read()
@@ -125,15 +125,18 @@ class Database:
             id:  The id to update
             txn: The new details
         '''
-        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ? WHERE id = ?', (txn.date, txn.amount, txn.description, txn.source, txn_id))
+        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ? WHERE id = ?',
+                        (txn.date, txn.amount, txn.description, txn.source, txn_id))
 
-    def get_transaction_list(self, expr: Optional[str] = None, params: Optional[Tuple] = ()) -> TransactionList:
+    def get_transaction_list(self, expr: Optional[str] = None, params: Tuple = tuple(), limit: Optional[int] = None, offset: int = 0) -> TransactionList:
         '''
         Get list of transaction based on a filter expression
 
         Args:
-            expr:   An SQL filter expression
+            expr:   An SQL expression
             params: Optional parameters to the expression
+            limit:  The amount of rows to return
+            offset: The amount of rows to skip
 
         Returns:
             A list of transactions that match the filter
@@ -145,6 +148,14 @@ class Database:
         res = TransactionList(total=0, transactions=[])
         for row in self.db:
             res.total += 1
+            if offset > 0:
+                offset -= 1
+                continue
+            if limit is not None:
+                if limit <= 0:
+                    continue
+                limit -= 1
+
             res.transactions.append(Transaction(
                 id=row[0],
                 date=row[1],
@@ -185,7 +196,7 @@ class Database:
     def get_location_id(self, name: str) -> int:
         '''
         Get a location id (creating one if necessary)
-
+filter
         Args:
             name: The name of the location
 
@@ -197,36 +208,54 @@ class Database:
         row = self.db.fetchone()
         return row[0]
 
-    def get_allocation_list(self, expr: str) -> List[Allocation]:
+    def get_allocation_list(self, expr: Optional[str] = None, params: Tuple = tuple(), limit: Optional[int] = None, offset: int = 0) -> AllocationList:
         '''
         Get list of allocations based on a filter expression
 
         Args:
-            filter: An SQL filter expression
+            expr:   An SQL expression
+            params: Optional parameters to the expression
+            limit:  The amount of rows to return
+            offset: The amount of rows to skip
 
         Returns:
             A list of allocations that match the filter
         '''
-        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.date as date, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
-                            FROM allocation
-                            LEFT JOIN category ON category_id = category.id
-                            LEFT JOIN location ON location_id = location.id
-                            LEFT JOIN txn ON txn_id = txn.id
-                            WHERE {expr}''')
-        res = []
+        query = '''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.date as date, allocation.amount as amount, txn.description as description, category.name as category, location.name as location, allocation.note as note
+                   FROM allocation
+                   LEFT JOIN category ON category_id = category.id
+                   LEFT JOIN location ON location_id = location.id
+                   LEFT JOIN txn ON txn_id = txn.id'''
+        if expr:
+            query += f' WHERE {expr}'
+
+        self.db.execute(query, params)
+
+        res = AllocationList(total=0, allocations=[])
         for row in self.db:
-            res.append(Allocation(
+            res.total += 1
+            if offset > 0:
+                offset -= 1
+                continue
+            if limit is not None:
+                if limit <= 0:
+                    continue
+                limit -= 1
+
+            res.allocations.append(Allocation(
                 id=row[0],
                 txn_id=row[1],
                 date=row[2],
                 amount=row[3],
-                category=row[4],
-                location=row[5],
-                note=row[6],
+                description=row[4],
+                category=row[5],
+                location=row[6],
+                note=row[7],
             ))
+
         return res
 
-    def get_txn_allocations(self, txn_id: int) -> List[Allocation]:
+    def get_txn_allocations(self, txn_id: int) -> AllocationList:
         '''
         Get list of allocations for a transaction
 
@@ -236,24 +265,7 @@ class Database:
         Returns:
             A list of allocations
         '''
-        self.db.execute(f'''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.date as date, allocation.amount as amount, category.name as category, location.name as location, allocation.note as note
-                            FROM allocation
-                            LEFT JOIN category ON category_id = category.id
-                            LEFT JOIN location ON location_id = location.id
-                            LEFT JOIN txn ON txn_id = txn.id
-                            WHERE txn_id = ?''', (txn_id, ))
-        res = []
-        for row in self.db:
-            res.append(Allocation(
-                id=row[0],
-                txn_id=row[1],
-                date=row[2],
-                amount=row[3],
-                category=row[4],
-                location=row[5],
-                note=row[6],
-            ))
-        return res
+        return self.get_allocation_list('txn_id = ?', (txn_id,))
 
     def get_allocation(self, alloc_id: int) -> Optional[Allocation]:
         '''
@@ -265,8 +277,8 @@ class Database:
         Returns:
             The allocation, or None if alloc_id is invalid
         '''
-        alloc_list = self.get_allocation_list(f'allocation.id = {alloc_id}')
-        return alloc_list[0] if alloc_list else None
+        res = self.get_allocation_list('allocation.id = ?', (alloc_id,))
+        return res.allocations[0] if res.allocations else None
 
     def update_allocation(self, alloc: Allocation) -> None:
         '''
@@ -311,7 +323,7 @@ class Database:
         Returns:
             The merged allocation
         '''
-        alloc_list = self.get_allocation_list(f'allocation.id IN ({",".join(str(i) for i in id_list)})')
+        alloc_list = self.get_allocation_list(f'allocation.id IN ({",".join(str(i) for i in id_list)})').allocations
         if not alloc_list:
             raise ValueError('No allocations found')
         if not all([alloc.txn_id == alloc_list[0].txn_id for alloc in alloc_list]):

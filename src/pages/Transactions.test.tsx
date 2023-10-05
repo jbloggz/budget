@@ -6,19 +6,25 @@
  * Transactions.test.tsx: This file contains the tests for the Transactions page
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Transactions } from '.';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Theme } from '../app.types';
+import { ThemeProvider } from '../providers';
+import { Transactions } from '.';
 
 const queryClient = new QueryClient();
 
 describe('Transactions', () => {
    it('renders the transactions page', () => {
+      const theme: Theme = 'dark';
+      const setTheme = vi.fn();
       render(
-         <QueryClientProvider client={queryClient}>
-            <Transactions />
-         </QueryClientProvider>
+         <ThemeProvider theme={theme} setTheme={setTheme}>
+            <QueryClientProvider client={queryClient}>
+               <Transactions />
+            </QueryClientProvider>
+         </ThemeProvider>
       );
       const title = screen.getByText('Transactions');
       expect(title).toBeInTheDocument();

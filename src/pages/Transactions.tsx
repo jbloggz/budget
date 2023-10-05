@@ -6,7 +6,7 @@
  * Transactions.tsx: This file contains the transactions page component
  */
 
-import { Dispatch, useCallback, useEffect, useMemo, useState } from 'react';
+import { Dispatch, useCallback, useEffect, useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, SearchIcon } from '@chakra-ui/icons';
 import {
    AbsoluteCenter,
@@ -167,22 +167,13 @@ const Transactions = () => {
    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
    const [textFilter, setTextFilter] = useState<string>('');
-   const queryFilter = useMemo(() => {
-      const start = format(dates[0], 'yyyy-MM-dd');
-      const end = format(dates[1], 'yyyy-MM-dd');
-      let q = `date BETWEEN '${start}' AND '${end}'`;
-      const filter = textFilter.replaceAll("'", "''");
-      if (textFilter !== '') {
-         q += ` AND description REGEXP '${filter}'`;
-      }
-      return q;
-   }, [dates, textFilter]);
-
    const query = api.useQuery<TransactionList>({
       method: 'GET',
       url: '/api/transaction/',
       params: new URLSearchParams({
-         query: queryFilter,
+         start: format(dates[0], 'yyyy-MM-dd'),
+         end: format(dates[1], 'yyyy-MM-dd'),
+         filter: textFilter,
          sort_column: sortColumn,
          sort_order: sortOrder,
       }),

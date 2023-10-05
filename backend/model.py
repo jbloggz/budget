@@ -30,9 +30,15 @@ class Allocation(BaseModel):
     txn_id: int
     date: str
     amount: int
+    description: str
     category: str
     location: str
     note: str | None = None
+
+
+class AllocationList(BaseModel):
+    total: int
+    allocations: List[Allocation]
 
 
 class Token(BaseModel):
