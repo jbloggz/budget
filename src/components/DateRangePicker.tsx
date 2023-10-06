@@ -14,17 +14,17 @@ import { useState } from 'react';
 
 interface DateRangePickerProps {
    dates: Date[];
-   onDateChange: (date: Date[]) => void;
+   onChange: (date: Date[]) => void;
 }
 
 const DateRangePicker = (props: DateRangePickerProps) => {
    const [dates, setDates] = useState<Date[]>(props.dates);
    const { theme } = useContext(ThemeContext);
 
-   const onDateChange = (dates: Date[]) => {
+   const onChange = (dates: Date[]) => {
       setDates(dates);
       if (dates.length === 2) {
-         props.onDateChange(dates);
+         props.onChange(dates);
       }
    };
 
@@ -39,7 +39,7 @@ const DateRangePicker = (props: DateRangePickerProps) => {
          </InputLeftElement>{' '}
          <RangeDatepicker
             selectedDates={dates}
-            onDateChange={onDateChange}
+            onDateChange={onChange}
             configs={{
                dateFormat: 'dd/MM/yyyy',
             }}

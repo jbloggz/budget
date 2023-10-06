@@ -16,7 +16,7 @@ describe('DateRangePicker', () => {
    it('Renders the DateRangePicker', () => {
       const TestComponent = () => {
          const [dates, setDates] = useState<Date[]>([new Date(), new Date()]);
-         return <DateRangePicker dates={dates} onDateChange={setDates} />;
+         return <DateRangePicker dates={dates} onChange={setDates} />;
       };
 
       const theme = 'light';

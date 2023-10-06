@@ -12,6 +12,9 @@ import { themes } from './theme';
 /* Either a valid theme name or unknown */
 export type Theme = (typeof themes)[number] | undefined;
 
+/* A sort order (asc for ascending and desc for descending */
+export type SortOrder = 'asc' | 'desc';
+
 /* A single transaction */
 export interface Transaction {
    id?: number;
@@ -25,6 +28,21 @@ export interface Transaction {
 export type TransactionList = {
    total: number;
    transactions: Transaction[];
+};
+
+/* A single allocation */
+export interface Allocation {
+   id?: number;
+   date: string;
+   amount: number;
+   description: string;
+   source: string;
+}
+
+/* A list of allocations */
+export type AllocationList = {
+   total: number;
+   transactions: Allocation[];
 };
 
 /* An API request that is expected to response with T */
@@ -92,6 +110,37 @@ export const isTransaction = (val: unknown): val is Transaction => {
 export const isTransactionList = (val: unknown): val is TransactionList => {
    try {
       const test = val as TransactionList;
+      return (
+         typeof test.total === 'number' &&
+         Array.isArray(test.transactions) &&
+         test.transactions.every((t) => isTransaction(t)) &&
+         test.total >= test.transactions.length
+      );
+   } catch {
+      return false;
+   }
+};
+
+/* Type predicate for APITransaction */
+export const isAllocation = (val: unknown): val is Allocation => {
+   try {
+      const test = val as Allocation;
+      return (
+         (typeof test.id === 'undefined' || typeof test.id === 'number') &&
+         typeof test.date === 'string' &&
+         typeof test.amount === 'number' &&
+         typeof test.description === 'string' &&
+         typeof test.source === 'string'
+      );
+   } catch {
+      return false;
+   }
+};
+
+/* Type predicate for TransactionList */
+export const isAllocationList = (val: unknown): val is AllocationList => {
+   try {
+      const test = val as AllocationList;
       return (
          typeof test.total === 'number' &&
          Array.isArray(test.transactions) &&
