@@ -15,4 +15,4 @@ import SideBar from './SideBar';
 import Table from './Table';
 import TopBar from './TopBar';
 
-export { App, BottomNav, DateRangePicker, NavList, SearchFilter, SideBar, Table, };
+export { App, BottomNav, DateRangePicker, NavList, SearchFilter, SideBar, Table, TopBar };
