@@ -11,11 +11,13 @@ import { buttonTheme } from './button';
 import { topBarTheme } from './topBar';
 import { sideBarTheme } from './sideBar';
 import { loginTheme } from './login';
+import { multiSelectTheme } from './multiSelect';
 
 export const components = {
-   Drawer: drawerTheme,
    Button: buttonTheme,
-   TopBar: topBarTheme,
-   SideBar: sideBarTheme,
+   Drawer: drawerTheme,
    Login: loginTheme,
+   MultiSelect: multiSelectTheme,
+   SideBar: sideBarTheme,
+   TopBar: topBarTheme,
 };

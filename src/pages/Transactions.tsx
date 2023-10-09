@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AbsoluteCenter, Avatar, Divider, FormControl, FormLabel, Heading, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
+import { MultiSelect, Option } from 'chakra-multiselect';
 import { TransactionList, isTransactionList, SortOrder } from '../app.types';
 import { useAPI } from '../hooks';
 import { DateRangePicker, Table, SearchFilter } from '../components';
@@ -20,6 +21,7 @@ const Transactions = () => {
    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
    const [textFilter, setTextFilter] = useState<string>('');
+   const [selectedSources, setSelectedSources] = useState<Option[]>([]);
    const query = api.useQuery<TransactionList>({
       method: 'GET',
       url: '/api/transaction/',
@@ -66,6 +68,14 @@ const Transactions = () => {
                <FormLabel>Search</FormLabel>
                <SearchFilter onChange={setTextFilter} />
             </FormControl>
+            <FormControl>
+               <FormLabel>Source</FormLabel>
+               <MultiSelect
+                  options={[...new Set(query.data?.data.transactions.map((txn) => txn.source))].map((src) => ({ label: src, value: src }))}
+                  value={selectedSources}
+                  onChange={setSelectedSources}
+               />
+            </FormControl>
          </Stack>
          <Divider marginBottom={2} marginTop={5} />
          {query.isFetching ? (
@@ -75,11 +85,7 @@ const Transactions = () => {
          ) : (
             <>
                <Table
-                  columns={[
-                     {
-                        sortable: false,
-                        text: '',
-                     },
+                  header={[
                      {
                         sortable: true,
                         text: 'Date',
@@ -92,25 +98,31 @@ const Transactions = () => {
                         sortable: true,
                         text: 'Amount',
                      },
+                     {
+                        sortable: false,
+                        text: '',
+                     },
                   ]}
                   rows={
                      query.data
-                        ? query.data.data.transactions.map((txn) => ({
-                             id: txn.id || 0,
-                             cells: [
-                                <Avatar
+                        ? query.data.data.transactions
+                             .filter((txn) => selectedSources.length == 0 || selectedSources.map((s) => s.value).includes(txn.source))
+                             .map((txn) => ({
+                                id: txn.id || 0,
+                                cells: [
+                                   <Text>{new Date(txn.date).toLocaleDateString()}</Text>,
+                                   <Text>{txn.description}</Text>,
+                                   <Text color={txn.amount < 0 ? 'red.500' : 'green.500'}>
+                                      {(txn.amount / 100).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })}
+                                   </Text>,
+                                   <Avatar
                                    src={'/' + txn.source.replaceAll(' ', '') + '.png'}
                                    name={txn.source}
                                    title={txn.source}
                                    size={{ base: 'xs', md: 'sm' }}
                                 />,
-                                new Date(txn.date).toLocaleDateString(),
-                                txn.description,
-                                <Text color={txn.amount < 0 ? 'red.500' : 'green.500'}>
-                                   {(txn.amount / 100).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })}
-                                </Text>,
                              ],
-                          }))
+                             }))
                         : []
                   }
                   sortColumn={sortColumn}
