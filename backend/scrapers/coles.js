@@ -13,7 +13,7 @@ import fs from 'fs';
 puppeteer.use(StealthPlugin());
 
 const secrets = JSON.parse(fs.readFileSync(process.argv[2], { encoding: 'utf8', flag: 'r' }));
-const { user, password } = secrets.scrapers.coles;
+const { user, password } = secrets.scrapers['Coles Credit Card'];
 
 const sleep = (ms) => {
    return new Promise((resolve) => setTimeout(resolve, ms));

@@ -12,7 +12,7 @@ import fs from 'fs';
 
 
 const secrets = JSON.parse(fs.readFileSync(process.argv[2], { encoding: 'utf8', flag: 'r' }));
-const { user, security_number, password } = secrets.scrapers.stgeorge;
+const { user, security_number, password } = secrets.scrapers['St George Bank'];
 
 puppeteer.use(StealthPlugin());
 

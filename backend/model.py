@@ -18,6 +18,7 @@ class Transaction(BaseModel):
     amount: int
     description: str
     source: str
+    balance: int = 0
 
 
 class TransactionList(BaseModel):

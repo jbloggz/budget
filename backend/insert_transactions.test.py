@@ -12,7 +12,7 @@ import unittest
 from typing import List
 
 # Local imports
-from insert_transactions import insert_transactions
+from insert_transactions import insert_transactions, update_balance
 from database import Database
 from model import Transaction
 
@@ -214,6 +214,20 @@ class TestInsertTransactions(unittest.TestCase):
         insert_transactions([txn.copy(), txn.copy(), txn.copy()], self.db)
         txn_list = self.db.get_transaction_list()
         self.assertEqual(len(txn_list.transactions), len(self.dummy_data) + 1)
+
+    def test_update_balance(self) -> None:
+        insert_transactions(self.dummy_data, self.db)
+        txn_list = self.db.get_transaction_list()
+        for txn in txn_list.transactions:
+            self.assertEqual(txn.balance, 0)
+
+        running_totals = {'bank of foo': 2234, 'Bar Inc': -48392}
+        update_balance('bank of foo', running_totals['bank of foo'], self.db)
+        update_balance('Bar Inc', running_totals['Bar Inc'], self.db)
+        txn_list = self.db.get_transaction_list('1 ORDER BY date ASC, amount ASC, description ASC, id ASC')
+        for txn in txn_list.transactions:
+            running_totals[txn.source] += txn.amount
+            self.assertEqual(txn.balance, running_totals[txn.source])
 
 
 unittest.main()

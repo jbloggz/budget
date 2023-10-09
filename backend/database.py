@@ -112,7 +112,7 @@ class Database:
         Returns:
             The transaction with the ID filled in
         '''
-        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?)', (txn.date, txn.amount, txn.description, txn.source))
+        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?, 0)', (txn.date, txn.amount, txn.description, txn.source))
         txn.id = self.db.lastrowid
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
         return txn
@@ -125,8 +125,8 @@ class Database:
             id:  The id to update
             txn: The new details
         '''
-        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ? WHERE id = ?',
-                        (txn.date, txn.amount, txn.description, txn.source, txn_id))
+        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ?, balance = ? WHERE id = ?',
+                        (txn.date, txn.amount, txn.description, txn.source, txn.balance, txn_id))
 
     def get_transaction_list(self, expr: Optional[str] = None, params: Tuple = tuple(), limit: Optional[int] = None, offset: int = 0) -> TransactionList:
         '''
@@ -142,9 +142,9 @@ class Database:
             A list of transactions that match the filter
         '''
         if expr:
-            self.db.execute(f'SELECT id, date, amount, description, source FROM txn WHERE {expr}', params)
+            self.db.execute(f'SELECT id, date, amount, description, source, balance FROM txn WHERE {expr}', params)
         else:
-            self.db.execute(f'SELECT id, date, amount, description, source FROM txn')
+            self.db.execute(f'SELECT id, date, amount, description, source, balance FROM txn')
         res = TransactionList(total=0, transactions=[])
         for row in self.db:
             res.total += 1
@@ -162,6 +162,7 @@ class Database:
                 amount=row[2],
                 description=row[3],
                 source=row[4],
+                balance=row[5],
             ))
         return res
 

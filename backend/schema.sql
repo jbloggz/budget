@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS txn (
    date            TEXT     NOT NULL,     /* The date of the transaction in YYYY-MM-DD */
    amount          INTEGER  NOT NULL,     /* The amount of the transaction in cents */
    description     TEXT     NOT NULL,     /* The description scraped from the transaction history */
-   source          TEXT     NOT NULL      /* The source of the transaction (ie. which account) */
+   source          TEXT     NOT NULL,     /* The source of the transaction (ie. which account) */
+   balance         INTEGER  NOT NULL      /* The balance of the source after the transaction */
 );
 CREATE INDEX IF NOT exists txn_date_idx ON txn(date);
 CREATE INDEX IF NOT EXISTS txn_description_idx ON txn(description);
