@@ -32,7 +32,7 @@ class Database:
 
     def open(self):
         self.con = sqlite3.connect(Database.DB_PATH)
-        self.con.create_function('REGEXP', 2, lambda x, y: 1 if re.search(x, y, re.IGNORECASE) else 0)
+        self.con.create_function('REGEXP', 2, lambda x, y: 1 if re.search(x, y or '', re.IGNORECASE) else 0)
         self.db = self.con.cursor()
         with open('schema.sql') as fp:
             schema = fp.read()
@@ -221,7 +221,15 @@ filter
         Returns:
             A list of allocations that match the filter
         '''
-        query = '''SELECT allocation.id as id, allocation.txn_id as txn_id, txn.date as date, allocation.amount as amount, txn.description as description, category.name as category, location.name as location, allocation.note as note
+        query = '''SELECT allocation.id as id,
+                          allocation.txn_id as txn_id,
+                          txn.date as date,
+                          allocation.amount as amount,
+                          txn.description as description,
+                          txn.source as source,
+                          category.name as category,
+                          location.name as location,
+                          allocation.note as note
                    FROM allocation
                    LEFT JOIN category ON category_id = category.id
                    LEFT JOIN location ON location_id = location.id
@@ -248,9 +256,10 @@ filter
                 date=row[2],
                 amount=row[3],
                 description=row[4],
-                category=row[5],
-                location=row[6],
-                note=row[7],
+                source=row[5],
+                category=row[6],
+                location=row[7],
+                note=row[8],
             ))
 
         return res

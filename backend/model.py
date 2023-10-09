@@ -31,6 +31,7 @@ class Allocation(BaseModel):
     date: str
     amount: int
     description: str
+    source: str
     category: str
     location: str
     note: str | None = None
