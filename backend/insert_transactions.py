@@ -136,7 +136,7 @@ def find_matching_transaction(txn: Transaction, txn_map: TxnMapType):
         return None
 
 
-def insert_transactions(name: str, transactions: List[Transaction], db):
+def insert_transactions(transactions: List[Transaction], db):
     '''
     Inserts transactions into the database
 
@@ -149,7 +149,6 @@ def insert_transactions(name: str, transactions: List[Transaction], db):
 
     # Any remaining new transactions are indeed new and need to be inserted
     for txn in transactions:
-        txn.source = name
         new_txn = db.add_transaction(txn)
         logging.info('Inserted new transaction: %d, %s, %s, %s, "%s"', new_txn.id, new_txn.source, new_txn.date, new_txn.amount, new_txn.description)
 
@@ -213,7 +212,7 @@ def main(args):  # pragma: no cover
 
     with Database() as db:
         for name, scraper in secrets['scrapers'].items():
-            insert_transactions(name, run_scraper(args.node, args.secrets, scraper['path']), db)
+            insert_transactions(run_scraper(args.node, args.secrets, scraper['path']), db)
             update_balance(name, scraper.get('initial_balance', 0), db)
 
     return 0

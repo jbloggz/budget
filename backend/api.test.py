@@ -42,7 +42,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_txn_fields(self) -> None:
         with self.db:
-            self.assertEqual(set(self.db.get_fields('txn')), {'id', 'date', 'amount', 'description', 'source'})
+            self.assertEqual(set(self.db.get_fields('txn')), {'id', 'date', 'amount', 'description', 'source', 'balance'})
 
     def test_category_fields(self) -> None:
         with self.db:
