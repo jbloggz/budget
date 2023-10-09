@@ -7,10 +7,9 @@
  */
 
 import { RangeDatepicker } from 'chakra-dayzed-datepicker';
-import { InputGroup, InputLeftElement } from '@chakra-ui/react';
+import { InputGroup, InputLeftElement, useColorModeValue } from '@chakra-ui/react';
 import { CalendarIcon } from '@chakra-ui/icons';
-import { ThemeContext, useContext } from '../providers';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 interface DateRangePickerProps {
    dates: Date[];
@@ -19,21 +18,26 @@ interface DateRangePickerProps {
 
 const DateRangePicker = (props: DateRangePickerProps) => {
    const [dates, setDates] = useState<Date[]>(props.dates);
-   const { theme } = useContext(ThemeContext);
+   const textColor = useColorModeValue('black', 'white');
+   const hoverColor = useColorModeValue('gray.200', 'whiteAlpha.400');
+   const selectedColor = useColorModeValue('gray.300', 'whiteAlpha.300');
 
+   const inputGroup = useRef<HTMLDivElement>(null);
    const onChange = (dates: Date[]) => {
       setDates(dates);
       if (dates.length === 2) {
          props.onChange(dates);
+
+         /*
+          * TODO: This is a hack to blur the input when dates are selected.
+          * It would be nice if the library did this for us.
+          */
+         setTimeout(() => inputGroup.current?.querySelectorAll('input').forEach((e) => e.blur()), 0);
       }
    };
 
-   const textColor = theme === 'dark' ? 'white' : 'black';
-   const hoverColor = theme === 'dark' ? 'whiteAlpha.400' : theme === 'light' ? 'gray.200' : `${theme}.200`;
-   const selectedColor = theme === 'dark' ? 'whiteAlpha.300' : theme === 'light' ? 'gray.300' : `${theme}.300`;
-
    return (
-      <InputGroup zIndex={100}>
+      <InputGroup zIndex={100} ref={inputGroup}>
          <InputLeftElement pointerEvents="none">
             <CalendarIcon color="gray.300" />
          </InputLeftElement>{' '}
