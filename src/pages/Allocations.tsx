@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AbsoluteCenter, Avatar, Divider, FormControl, FormLabel, HStack, Heading, Spacer, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
 import groupBy from 'object.groupby';
+// @ts-expect-error: chakra-multiselect doesn't export types properly
 import { MultiSelect, Option } from 'chakra-multiselect';
 import { DateRangePicker, SearchFilter, Table, TreeView } from '../components';
 import { endOfMonth, format, startOfMonth } from 'date-fns';

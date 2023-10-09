@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AbsoluteCenter, Avatar, Divider, FormControl, FormLabel, Heading, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
+// @ts-expect-error: chakra-multiselect doesn't export types properly
 import { MultiSelect, Option } from 'chakra-multiselect';
 import { TransactionList, isTransactionList, SortOrder } from '../app.types';
 import { useAPI } from '../hooks';
