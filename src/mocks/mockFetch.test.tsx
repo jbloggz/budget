@@ -16,23 +16,23 @@ describe('mockFetch', () => {
    });
 
    it('is not mocked by default', () => {
-      expect(globalThis.fetch).toBeInstanceOf(Function);
+      expect(fetch).toBeInstanceOf(Function);
    });
 
    it('can be enabled', () => {
-      expect(globalThis.fetch).toBeInstanceOf(Function);
+      expect(fetch).toBeInstanceOf(Function);
       mockFetch.enable();
       expect(fetch).toBeDefined();
       expect(fetch).toBeInstanceOf(Object);
    });
 
    it('can be disabled', () => {
-      expect(globalThis.fetch).toBeInstanceOf(Function);
+      expect(fetch).toBeInstanceOf(Function);
       mockFetch.enable();
       expect(fetch).toBeDefined();
       expect(fetch).toBeInstanceOf(Object);
       mockFetch.disable();
-      expect(globalThis.fetch).toBeInstanceOf(Function);
+      expect(fetch).toBeInstanceOf(Function);
    });
 
    it('can set basic unconditional response', async () => {

@@ -7,3 +7,4 @@
  */
 
 export { mockFetch } from './mockFetch';
+export { mockResizeObserver } from './mockResizeObserver';

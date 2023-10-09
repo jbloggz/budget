@@ -6,9 +6,10 @@
  * Allocations.test.tsx: This file contains the tests for the Allocations page
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { mockResizeObserver } from '../mocks';
 import { Theme } from '../app.types';
 import { ThemeProvider } from '../providers';
 import { Allocations } from '.';
@@ -16,6 +17,10 @@ import { Allocations } from '.';
 const queryClient = new QueryClient();
 
 describe('Allocations', () => {
+   beforeEach(() => {
+      mockResizeObserver.reset();
+   });
+
    it('renders the allocations page', () => {
       const theme: Theme = 'dark';
       const setTheme = vi.fn();
