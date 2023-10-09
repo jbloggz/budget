@@ -33,16 +33,20 @@ export type TransactionList = {
 /* A single allocation */
 export interface Allocation {
    id?: number;
+   txn_id: number;
    date: string;
    amount: number;
    description: string;
+   category: string;
+   location: string;
+   note: string;
    source: string;
 }
 
 /* A list of allocations */
 export type AllocationList = {
    total: number;
-   transactions: Allocation[];
+   allocations: Allocation[];
 };
 
 /* An API request that is expected to response with T */
@@ -90,7 +94,7 @@ export const isAPIAuthTokens = (val: unknown): val is APIAuthTokens => {
    }
 };
 
-/* Type predicate for APITransaction */
+/* Type predicate for Transaction */
 export const isTransaction = (val: unknown): val is Transaction => {
    try {
       const test = val as Transaction;
@@ -121,31 +125,35 @@ export const isTransactionList = (val: unknown): val is TransactionList => {
    }
 };
 
-/* Type predicate for APITransaction */
+/* Type predicate for Allocation */
 export const isAllocation = (val: unknown): val is Allocation => {
    try {
       const test = val as Allocation;
       return (
          (typeof test.id === 'undefined' || typeof test.id === 'number') &&
+         typeof test.txn_id === 'number' &&
          typeof test.date === 'string' &&
          typeof test.amount === 'number' &&
          typeof test.description === 'string' &&
-         typeof test.source === 'string'
+         typeof test.source === 'string' &&
+         typeof test.category === 'string' &&
+         typeof test.location === 'string' &&
+         typeof test.note === 'string' || test.note === null
       );
    } catch {
       return false;
    }
 };
 
-/* Type predicate for TransactionList */
+/* Type predicate for AllocationList */
 export const isAllocationList = (val: unknown): val is AllocationList => {
    try {
       const test = val as AllocationList;
       return (
          typeof test.total === 'number' &&
-         Array.isArray(test.transactions) &&
-         test.transactions.every((t) => isTransaction(t)) &&
-         test.total >= test.transactions.length
+         Array.isArray(test.allocations) &&
+         test.allocations.every((t) => isAllocation(t)) &&
+         test.total >= test.allocations.length
       );
    } catch {
       return false;
