@@ -14,5 +14,6 @@ import SearchFilter from './SearchFilter';
 import SideBar from './SideBar';
 import Table from './Table';
 import TopBar from './TopBar';
+import TreeView from './TreeView';
 
-export { App, BottomNav, DateRangePicker, NavList, SearchFilter, SideBar, Table, TopBar };
+export { App, BottomNav, DateRangePicker, NavList, SearchFilter, SideBar, Table, TopBar, TreeView };
