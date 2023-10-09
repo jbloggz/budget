@@ -12,7 +12,7 @@ import { Table } from '.';
 
 describe('Table', () => {
    it('Renders an empty Table', () => {
-      const {container} = render(<Table columns={[]} rows={[]}/>);
+      const {container} = render(<Table rows={[]}/>);
       const elem = container.querySelector('tbody');
       expect(elem).toBeEmptyDOMElement();
    });
