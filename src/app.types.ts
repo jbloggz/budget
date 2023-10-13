@@ -22,6 +22,7 @@ export interface Transaction {
    amount: number;
    description: string;
    source: string;
+   balance?: number;
 }
 
 /* A list of transactions */
@@ -49,6 +50,12 @@ export type AllocationList = {
    allocations: Allocation[];
 };
 
+/* Category/location lists ordered by closest match to a description */
+export interface Categorisation {
+   categories: string[];
+   locations: string[];
+}
+
 /* An API request that is expected to response with T */
 export interface APIRequest<T> {
    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -64,6 +71,13 @@ export type APIResponse<T> = {
    code: number;
    data: T;
 };
+
+/* The options to use for react-query */
+export interface QueryOptions<T> {
+   enabled?: boolean;
+   runOnce?: boolean;
+   onSuccess?: (data: T) => void;
+}
 
 /* The credentials returned be the API for a successful login or token refresh */
 export interface APIAuthTokens {
@@ -130,15 +144,16 @@ export const isAllocation = (val: unknown): val is Allocation => {
    try {
       const test = val as Allocation;
       return (
-         (typeof test.id === 'undefined' || typeof test.id === 'number') &&
-         typeof test.txn_id === 'number' &&
-         typeof test.date === 'string' &&
-         typeof test.amount === 'number' &&
-         typeof test.description === 'string' &&
-         typeof test.source === 'string' &&
-         typeof test.category === 'string' &&
-         typeof test.location === 'string' &&
-         typeof test.note === 'string' || test.note === null
+         ((typeof test.id === 'undefined' || typeof test.id === 'number') &&
+            typeof test.txn_id === 'number' &&
+            typeof test.date === 'string' &&
+            typeof test.amount === 'number' &&
+            typeof test.description === 'string' &&
+            typeof test.source === 'string' &&
+            typeof test.category === 'string' &&
+            typeof test.location === 'string' &&
+            typeof test.note === 'string') ||
+         test.note === null
       );
    } catch {
       return false;
@@ -154,6 +169,21 @@ export const isAllocationList = (val: unknown): val is AllocationList => {
          Array.isArray(test.allocations) &&
          test.allocations.every((t) => isAllocation(t)) &&
          test.total >= test.allocations.length
+      );
+   } catch {
+      return false;
+   }
+};
+
+/* Type predicate for AllocationList */
+export const isCategorisation = (val: unknown): val is Categorisation => {
+   try {
+      const test = val as Categorisation;
+      return (
+         Array.isArray(test.categories) &&
+         Array.isArray(test.locations) &&
+         test.categories.every((t) => typeof t === 'string') &&
+         test.locations.every((t) => typeof t === 'string')
       );
    } catch {
       return false;

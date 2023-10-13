@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import useLocalStorageState from 'use-local-storage-state';
 import useSessionStorageState from 'use-session-storage-state';
-import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens } from '../app.types';
+import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens, QueryOptions } from '../app.types';
 import { UseMutationOptions, UseQueryOptions, useQuery as useReactQuery, useMutation as useReactMutation } from '@tanstack/react-query';
 
 interface TokenData {
@@ -181,38 +181,71 @@ export const useAPI = () => {
       [runRawRequest, runTokenRequest, refreshToken, accessToken, accessTokenLS]
    );
 
-   const useQuery = <T>(apiOpts: APIRequest<T>, queryOpts?: UseQueryOptions<APIResponse<T>, APIError>) => {
-      if (!queryOpts) {
-         queryOpts = {};
-      }
-      if (!queryOpts.queryKey) {
-         const queryKey = [apiOpts.method, apiOpts.url];
-         if (apiOpts.params) {
-            for (const [key, value] of apiOpts.params) {
-               queryKey.push(key);
-               queryKey.push(value);
-            }
+   const useQuery = <T>(opts: APIRequest<T> & QueryOptions<T>) => {
+      const queryKey = [opts.method, opts.url];
+      if (opts.params) {
+         for (const [key, value] of opts.params) {
+            queryKey.push(key);
+            queryKey.push(value);
          }
-         queryOpts.queryKey = queryKey;
       }
-      return useReactQuery<APIResponse<T>, APIError>({
-         ...queryOpts,
-         queryFn: useCallback(() => request<T>(apiOpts), [apiOpts]),
-      });
+
+      const { enabled, runOnce, onSuccess, ...apiOpts } = opts;
+      const queryOpts: UseQueryOptions<APIResponse<T>, APIError> = {
+         queryKey,
+         enabled,
+         queryFn: async () => {
+            const resp = await request<T>(apiOpts);
+            if (onSuccess) {
+               onSuccess(resp.data);
+            }
+            return resp;
+         },
+      };
+      if (runOnce) {
+         queryOpts.staleTime = Infinity;
+         queryOpts.cacheTime = Infinity;
+         queryOpts.retry = 0;
+      }
+      const query = useReactQuery<APIResponse<T>, APIError>(queryOpts);
+
+      return query;
    };
 
-   const useMutation = <TOutput, TInput = void>(
+   const useMutationFn = <TInput = void, TOutput = void>(
       fn: (data: TInput) => Promise<APIResponse<TOutput>>,
       mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>
    ) => {
       if (!mutationOpts) {
          mutationOpts = {};
       }
-      return useReactMutation<APIResponse<TOutput>, APIError, TInput>({
+      const mutation = useReactMutation<APIResponse<TOutput>, APIError, TInput>({
          ...mutationOpts,
          mutationFn: fn,
       });
+
+      return {
+         run: mutation.mutate,
+         runAsync: mutation.mutateAsync,
+         query: mutation,
+      };
    };
 
-   return { request, login, logout, useQuery, useMutation, user: tokenData.sub, expiry: tokenData.exp };
+   const useMutationQuery = <TInput = void, TOutput = void>(
+      apiOpts: APIRequest<TOutput>,
+      mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>
+   ) => {
+      return useMutationFn(
+         useCallback(
+            (data: TInput) => {
+               const body = data ? JSON.stringify(data) : undefined;
+               return request<TOutput>({ ...apiOpts, body });
+            },
+            [apiOpts]
+         ),
+         mutationOpts
+      );
+   };
+
+   return { request, login, logout, useQuery, useMutationFn, useMutationQuery, user: tokenData.sub, expiry: tokenData.exp };
 };

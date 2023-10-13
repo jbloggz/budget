@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isAPIAuthTokens, isNonEmptyString, isTransaction, isTransactionList } from './app.types';
+import { isAPIAuthTokens, isCategorisation, isNonEmptyString, isTransaction, isTransactionList } from './app.types';
 
 describe('isNonEmptyString', () => {
    it('correctly checks a non-empty string', () => {
@@ -82,16 +82,21 @@ describe('isTransactionList', () => {
       expect(
          isTransactionList({ total: 1, transactions: [{ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' }] })
       ).toBe(true);
-      expect(isTransactionList({ total: 10, transactions: [
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' }
-      ] })).toBe(true);
+      expect(
+         isTransactionList({
+            total: 10,
+            transactions: [
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+            ],
+         })
+      ).toBe(true);
    });
 
    it('fails for missing properties', () => {
@@ -105,27 +110,57 @@ describe('isTransactionList', () => {
    });
 
    it('fails for incorrect transactions', () => {
-      expect(isTransactionList({ total: 10, transactions: [
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: 5, amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' }
-      ] })).toBe(false);
+      expect(
+         isTransactionList({
+            total: 10,
+            transactions: [
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: 5, amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+            ],
+         })
+      ).toBe(false);
    });
 
    it('fails for incorrect total', () => {
-      expect(isTransactionList({ total: 3, transactions: [
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-         { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' }
-      ] })).toBe(false);
+      expect(
+         isTransactionList({
+            total: 3,
+            transactions: [
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+            ],
+         })
+      ).toBe(false);
+   });
+});
+
+describe('isCategorisation', () => {
+   it('correctly checks empty lists', () => {
+      expect(isCategorisation({ categories: [], locations: [] })).toBe(true);
+   });
+
+   it('correctly checks populated lists', () => {
+      expect(isCategorisation({ categories: ['test', 'hello'], locations: ['foo', 'bar', 'baz'] })).toBe(true);
+   });
+
+   it('fails for missing category/location', () => {
+      expect(isCategorisation({ categories: ['test', 'hello'] })).toBe(false);
+      expect(isCategorisation({ locations: ['test', 'hello'] })).toBe(false);
+   });
+
+   it('fails for incorrect category/location type', () => {
+      expect(isCategorisation({ categories: 1, locations: ['foo', 'bar', 'baz'] })).toBe(false);
+      expect(isCategorisation({ locations: 1, categories: ['foo', 'bar', 'baz'] })).toBe(false);
    });
 });
