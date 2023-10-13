@@ -7,13 +7,14 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { AbsoluteCenter, Avatar, Divider, FormControl, FormLabel, Heading, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
+import { AbsoluteCenter, Divider, FormControl, FormLabel, Heading, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
 // @ts-expect-error: chakra-multiselect doesn't export types properly
 import { MultiSelect, Option } from 'chakra-multiselect';
 import { TransactionList, isTransactionList, SortOrder } from '../app.types';
 import { useAPI } from '../hooks';
-import { DateRangePicker, Table, SearchFilter } from '../components';
+import { DateRangePicker, Table, SearchFilter, SourceLogo } from '../components';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { prettyAmount, prettyDate } from '../utils';
 
 const Transactions = () => {
    const toast = useToast();
@@ -100,6 +101,10 @@ const Transactions = () => {
                         text: 'Amount',
                      },
                      {
+                        sortable: true,
+                        text: 'Balance',
+                     },
+                     {
                         sortable: false,
                         text: '',
                      },
@@ -111,18 +116,16 @@ const Transactions = () => {
                              .map((txn) => ({
                                 id: txn.id || 0,
                                 cells: [
-                                   <Text>{new Date(txn.date).toLocaleDateString()}</Text>,
+                                   <Text>{prettyDate(txn.date)}</Text>,
                                    <Text>{txn.description}</Text>,
-                                   <Text color={txn.amount < 0 ? 'red.500' : 'green.500'}>
-                                      {(txn.amount / 100).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })}
-                                   </Text>,
-                                   <Avatar
-                                   src={'/' + txn.source.replaceAll(' ', '') + '.png'}
-                                   name={txn.source}
-                                   title={txn.source}
-                                   size={{ base: 'xs', md: 'sm' }}
-                                />,
-                             ],
+                                   <Text color={txn.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(txn.amount)}</Text>,
+                                   txn.balance ? (
+                                      <Text color={txn.balance < 0 ? 'red.500' : 'green.500'}>{prettyAmount(txn.balance)}</Text>
+                                   ) : (
+                                      <Text></Text>
+                                   ),
+                                   <SourceLogo source={txn.source} />,
+                                ],
                              }))
                         : []
                   }
