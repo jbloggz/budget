@@ -72,10 +72,15 @@ export type APIResponse<T> = {
    data: T;
 };
 
-/* The options to use for react-query */
+/* The options to use for react-query useQuery */
 export interface QueryOptions<T> {
    enabled?: boolean;
    runOnce?: boolean;
+   onSuccess?: (data: T) => void;
+}
+
+/* The options to use for react-query useMutation */
+export interface MutationOptions<T> {
    onSuccess?: (data: T) => void;
 }
 

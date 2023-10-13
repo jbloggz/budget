@@ -27,23 +27,23 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       runOnce: true,
       enabled: api.expiry > 0,
    });
-   const login = async (creds: LoginCredentials) => loginQuery.runAsync(creds);
+   const login = async (creds: LoginCredentials) => loginQuery.mutateAsync(creds);
    const logout = useCallback(() => {
-      logoutQuery.runAsync();
+      logoutQuery.mutate();
       navigate('/');
       window.location.reload();
    }, [navigate, logoutQuery]);
 
    return (
       <AuthContext.Provider value={{ login, logout }}>
-         {loginQuery.query.isSuccess || tokenCheckQuery.isSuccess ? (
+         {loginQuery.isSuccess || tokenCheckQuery.isSuccess ? (
             children
          ) : tokenCheckQuery.isFetching ? (
             <Center h="100vh">
                <Spinner />
             </Center>
          ) : (
-            <Login isLoading={loginQuery.query.isLoading} />
+            <Login isLoading={loginQuery.isLoading} />
          )}
       </AuthContext.Provider>
    );

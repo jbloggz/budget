@@ -26,19 +26,10 @@ import {
    Text,
    useToast,
 } from '@chakra-ui/react';
-// @ts-expect-error: chakra-multiselect doesn't export types properly
-import { MultiSelect, useMultiSelect } from 'chakra-multiselect';
 import { Allocation, Categorisation, isAllocation, isCategorisation } from '../app.types';
 import { useAPI } from '../hooks';
 import { prettyAmount, prettyDate } from '../utils';
-import { SourceLogo } from '../components';
-
-interface SelectInputProps {
-   name: string;
-   value: string;
-   options: string[];
-   onChange: (val: string) => void;
-}
+import { SelectInput, SourceLogo } from '../components';
 
 interface EditAllocationModalProps {
    id: string;
@@ -46,27 +37,6 @@ interface EditAllocationModalProps {
    onClose: () => void;
    onSave: () => void;
 }
-
-const SelectInput = (props: SelectInputProps) => {
-   const data = useMultiSelect({
-      value: props.value,
-      options: props.options,
-   });
-
-   return (
-      <MultiSelect
-         options={data.options}
-         value={data.value}
-         onChange={(value: string, change: unknown) => {
-            data.onChange(value, change);
-            props.onChange(value);
-         }}
-         placeholder={'Select or add a ' + props.name}
-         single
-         create
-      />
-   );
-};
 
 const EditAllocationModal = (props: EditAllocationModalProps) => {
    const toast = useToast();
@@ -97,30 +67,34 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    });
    const { categories, locations } =
       categoriseQuery.isSuccess && categoriseQuery.data ? categoriseQuery.data.data : { categories: null, locations: null };
-   const updateQuery = api.useMutationQuery<Allocation>({ method: 'PUT', url: '/api/allocation/' });
-   const splitQuery = api.useMutationQuery<{ amount: number }, Allocation>({ method: 'PUT', url: `/api/allocation/${props.id}/split` });
+   const updateQuery = api.useMutationQuery<Allocation>({
+      method: 'PUT',
+      url: '/api/allocation/',
+      onSuccess: () => props.onSave(),
+   });
+   const splitQuery = api.useMutationQuery<{ amount: number }, Allocation>({
+      method: 'PUT',
+      url: `/api/allocation/${props.id}/split/`,
+      onSuccess: (new_alloc: Allocation) => {
+         new_alloc.category = category;
+         new_alloc.location = location;
+         updateQuery.mutate(new_alloc);
+      },
+   });
 
    /* Check for query errors */
    useEffect(() => {
-      if (allocationQuery.isError) {
-         toast({
-            title: 'Error',
-            description: allocationQuery.error.message,
-            status: 'error',
-            duration: 5000,
-         });
-         props.onClose();
+      for (const query of [allocationQuery, categoriseQuery, updateQuery, splitQuery]) {
+         if (query.isError) {
+            toast({
+               title: 'Error',
+               description: query.error.message,
+               status: 'error',
+               duration: 5000,
+            });
+         }
       }
-      if (categoriseQuery.isError) {
-         toast({
-            title: 'Error',
-            description: categoriseQuery.error.message,
-            status: 'error',
-            duration: 5000,
-         });
-         props.onClose();
-      }
-   }, [allocationQuery, categoriseQuery, toast, props]);
+   }, [allocationQuery, categoriseQuery, updateQuery, splitQuery, toast]);
 
    /* Run when user clicks the save button */
    const onSave = async () => {
@@ -152,17 +126,15 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          return;
       }
 
-      if (intAmount === 0) {
+      if (intAmount > 0) {
+         /* Split the allocation */
+         splitQuery.mutate({ amount: intAmount });
+      } else {
          /* Update the allocation */
          allocation.category = category;
          allocation.location = location;
-         await updateQuery.runAsync(allocation);
-      } else {
-         /* Split the allocation */
-         alert('NOT IMPLEMENTED!!');
-         return;
+         updateQuery.mutate(allocation);
       }
-      props.onSave();
    };
 
    return (
@@ -250,8 +222,10 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                <ModalBody>Unable to find allocation with id {props.id}</ModalBody>
             )}
             <ModalFooter>
-               <Button onClick={onSave}>{amount !== '' && +amount !== 0 ? 'Split' : 'Save'}</Button>
-               <Button ml={6} onClick={props.onClose}>
+               <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} onClick={onSave}>
+                  {amount !== '' && +amount !== 0 ? 'Split' : 'Save'}
+               </Button>
+               <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} ml={6} onClick={props.onClose}>
                   Close
                </Button>
             </ModalFooter>

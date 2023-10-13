@@ -216,25 +216,14 @@ export const useAPI = () => {
       fn: (data: TInput) => Promise<APIResponse<TOutput>>,
       mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>
    ) => {
-      if (!mutationOpts) {
-         mutationOpts = {};
-      }
-      const mutation = useReactMutation<APIResponse<TOutput>, APIError, TInput>({
-         ...mutationOpts,
+      return useReactMutation<APIResponse<TOutput>, APIError, TInput>({
          mutationFn: fn,
+         ...mutationOpts,
       });
-
-      return {
-         run: mutation.mutate,
-         runAsync: mutation.mutateAsync,
-         query: mutation,
-      };
    };
 
-   const useMutationQuery = <TInput = void, TOutput = void>(
-      apiOpts: APIRequest<TOutput>,
-      mutationOpts?: UseMutationOptions<APIResponse<TOutput>, APIError, TInput>
-   ) => {
+   const useMutationQuery = <TInput = void, TOutput = void>(opts: APIRequest<TOutput> & QueryOptions<TOutput>) => {
+      const { onSuccess, ...apiOpts } = opts;
       return useMutationFn(
          useCallback(
             (data: TInput) => {
@@ -243,7 +232,7 @@ export const useAPI = () => {
             },
             [apiOpts]
          ),
-         mutationOpts
+         { ...(onSuccess && { onSuccess: (resp: APIResponse<TOutput>) => onSuccess(resp.data) }) }
       );
    };
 

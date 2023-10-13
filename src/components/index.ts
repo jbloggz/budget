@@ -12,10 +12,11 @@ import DateRangePicker from './DateRangePicker';
 import EditAllocationModal from './EditAllocationModal';
 import NavList from './NavList';
 import SearchFilter from './SearchFilter';
+import SelectInput from './SelectInput';
 import SideBar from './SideBar';
 import SourceLogo from './SourceLogo';
 import Table from './Table';
 import TopBar from './TopBar';
 import TreeView from './TreeView';
 
-export { App, BottomNav, DateRangePicker, EditAllocationModal, NavList, SearchFilter, SideBar, SourceLogo, Table, TopBar, TreeView };
+export { App, BottomNav, DateRangePicker, EditAllocationModal, NavList, SearchFilter, SelectInput, SideBar, SourceLogo, Table, TopBar, TreeView };
