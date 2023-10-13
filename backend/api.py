@@ -108,6 +108,8 @@ def get_categorise(description: str) -> Categorisation:
         all_locations.discard(location)
     res.locations.extend(sorted(all_locations))
 
+    res.categories = [v for v in res.categories if v != 'Unknown']
+    res.locations = [v for v in res.locations if v != 'Unknown']
     return res
 
 

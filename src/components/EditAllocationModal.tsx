@@ -99,8 +99,12 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    /* Update category/location when allocation is loaded */
    useEffect(() => {
       if (allocation) {
-         setCategory(allocation.category);
-         setLocation(allocation.location);
+         if (allocation.category !== 'Unknown') {
+            setCategory(allocation.category);
+         }
+         if (allocation.location !== 'Unknown') {
+            setLocation(allocation.location);
+         }
       }
    }, [allocation]);
 
@@ -116,11 +120,11 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          });
          return;
       }
-      if (!category || category === 'Unknown') {
+      if (!category) {
          setCategoryErrmsg('Please select a category');
          error = true;
       }
-      if (!location || location === 'Unknown') {
+      if (!location) {
          setLocationErrmsg('Please select a location');
          error = true;
       }
@@ -178,7 +182,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                         <SelectInput
                            name={'category'}
                            options={categories}
-                           value={allocation.category}
+                           value={category}
                            onChange={(val: string) => {
                               setCategoryErrmsg('');
                               setCategory(val);
@@ -197,7 +201,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                         <SelectInput
                            name={'location'}
                            options={locations}
-                           value={allocation.location}
+                           value={location}
                            onChange={(val: string) => {
                               setLocationErrmsg('');
                               setLocation(val);
