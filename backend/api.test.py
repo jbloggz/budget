@@ -518,7 +518,7 @@ class TestAPI(unittest.TestCase):
         alloc_list = resp.json()['allocations']
         self.assertEqual(len(alloc_list), 1)
         alloc = alloc_list[0]
-        response = self.client.get(f'/api/allocation/split?id={alloc["id"]}&amount=1234')
+        response = self.client.put(f'/api/allocation/{alloc["id"]}/split', json={'amount': 1234})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['amount'], 1234)
         resp = self.client.get(f'/api/allocation/?txn={txn_response.json()["id"]}')
@@ -541,7 +541,7 @@ class TestAPI(unittest.TestCase):
         alloc_list = resp.json()['allocations']
         self.assertEqual(len(alloc_list), 1)
         alloc = alloc_list[0]
-        response = self.client.get(f'/api/allocation/split?id={alloc["id"]}&amount=1234')
+        response = self.client.put(f'/api/allocation/{alloc["id"]}/split', json={'amount': 1234})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['amount'], 1234)
         resp = self.client.get(f'/api/allocation/?txn={txn_response.json()["id"]}')
@@ -549,7 +549,7 @@ class TestAPI(unittest.TestCase):
         alloc_list = resp.json()['allocations']
         self.assertEqual(alloc_list[0]['amount'], 8698)
         self.assertEqual(alloc_list[1]['amount'], 1234)
-        response = self.client.get(f'/api/allocation/merge/?ids={alloc_list[0]["id"]}&ids={alloc_list[1]["id"]}')
+        response = self.client.put(f'/api/allocation/{alloc_list[0]["id"]}/merge', json=[alloc_list[1]["id"]])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['amount'], 9932)
         resp = self.client.get(f'/api/allocation/?txn={txn_response.json()["id"]}')
@@ -559,7 +559,7 @@ class TestAPI(unittest.TestCase):
 
     def test_throws_on_merge_allocations_fail(self) -> None:
         with self.assertRaises(ValueError):
-            self.client.get(f'/api/allocation/merge/?ids=10000&ids=223423&ids=34353452')
+            self.client.put(f'/api/allocation/10000/merge', json=[223423, 34353452])
 
     def test_failed_with_corrupt_token(self) -> None:
         self.client.headers.update({'Authorization': 'Bearer foobar'})

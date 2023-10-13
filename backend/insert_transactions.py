@@ -160,7 +160,7 @@ def update_balance(name: str, initial_balance: int, db):
     Update balance of all transactions
 
     Args:
-        name: Te name of the source
+        name: The name of the source
         initial_balance: The starting balance for the source
         db: The database object
     '''

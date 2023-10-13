@@ -43,6 +43,15 @@ class AllocationList(BaseModel):
     allocations: List[Allocation]
 
 
+class Categorisation(BaseModel):
+    categories: List[str]
+    locations: List[str]
+
+
+class SplitAmount(BaseModel):
+    amount: int
+
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str

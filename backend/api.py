@@ -8,23 +8,23 @@
 
 # System imports
 import os
+import difflib
 from typing import List, Annotated, Optional
-from fastapi import FastAPI, Query, Depends, HTTPException, status, Response
+from fastapi import FastAPI, Query, Depends, HTTPException, status, Response, Body
 from fastapi.staticfiles import StaticFiles
 
 # Local imports
 from database import Database
-from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm
+from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation
 from auth import create_token, verify_user, validate_access_token, validate_refresh_token
 
 
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
-db = Database()
 
 
 @app.post('/api/transaction/', status_code=201, response_model=Transaction, dependencies=[Depends(validate_access_token)])
 def add_transaction(txn: Transaction) -> Transaction:
-    with db:
+    with Database() as db:
         db.add_transaction(txn)
     return txn
 
@@ -37,7 +37,7 @@ def get_transactions(start: Optional[str],
                      sort_order: str = 'desc',
                      limit: Optional[int] = None,
                      offset: int = 0) -> TransactionList:
-    with db:
+    with Database() as db:
         filter_list: List[str] = []
         params: List[str | int] = []
 
@@ -71,11 +71,44 @@ def get_transactions(start: Optional[str],
         return db.get_transaction_list(query, tuple(params), limit, offset)
 
 
-@app.get("/api/transaction/{txn_id}")
+@app.get('/api/transaction/{txn_id}', response_model=Optional[Transaction], dependencies=[Depends(validate_access_token)])
 def get_transaction(txn_id: int) -> Optional[Transaction]:
-    with db:
+    with Database() as db:
         txn_list = db.get_transaction_list(f'id = {txn_id}')
         return txn_list.transactions[0] if txn_list.transactions else None
+
+
+@app.get('/api/categorise/', response_model=Categorisation, dependencies=[Depends(validate_access_token)])
+def get_categorise(description: str) -> Categorisation:
+    with Database() as db:
+        all_categories = set(db.get_category_list())
+        all_locations = set(db.get_location_list())
+        descr_map = db.get_description_map()
+
+    category_scores = {k: 0 for k in all_categories}
+    location_scores = {k: 0 for k in all_locations}
+    for candidate_description, candidate_data in descr_map.items():
+        score = difflib.SequenceMatcher(a=description, b=candidate_description).ratio()
+        for category, count in candidate_data['categories'].items():
+            category_scores[category] += score * count
+        for location, count in candidate_data['locations'].items():
+            location_scores[location] += score * count
+
+    res = Categorisation(categories=[], locations=[])
+
+    # Get the list of categories sorted by score
+    for category in map(lambda x: x[0], sorted(category_scores.items(), key=lambda x: x[1])):
+        res.categories.append(category)
+        all_categories.discard(category)
+    res.categories.extend(sorted(all_categories))
+
+    # Get the list of locations sorted by score
+    for location in map(lambda x: x[0], sorted(location_scores.items(), key=lambda x: x[1])):
+        res.locations.append(location)
+        all_locations.discard(location)
+    res.locations.extend(sorted(all_locations))
+
+    return res
 
 
 @app.get('/api/allocation/', response_model=AllocationList, dependencies=[Depends(validate_access_token)])
@@ -87,7 +120,7 @@ def get_allocations(txn: Optional[int] = None,
                     sort_order: str = 'asc',
                     limit: Optional[int] = None,
                     offset: int = 0) -> AllocationList:
-    with db:
+    with Database() as db:
         filter_list: List[str] = []
         params: List[str | int] = []
 
@@ -134,22 +167,29 @@ def get_allocations(txn: Optional[int] = None,
         return db.get_allocation_list(query, tuple(params), limit, offset)
 
 
+@app.get('/api/allocation/{alloc_id}', response_model=Optional[Allocation], dependencies=[Depends(validate_access_token)])
+def get_allocation(alloc_id: int) -> Optional[Allocation]:
+    with Database() as db:
+        alloc_list = db.get_allocation_list(f'allocation.id = {alloc_id}')
+        return alloc_list.allocations[0] if alloc_list.allocations else None
+
+
 @app.put('/api/allocation/', dependencies=[Depends(validate_access_token)])
 def update_allocation(alloc: Allocation) -> None:
-    with db:
+    with Database() as db:
         db.update_allocation(alloc)
 
 
-@app.get('/api/allocation/split/', dependencies=[Depends(validate_access_token)])
-def split_allocation(id: int, amount: int) -> Allocation:
-    with db:
-        return db.split_allocation(id, amount)
+@app.put('/api/allocation/{alloc_id}/split/', dependencies=[Depends(validate_access_token)])
+def split_allocation(alloc_id: int, amount: Annotated[int, Body(embed=True)]) -> Allocation:
+    with Database() as db:
+        return db.split_allocation(alloc_id, amount)
 
 
-@app.get('/api/allocation/merge/', dependencies=[Depends(validate_access_token)])
-def merge_allocation(ids: Annotated[List[int], Query()]) -> Allocation:
-    with db:
-        return db.merge_allocations(ids)
+@app.put('/api/allocation/{alloc_id}/merge/', dependencies=[Depends(validate_access_token)])
+def merge_allocation(alloc_id: int, ids: Annotated[List[int], Body()]) -> Allocation:
+    with Database() as db:
+        return db.merge_allocations([alloc_id, *ids])
 
 
 @app.post('/api/oauth2/token/', response_model=Token)

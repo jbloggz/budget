@@ -10,7 +10,7 @@
 import os
 import re
 import sqlite3
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 import time
 
 # Local imports
@@ -179,6 +179,60 @@ class Database:
         txn_list = self.get_transaction_list(f'id = {txn_id}')
         return txn_list.transactions[0] if txn_list.transactions else None
 
+    def get_description_map(self) -> Dict:
+        '''
+        Get a map of descriptions to categories and locations
+
+        Returns:
+            A map of descriptions to the categories/locations that have need assigned
+        '''
+        query = '''SELECT LOWER(txn.description) as description,
+                          category.name as category,
+                          location.name as location
+                   FROM allocation
+                   LEFT JOIN category ON category_id = category.id
+                   LEFT JOIN location ON location_id = location.id
+                   LEFT JOIN txn ON txn_id = txn.id'''
+
+        self.db.execute(query)
+        res: Dict[str, Dict] = {}
+        for row in self.db:
+            description, category, location = row
+            if description not in res:
+                res[description] = {
+                    'categories': {},
+                    'locations': {}
+                }
+            if category not in res[description]['categories']:
+                res[description]['categories'][category] = 0
+            if location not in res[description]['locations']:
+                res[description]['locations'][location] = 0
+
+            res[description]['categories'][category] += 1
+            res[description]['locations'][location] += 1
+
+        return res
+
+    def get_category_list(self) -> List[str]:
+        '''
+        Get a list of all categories
+
+        Returns:
+            The list of all category names
+        '''
+        self.db.execute('SELECT name FROM category')
+        return [v[0] for v in self.db.fetchall()]
+
+    def get_location_list(self) -> List[str]:
+        '''
+        Get a list of all locations
+
+        Returns:
+            The list of all location names
+        '''
+        self.db.execute('SELECT name FROM location')
+        return [v[0] for v in self.db.fetchall()]
+
     def get_category_id(self, name: str) -> int:
         '''
         Get a category id (creating one if necessary)
@@ -197,7 +251,7 @@ class Database:
     def get_location_id(self, name: str) -> int:
         '''
         Get a location id (creating one if necessary)
-filter
+
         Args:
             name: The name of the location
 
