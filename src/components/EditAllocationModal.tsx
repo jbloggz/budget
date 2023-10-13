@@ -116,11 +116,11 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          });
          return;
       }
-      if (!category) {
+      if (!category || category === 'Unknown') {
          setCategoryErrmsg('Please select a category');
          error = true;
       }
-      if (!location) {
+      if (!location || location === 'Unknown') {
          setLocationErrmsg('Please select a location');
          error = true;
       }
