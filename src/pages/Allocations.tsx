@@ -6,15 +6,17 @@
  * Allocations.tsx: This file contains the allocations page component
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { AbsoluteCenter, Avatar, Divider, FormControl, FormLabel, HStack, Heading, Spacer, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AbsoluteCenter, Divider, FormControl, FormLabel, HStack, Heading, Spacer, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
 import groupBy from 'object.groupby';
 // @ts-expect-error: chakra-multiselect doesn't export types properly
 import { MultiSelect, Option } from 'chakra-multiselect';
-import { DateRangePicker, SearchFilter, Table, TreeView } from '../components';
+import { DateRangePicker, SearchFilter, SourceLogo, Table, TreeView } from '../components';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { Allocation, AllocationList, isAllocationList } from '../app.types';
 import { useAPI } from '../hooks';
+import { prettyAmount, prettyDate } from '../utils';
+import { Outlet, useNavigate } from 'react-router-dom';
 
 interface AllocationHeaderProps {
    text: string;
@@ -44,6 +46,7 @@ const Allocations = () => {
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
    const [selectedSources, setSelectedSources] = useState<Option[]>([]);
    const [textFilter, setTextFilter] = useState<string>('');
+   const navigate = useNavigate();
    const query = api.useQuery<AllocationList>({
       method: 'GET',
       url: '/api/allocation/',
@@ -60,6 +63,10 @@ const Allocations = () => {
    const onDateChange = (dates: Date[]) => {
       setDates(dates);
    };
+
+   const onAllocationChange = useCallback(() => {
+      query.refetch();
+   }, [query]);
 
    useEffect(() => {
       if (query.isError) {
@@ -90,21 +97,14 @@ const Allocations = () => {
                {
                   content: (
                      <Table
-                        onRowClick={(_, row) => console.log(row.id)}
+                        onRowClick={(_, row) => !isNaN(+row.id) && navigate(`/allocations/${+row.id}`, {state: 'modal'})}
                         rows={locationList.map((alloc) => ({
                            id: alloc.id || 0,
                            cells: [
-                              <Text>{new Date(alloc.date).toLocaleDateString()}</Text>,
+                              <Text>{prettyDate(alloc.date)}</Text>,
                               <Text>{alloc.description}</Text>,
-                              <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>
-                                 {(alloc.amount / 100).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })}
-                              </Text>,
-                              <Avatar
-                                 src={'/' + alloc.source.replaceAll(' ', '') + '.png'}
-                                 name={alloc.source}
-                                 title={alloc.source}
-                                 size={{ base: 'xs', md: 'sm' }}
-                              />,
+                              <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
+                              <SourceLogo source={alloc.source} />,
                            ],
                         }))}
                      />
@@ -113,7 +113,7 @@ const Allocations = () => {
             ],
          })),
       }));
-   }, [allocations]);
+   }, [allocations, navigate]);
 
    return (
       <>
@@ -162,6 +162,7 @@ const Allocations = () => {
                />
             </>
          )}
+         <Outlet context={onAllocationChange} />
       </>
    );
 };

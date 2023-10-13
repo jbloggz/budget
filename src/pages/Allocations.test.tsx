@@ -13,6 +13,7 @@ import { mockResizeObserver } from '../mocks';
 import { Theme } from '../app.types';
 import { ThemeProvider } from '../providers';
 import { Allocations } from '.';
+import { MemoryRouter } from 'react-router-dom';
 
 const queryClient = new QueryClient();
 
@@ -25,11 +26,13 @@ describe('Allocations', () => {
       const theme: Theme = 'dark';
       const setTheme = vi.fn();
       render(
-         <ThemeProvider theme={theme} setTheme={setTheme}>
-            <QueryClientProvider client={queryClient}>
-               <Allocations />
-            </QueryClientProvider>
-         </ThemeProvider>
+         <MemoryRouter>
+            <ThemeProvider theme={theme} setTheme={setTheme}>
+               <QueryClientProvider client={queryClient}>
+                  <Allocations />
+               </QueryClientProvider>
+            </ThemeProvider>{' '}
+         </MemoryRouter>
       );
       const title = screen.getByText('Allocations');
       expect(title).toBeInTheDocument();
