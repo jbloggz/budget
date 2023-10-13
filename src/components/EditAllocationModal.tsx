@@ -96,6 +96,14 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       }
    }, [allocationQuery, categoriseQuery, updateQuery, splitQuery, toast]);
 
+   /* Update category/location when allocation is loaded */
+   useEffect(() => {
+      if (allocation) {
+         setCategory(allocation.category);
+         setLocation(allocation.location);
+      }
+   }, [allocation]);
+
    /* Run when user clicks the save button */
    const onSave = async () => {
       let error = false;
