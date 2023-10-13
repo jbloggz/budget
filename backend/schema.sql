@@ -33,15 +33,15 @@ CREATE INDEX IF NOT EXISTS txn_description_idx ON txn(description);
 
 /* A table to store the categories */
 CREATE TABLE IF NOT EXISTS category (
-   id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
-   name            TEXT     NOT NULL      /* The category name */
+   id              INTEGER  PRIMARY KEY,     /* A unique identifier for this table */
+   name            TEXT     NOT NULL UNIQUE  /* The category name */
 );
 INSERT OR IGNORE INTO category VALUES (1, 'Unknown');
 
 /* A table to store the locations */
 CREATE TABLE IF NOT EXISTS location (
-   id              INTEGER  PRIMARY KEY,  /* A unique identifier for this table */
-   name            TEXT     NOT NULL      /* The location name */
+   id              INTEGER  PRIMARY KEY,     /* A unique identifier for this table */
+   name            TEXT     NOT NULL UNIQUE  /* The location name */
 );
 INSERT OR IGNORE INTO location VALUES (1, 'Unknown');
 
