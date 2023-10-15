@@ -43,9 +43,14 @@ class AllocationList(BaseModel):
     allocations: List[Allocation]
 
 
+class Score(BaseModel):
+    name: str
+    score: float
+
+
 class Categorisation(BaseModel):
-    categories: List[str]
-    locations: List[str]
+    categories: List[Score]
+    locations: List[Score]
 
 
 class SplitAmount(BaseModel):

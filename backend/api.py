@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 # Local imports
 from database import Database
-from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation
+from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score
 from auth import create_token, verify_user, validate_access_token, validate_refresh_token
 
 
@@ -81,35 +81,45 @@ def get_transaction(txn_id: int) -> Optional[Transaction]:
 @app.get('/api/categorise/', response_model=Categorisation, dependencies=[Depends(validate_access_token)])
 def get_categorise(description: str) -> Categorisation:
     with Database() as db:
-        all_categories = set(db.get_category_list())
-        all_locations = set(db.get_location_list())
+        all_categories = set([v for v in db.get_category_list() if v != 'Unknown'])
+        all_locations = set([v for v in db.get_location_list() if v != 'Unknown'])
         descr_map = db.get_description_map()
 
-    category_scores = {k: 0 for k in all_categories}
-    location_scores = {k: 0 for k in all_locations}
+    category_scores = {k: {'score': 0, 'ratio': 0.0} for k in all_categories}
+    location_scores = {k: {'score': 0, 'ratio': 0.0} for k in all_locations}
+    description = description.lower()
     for candidate_description, candidate_data in descr_map.items():
-        score = difflib.SequenceMatcher(a=description, b=candidate_description).ratio()
+        ratio = difflib.SequenceMatcher(a=description, b=candidate_description).ratio()
         for category, count in candidate_data['categories'].items():
-            category_scores[category] += score * count
+            if category == 'Unknown':
+                continue
+            category_scores[category]['score'] += ratio * count
+            category_scores[category]['ratio'] = max(ratio, category_scores[category]['ratio'])
+
         for location, count in candidate_data['locations'].items():
-            location_scores[location] += score * count
+            if location == 'Unknown':
+                continue
+            location_scores[location]['score'] += ratio * count
+            location_scores[location]['ratio'] = max(ratio, location_scores[location]['ratio'])
 
     res = Categorisation(categories=[], locations=[])
 
-    # Get the list of categories sorted by score
-    for category in map(lambda x: x[0], sorted(category_scores.items(), key=lambda x: x[1])):
-        res.categories.append(category)
+    # Get the list of categories sorted by score, normalised to the best
+    sorted_category_scores = sorted(category_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+    best_score = sorted_category_scores[0][1]
+    for category, score in sorted_category_scores:
+        res.categories.append(Score(name=category, score=score['score'] / best_score['score'] * best_score['ratio']))
         all_categories.discard(category)
-    res.categories.extend(sorted(all_categories))
+    res.categories.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_categories)))
 
-    # Get the list of locations sorted by score
-    for location in map(lambda x: x[0], sorted(location_scores.items(), key=lambda x: x[1])):
-        res.locations.append(location)
+    # Get the list of locations sorted by score, normalised to the best
+    sorted_location_scores = sorted(location_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+    best_score = sorted_location_scores[0][1]
+    for location, score in sorted_location_scores:
+        res.locations.append(Score(name=location, score=score['score'] / best_score['score'] * best_score['ratio']))
         all_locations.discard(location)
-    res.locations.extend(sorted(all_locations))
+    res.locations.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_locations)))
 
-    res.categories = [v for v in res.categories if v != 'Unknown']
-    res.locations = [v for v in res.locations if v != 'Unknown']
     return res
 
 
