@@ -14,6 +14,7 @@ import {
    FormErrorMessage,
    FormHelperText,
    FormLabel,
+   HStack,
    Input,
    Modal,
    ModalBody,
@@ -22,14 +23,17 @@ import {
    ModalFooter,
    ModalHeader,
    ModalOverlay,
+   Spacer,
    Spinner,
+   Tag,
    Text,
    useToast,
 } from '@chakra-ui/react';
 import { Allocation, Categorisation, isAllocation, isCategorisation } from '../app.types';
 import { useAPI } from '../hooks';
 import { prettyAmount, prettyDate } from '../utils';
-import { SelectInput, SourceLogo } from '../components';
+import { SourceLogo } from '../components';
+import { CreatableSelect } from 'chakra-react-select';
 
 interface EditAllocationModalProps {
    id: string;
@@ -37,6 +41,25 @@ interface EditAllocationModalProps {
    onClose: () => void;
    onSave: () => void;
 }
+
+interface SelectOptionProps {
+   name: string;
+   score: number;
+   tagOpacity?: number;
+}
+
+const SelectOption = (props: SelectOptionProps) => {
+   const tagOpacity = typeof props.tagOpacity === 'undefined' ? 1 : props.tagOpacity;
+   return (
+      <HStack w={'100%'}>
+         <Text>{props.name}</Text>
+         <Spacer />
+         <Tag color={'black'} backgroundColor={`hsla(${props.score * 120},100%,50%,${tagOpacity})`}>
+            {(props.score * 100).toFixed(1)}%
+         </Tag>
+      </HStack>
+   );
+};
 
 const EditAllocationModal = (props: EditAllocationModalProps) => {
    const toast = useToast();
@@ -179,14 +202,21 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                   <FormControl mt={4} isRequired isInvalid={categoryErrmsg !== ''}>
                      <FormLabel>Category</FormLabel>
                      {categories ? (
-                        <SelectInput
-                           name={'category'}
-                           options={categories}
-                           value={category}
-                           onChange={(val: string) => {
-                              setCategoryErrmsg('');
-                              setCategory(val);
-                           }}
+                        <CreatableSelect
+                           blurInputOnSelect
+                           defaultInputValue={category}
+                           placeholder={
+                              category || categories.length === 0 ? (
+                                 'Select a category...'
+                              ) : (
+                                 <SelectOption name={categories[0].name} score={categories[0].score} tagOpacity={0.5} />
+                              )
+                           }
+                           options={categories.map((v) => ({
+                              label: <SelectOption name={v.name} score={v.score} />,
+                              value: v.name,
+                           }))}
+                           onChange={(v) => setCategory(v?.value || '')}
                         />
                      ) : (
                         <Center>
@@ -198,14 +228,21 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                   <FormControl mt={4} isRequired isInvalid={locationErrmsg !== ''}>
                      <FormLabel>Location</FormLabel>
                      {locations ? (
-                        <SelectInput
-                           name={'location'}
-                           options={locations}
-                           value={location}
-                           onChange={(val: string) => {
-                              setLocationErrmsg('');
-                              setLocation(val);
-                           }}
+                        <CreatableSelect
+                           blurInputOnSelect
+                           defaultInputValue={location}
+                           placeholder={
+                              location || locations.length === 0 ? (
+                                 'Select a location...'
+                              ) : (
+                                 <SelectOption name={locations[0].name} score={locations[0].score} tagOpacity={0.5} />
+                              )
+                           }
+                           options={locations.map((v) => ({
+                              label: <SelectOption name={v.name} score={v.score} />,
+                              value: v.name,
+                           }))}
+                           onChange={(v) => setLocation(v?.value || '')}
                         />
                      ) : (
                         <Center>

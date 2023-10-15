@@ -21,6 +21,7 @@
       "@tanstack/react-query-devtools": "^4.35.3",
       "chakra-dayzed-datepicker": "^0.2.10",
       "chakra-multiselect": "^0.4.6",
+      "chakra-react-select": "^4.7.4",
       "date-fns": "^2.30.0",
       "dayzed": "^3.2.3",
       "framer-motion": "^10.12.16",

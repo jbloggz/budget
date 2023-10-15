@@ -52,8 +52,8 @@ export type AllocationList = {
 
 /* Category/location lists ordered by closest match to a description */
 export interface Categorisation {
-   categories: string[];
-   locations: string[];
+   categories: { name: string; score: number }[];
+   locations: { name: string; score: number }[];
 }
 
 /* An API request that is expected to response with T */
@@ -187,8 +187,8 @@ export const isCategorisation = (val: unknown): val is Categorisation => {
       return (
          Array.isArray(test.categories) &&
          Array.isArray(test.locations) &&
-         test.categories.every((t) => typeof t === 'string') &&
-         test.locations.every((t) => typeof t === 'string')
+         test.categories.every((t) => typeof t.name === 'string' && typeof t.score === 'number') &&
+         test.locations.every((t) => typeof t.name === 'string' && typeof t.score === 'number')
       );
    } catch {
       return false;
