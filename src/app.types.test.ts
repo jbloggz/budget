@@ -151,7 +151,20 @@ describe('isCategorisation', () => {
    });
 
    it('correctly checks populated lists', () => {
-      expect(isCategorisation({ categories: ['test', 'hello'], locations: ['foo', 'bar', 'baz'] })).toBe(true);
+      expect(
+         isCategorisation({
+            categories: [
+               { name: 'test', score: 23.1 },
+               { name: 'hello', score: 43.0 },
+            ],
+            locations: [
+               { name: 'foo', score: 21.1 },
+               { name: 'bar', score: 6.0 },
+               { name: 'baz', score: 0.1 },
+               { name: 'bill', score: 123.0 },
+            ],
+         })
+      ).toBe(true);
    });
 
    it('fails for missing category/location', () => {
