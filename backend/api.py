@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 # Local imports
 from database import Database
 from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score
-from auth import create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token
+from auth import create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token, clear_cached_token
 
 
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -225,11 +225,17 @@ def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
                 detail='Incorrect username or password',
                 headers={'WWW-Authenticate': 'Bearer'},
             )
-        return create_token(form_data.username, None)
+        return create_token(form_data.username)
 
 
 @app.get('/api/oauth2/token/', response_class=Response, dependencies=[Depends(validate_access_token)])
-def check_auth():
+def check_auth() -> Response:
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post('/api/oauth2/logout/', response_class=Response)
+def logout(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Response:
+    clear_cached_token(form_data.refresh_token)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

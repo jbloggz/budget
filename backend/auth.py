@@ -59,7 +59,7 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_token(user: str, cached_token: Optional[str]) -> Token:
+def create_token(user: str, cached_token: Optional[str] = None) -> Token:
     '''
     Create a JSON web token
 
@@ -115,3 +115,8 @@ def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str
 def get_cached_token(value: Annotated[str, Depends(oauth2_scheme)]) -> Optional[CachedToken]:
     with Database() as db:
         return db.get_cached_token(value)
+
+
+def clear_cached_token(value: Annotated[str, Depends(oauth2_scheme)]) -> None:
+    with Database() as db:
+        db.clear_cached_token(value)

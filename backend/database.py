@@ -123,6 +123,15 @@ class Database:
             token.token.token_type if token.token else None,
             token.value))
 
+    def clear_cached_token(self, value: str) -> None:
+        '''
+        Remove a cached token from the database
+
+        Args:
+            value: The token value
+        '''
+        self.db.execute('DELETE FROM token WHERE value = ?', (value,))
+
     def add_transaction(self, txn: Transaction) -> Transaction:
         '''
         Add a new transaction
