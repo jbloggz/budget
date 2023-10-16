@@ -9,8 +9,9 @@
 # System imports
 import os
 import difflib
+import math
 from typing import List, Annotated, Optional
-from fastapi import FastAPI, Query, Depends, HTTPException, status, Response, Body
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Body
 from fastapi.staticfiles import StaticFiles
 
 # Local imports
@@ -93,13 +94,13 @@ def get_categorise(description: str) -> Categorisation:
         for category, count in candidate_data['categories'].items():
             if category == 'Unknown':
                 continue
-            category_scores[category]['score'] += ratio * count
+            category_scores[category]['score'] += ratio * ratio * math.sqrt(count)
             category_scores[category]['ratio'] = max(ratio, category_scores[category]['ratio'])
 
         for location, count in candidate_data['locations'].items():
             if location == 'Unknown':
                 continue
-            location_scores[location]['score'] += ratio * count
+            location_scores[location]['score'] += ratio * ratio * math.sqrt(count)
             location_scores[location]['ratio'] = max(ratio, location_scores[location]['ratio'])
 
     res = Categorisation(categories=[], locations=[])
