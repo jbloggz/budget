@@ -76,6 +76,15 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       method: 'GET',
       url: '/api/allocation/' + props.id,
       validate: isAllocation,
+      onSuccess: (alloc: Allocation) => {
+         /* Update category/location when allocation is loaded */
+         if (alloc.category !== 'Unknown') {
+            setCategory(alloc.category);
+         }
+         if (alloc.location !== 'Unknown') {
+            setLocation(alloc.location);
+         }
+      },
    });
    const allocation = allocationQuery.data?.data;
 
@@ -89,10 +98,11 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       enabled: allocationQuery.isSuccess,
    });
    const { categories, locations } =
-      categoriseQuery.isSuccess && categoriseQuery.data ? categoriseQuery.data.data : { categories: null, locations: null };
+      categoriseQuery.isSuccess && categoriseQuery.data ? categoriseQuery.data.data : { categories: [], locations: [] };
    const updateQuery = api.useMutationQuery<Allocation>({
       method: 'PUT',
       url: '/api/allocation/',
+      onSuccess: () => props.id !== '0' && props.onSave(),
    });
    const splitQuery = api.useMutationQuery<{ amount: number }, Allocation>({
       method: 'PUT',
@@ -122,8 +132,6 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
             setCategory('');
             setLocation('');
          }
-      } else if (updateQuery.isSuccess) {
-         props.onSave();
       }
    }, [allocation, props, allocationQuery, updateQuery, toast]);
 
@@ -165,11 +173,11 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          });
          return;
       }
-      if (!category) {
+      if (!category && categories.length === 0) {
          setCategoryErrmsg('Please select a category');
          error = true;
       }
-      if (!location) {
+      if (!location && locations.length === 0) {
          setLocationErrmsg('Please select a location');
          error = true;
       }
@@ -188,8 +196,8 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          splitQuery.mutate({ amount: intAmount });
       } else {
          /* Update the allocation */
-         allocation.category = category;
-         allocation.location = location;
+         allocation.category = category || categories[0].name;
+         allocation.location = location || locations[0].name;
          updateQuery.mutate(allocation);
       }
    };
@@ -223,7 +231,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                   </FormControl>
                   <FormControl mt={4} isRequired isInvalid={categoryErrmsg !== ''}>
                      <FormLabel>Category</FormLabel>
-                     {categories ? (
+                     {categories.length > 0 ? (
                         <CreatableSelect
                            blurInputOnSelect
                            defaultInputValue={category}
@@ -249,7 +257,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                   </FormControl>
                   <FormControl mt={4} isRequired isInvalid={locationErrmsg !== ''}>
                      <FormLabel>Location</FormLabel>
-                     {locations ? (
+                     {locations.length > 0 ? (
                         <CreatableSelect
                            blurInputOnSelect
                            defaultInputValue={location}
