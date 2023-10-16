@@ -79,7 +79,7 @@ const TopBar = () => {
                   <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
                      <Avatar name={api.user} size="sm" />
                   </MenuButton>
-                  <MenuList>
+                  <MenuList zIndex={200}>
                      <MenuGroup color="gray.500" title={api.user}>
                         <MenuItem aria-label="Settings" as={Link} to="settings">
                            Settings
