@@ -55,6 +55,11 @@ export const useAPI = () => {
       setTokenData({ sub: '', iat: 0, exp: 0 });
    }, [accessToken]);
 
+   useEffect(() => {
+      setAccessToken(accessTokenLS || accessTokenSS);
+      setRefreshToken(refreshTokenLS || refreshTokenSS);
+   }, [accessTokenLS, refreshTokenLS, accessTokenSS, refreshTokenSS]);
+
    const runRawRequest = useCallback(
       async <T>(options: APIRequest<T>): Promise<APIResponse<T>> => {
          let code = -1;
