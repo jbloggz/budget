@@ -63,6 +63,12 @@ class Token(BaseModel):
     token_type: str
 
 
+class CachedToken(BaseModel):
+    value: str
+    expire: int
+    token: Optional[Token]
+
+
 class OAuth2RequestForm:
     '''
     This is a dependency class to use with FastAPI for token authorization. Use

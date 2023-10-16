@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple, Dict
 import time
 
 # Local imports
-from model import Transaction, TransactionList, Allocation, AllocationList
+from model import Transaction, TransactionList, Allocation, AllocationList, CachedToken, Token
 
 
 class Database:
@@ -91,16 +91,37 @@ class Database:
         '''
         self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
 
-    def add_token(self, value: str, expire: int) -> None:
-        self.db.execute('INSERT OR IGNORE INTO token VALUES (?, ?)', (value, expire))
-
-    def clear_token(self, value: str) -> None:
-        self.db.execute('DELETE FROM token WHERE value = ?', (value,))
-
-    def has_token(self, value: str) -> bool:
+    def add_cached_token(self, token: CachedToken) -> None:
         self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
-        self.db.execute('SELECT value FROM token WHERE value = ?', (value,))
-        return self.db.fetchone() is not None
+        self.db.execute('INSERT OR IGNORE INTO token VALUES (?, ?, ?, ?, ?)', (
+            token.value,
+            token.expire,
+            token.token.access_token if token.token else None,
+            token.token.refresh_token if token.token else None,
+            token.token.token_type if token.token else None))
+
+    def get_cached_token(self, value: str) -> Optional[CachedToken]:
+        self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
+        self.db.execute('SELECT value, expire, access_token, refresh_token, token_type FROM token WHERE value = ?', (value,))
+        row = self.db.fetchone()
+        if not row:
+            return None
+        return CachedToken(value=row[0], expire=row[1], token=Token(access_token=row[2], refresh_token=row[3], token_type=row[4]) if row[2] else None)
+
+    def update_cached_token(self, token: CachedToken) -> None:
+        '''
+        Updates the database to indicate the token that was created by the cached token
+
+        Args:
+            token: The token to update
+        '''
+        self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
+        self.db.execute('UPDATE token SET expire = ?, access_token = ?, refresh_token = ?, token_type = ? WHERE value = ?', (
+            token.expire,
+            token.token.access_token if token.token else None,
+            token.token.refresh_token if token.token else None,
+            token.token.token_type if token.token else None,
+            token.value))
 
     def add_transaction(self, txn: Transaction) -> Transaction:
         '''

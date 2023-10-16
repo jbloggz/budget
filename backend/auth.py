@@ -9,6 +9,7 @@
 # System imports
 import os
 import json
+import time
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -16,9 +17,10 @@ from calendar import timegm
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
+from typing import Optional
 
 # Local imports
-from model import Token
+from model import Token, CachedToken
 from database import Database
 
 
@@ -57,27 +59,32 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_token(user: str) -> Token:
+def create_token(user: str, cached_token: Optional[str]) -> Token:
     '''
     Create a JSON web token
 
     Args:
-        user: The user name
-        expires_delta: The TTL
+        user:         The user name
+        cached_token: The cached token to update
 
     Returns:
         The encoded token
     '''
-    now = datetime.utcnow()
-    access_expire = now + timedelta(seconds=secrets['access_token_ttl'])
-    refresh_expire = now + timedelta(seconds=secrets['refresh_token_ttl'])
+    utcnow = datetime.utcnow()
+    utc_access_expire = utcnow + timedelta(seconds=secrets['access_token_ttl'])
+    utc_refresh_expire = utcnow + timedelta(seconds=secrets['refresh_token_ttl'])
     token = Token(
-        access_token=jwt.encode({'sub': user, 'exp': access_expire, 'iat': now}, secrets['access_token_key'], algorithm=secrets['algorithm']),
-        refresh_token=jwt.encode({'sub': user, 'exp': refresh_expire, 'iat': now}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
+        access_token=jwt.encode({'sub': user, 'exp': utc_access_expire, 'iat': utcnow}, secrets['access_token_key'], algorithm=secrets['algorithm']),
+        refresh_token=jwt.encode({'sub': user, 'exp': utc_refresh_expire, 'iat': utcnow}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
         token_type='bearer'
     )
+
     with Database() as db:
-        db.add_token(token.refresh_token, timegm(refresh_expire.utctimetuple()))
+        refresh_expire = timegm(utc_refresh_expire.utctimetuple())
+        db.add_cached_token(CachedToken(value=token.refresh_token, expire=refresh_expire, token=None))
+        if cached_token is not None and secrets.get('refresh_token_expire_delay') is not None:
+            expire = timegm(utcnow.utctimetuple()) + secrets['refresh_token_expire_delay']
+            db.update_cached_token(CachedToken(value=cached_token, expire=expire, token=token))
 
     return token
 
@@ -102,12 +109,9 @@ def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
 
 
 def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
+    return validate_token('refresh_token_key', token)
+
+
+def get_cached_token(value: Annotated[str, Depends(oauth2_scheme)]) -> Optional[CachedToken]:
     with Database() as db:
-        if not db.has_token(token):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Invalid/expired refresh token',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
-        db.clear_token(token)
-        return validate_token('refresh_token_key', token)
+        return db.get_cached_token(value)

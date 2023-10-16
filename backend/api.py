@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 # Local imports
 from database import Database
 from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score
-from auth import create_token, verify_user, validate_access_token, validate_refresh_token
+from auth import create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token
 
 
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -207,8 +207,17 @@ def merge_allocation(alloc_id: int, ids: Annotated[List[int], Body()]) -> Alloca
 @app.post('/api/oauth2/token/', response_model=Token)
 def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
     if form_data.grant_type == 'refresh_token':
-        username = validate_refresh_token(form_data.refresh_token)
-        return create_token(username)
+        token = get_cached_token(form_data.refresh_token)
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Incorrect username or password',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
+        username = validate_refresh_token(token.value)
+        if token.token:
+            return token.token
+        return create_token(username, token.value)
     else:
         if not verify_user(form_data.username, form_data.password):
             raise HTTPException(
@@ -216,7 +225,7 @@ def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
                 detail='Incorrect username or password',
                 headers={'WWW-Authenticate': 'Bearer'},
             )
-        return create_token(form_data.username)
+        return create_token(form_data.username, None)
 
 
 @app.get('/api/oauth2/token/', response_class=Response, dependencies=[Depends(validate_access_token)])
