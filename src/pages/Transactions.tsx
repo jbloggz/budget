@@ -8,9 +8,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AbsoluteCenter, Divider, FormControl, FormLabel, Heading, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
-// @ts-expect-error: chakra-multiselect doesn't export types properly
-import { MultiSelect, Option } from 'chakra-multiselect';
 import { TransactionList, isTransactionList, SortOrder } from '../app.types';
+import { Select } from 'chakra-react-select';
 import { useAPI } from '../hooks';
 import { DateRangePicker, Table, SearchFilter, SourceLogo } from '../components';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
@@ -23,7 +22,7 @@ const Transactions = () => {
    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
    const [textFilter, setTextFilter] = useState<string>('');
-   const [selectedSources, setSelectedSources] = useState<Option[]>([]);
+   const [selectedSources, setSelectedSources] = useState<readonly {label: string, value: string}[]>([]);
    const query = api.useQuery<TransactionList>({
       method: 'GET',
       url: '/api/transaction/',
@@ -72,7 +71,8 @@ const Transactions = () => {
             </FormControl>
             <FormControl>
                <FormLabel>Source</FormLabel>
-               <MultiSelect
+               <Select
+                  isMulti
                   options={[...new Set(query.data?.data.transactions.map((txn) => txn.source))].map((src) => ({ label: src, value: src }))}
                   value={selectedSources}
                   onChange={setSelectedSources}

@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ChakraProvider } from '@chakra-ui/react';
 import { Theme } from '../app.types';
 import { ThemeProvider } from '../providers';
 import { Transactions } from '.';
@@ -25,11 +26,13 @@ describe('Transactions', () => {
       const theme: Theme = 'dark';
       const setTheme = vi.fn();
       render(
-         <ThemeProvider theme={theme} setTheme={setTheme}>
-            <QueryClientProvider client={queryClient}>
-               <Transactions />
-            </QueryClientProvider>
-         </ThemeProvider>
+         <ChakraProvider>
+            <ThemeProvider theme={theme} setTheme={setTheme}>
+               <QueryClientProvider client={queryClient}>
+                  <Transactions />
+               </QueryClientProvider>
+            </ThemeProvider>
+         </ChakraProvider>
       );
       const title = screen.getByText('Transactions');
       expect(title).toBeInTheDocument();

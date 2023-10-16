@@ -9,8 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AbsoluteCenter, Divider, FormControl, FormLabel, HStack, Heading, Spacer, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
 import groupBy from 'object.groupby';
-// @ts-expect-error: chakra-multiselect doesn't export types properly
-import { MultiSelect, Option } from 'chakra-multiselect';
+import { Select } from 'chakra-react-select';
 import { DateRangePicker, SearchFilter, SourceLogo, Table, TreeView } from '../components';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { Allocation, AllocationList, isAllocationList } from '../app.types';
@@ -44,7 +43,7 @@ const Allocations = () => {
    const toast = useToast();
    const api = useAPI();
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
-   const [selectedSources, setSelectedSources] = useState<Option[]>([]);
+   const [selectedSources, setSelectedSources] = useState<readonly {label: string, value: string}[]>([]);
    const [textFilter, setTextFilter] = useState<string>('');
    const navigate = useNavigate();
    const query = api.useQuery<AllocationList>({
@@ -131,7 +130,8 @@ const Allocations = () => {
             </FormControl>
             <FormControl>
                <FormLabel>Source</FormLabel>
-               <MultiSelect
+               <Select
+                  isMulti
                   options={[...new Set(query.data?.data.allocations.map((alloc) => alloc.source))].map((src) => ({ label: src, value: src }))}
                   value={selectedSources}
                   onChange={setSelectedSources}

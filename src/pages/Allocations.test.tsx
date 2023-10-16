@@ -7,13 +7,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { ChakraProvider } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { mockResizeObserver } from '../mocks';
 import { Theme } from '../app.types';
 import { ThemeProvider } from '../providers';
 import { Allocations } from '.';
-import { MemoryRouter } from 'react-router-dom';
 
 const queryClient = new QueryClient();
 
@@ -27,11 +28,13 @@ describe('Allocations', () => {
       const setTheme = vi.fn();
       render(
          <MemoryRouter>
-            <ThemeProvider theme={theme} setTheme={setTheme}>
-               <QueryClientProvider client={queryClient}>
-                  <Allocations />
-               </QueryClientProvider>
-            </ThemeProvider>{' '}
+            <ChakraProvider>
+               <ThemeProvider theme={theme} setTheme={setTheme}>
+                  <QueryClientProvider client={queryClient}>
+                     <Allocations />
+                  </QueryClientProvider>
+               </ThemeProvider>
+            </ChakraProvider>
          </MemoryRouter>
       );
       const title = screen.getByText('Allocations');
