@@ -7,7 +7,6 @@
  */
 
 import { PropsWithChildren, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Center, Spinner } from '@chakra-ui/react';
 import { Login } from '../pages';
 import { createContext } from '.';
@@ -17,31 +16,27 @@ import { APIAuthTokens, APIResponse, LoginCredentials } from '../app.types';
 export const AuthContext = createContext<{ login: (creds: LoginCredentials) => Promise<APIResponse<APIAuthTokens>>; logout: () => void }>();
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
-   const navigate = useNavigate();
    const api = useAPI();
    const loginQuery = api.useMutationFn(useCallback((creds: LoginCredentials) => api.login(creds.email, creds.password, creds.remember), [api]));
-   const logoutQuery = api.useMutationFn(useCallback(() => api.logout(), [api]));
+   const logoutQuery = api.useMutationFn(
+      useCallback(() => api.logout(), [api]),
+      { onSettled: () => window.location.replace('/') }
+   );
    const tokenCheckQuery = api.useQuery({
       method: 'GET',
       url: '/api/oauth2/token/',
       runOnce: true,
       enabled: api.expiry > 0,
    });
-   const login = async (creds: LoginCredentials) => loginQuery.mutateAsync(creds);
-   const logout = useCallback(() => {
-      logoutQuery.mutate();
-      navigate('/');
-      window.location.reload();
-   }, [navigate, logoutQuery]);
 
    return (
-      <AuthContext.Provider value={{ login, logout }}>
-         {loginQuery.isSuccess || tokenCheckQuery.isSuccess ? (
-            children
-         ) : tokenCheckQuery.isFetching ? (
+      <AuthContext.Provider value={{ login: loginQuery.mutateAsync, logout: logoutQuery.mutate }}>
+         {tokenCheckQuery.isFetching || logoutQuery.isLoading || logoutQuery.isSuccess ? (
             <Center h="100vh">
                <Spinner />
             </Center>
+         ) : loginQuery.isSuccess || tokenCheckQuery.isSuccess ? (
+            children
          ) : (
             <Login isLoading={loginQuery.isLoading} />
          )}

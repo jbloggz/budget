@@ -66,7 +66,10 @@ export const useAPI = () => {
             const resp = await fetch(url, { method: options.method, headers: options.headers, body: options.body });
             code = resp.status;
             let data;
-            if (code == 204 && options.url === '/api/oauth2/token/') {
+            if (code == 204 && options.url === '/api/oauth2/logout/') {
+               /* Successfully logged out */
+               data = undefined;
+            } else if (code == 204 && options.url === '/api/oauth2/token/') {
                /* Successfully validated credentials */
                data = {
                   access_token: accessToken || '',
@@ -94,19 +97,18 @@ export const useAPI = () => {
       [accessToken, refreshToken]
    );
 
-   const logout = useCallback(() => {
+   const clear_tokens = useCallback(() => {
       setAccessToken(undefined);
       setRefreshToken(undefined);
       removeAccessTokenLS();
       removeRefreshTokenLS();
       removeAccessTokenSS();
       removeRefreshTokenSS();
-      return Promise.resolve({ code: 200 } as APIResponse<void>);
    }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS, setAccessToken, setRefreshToken]);
 
    const runTokenRequest = useCallback(
       async (creds: URLSearchParams): Promise<APIResponse<APIAuthTokens>> => {
-         logout();
+         clear_tokens();
          const resp = await runRawRequest<APIAuthTokens>({
             method: 'POST',
             url: '/api/oauth2/token/',
@@ -126,7 +128,7 @@ export const useAPI = () => {
 
          return resp;
       },
-      [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, logout, setAccessToken, setRefreshToken]
+      [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, clear_tokens, setAccessToken, setRefreshToken]
    );
 
    const login = useCallback(
@@ -142,6 +144,24 @@ export const useAPI = () => {
       },
       [runTokenRequest]
    );
+
+   const logout = useCallback(async () => {
+      let resp = Promise.resolve({ code: 204 } as APIResponse<void>);
+      if (refreshToken) {
+         resp = runRawRequest<void>({
+            method: 'POST',
+            url: '/api/oauth2/logout/',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+               refresh_token: refreshToken,
+               grant_type: 'refresh_token',
+            }).toString(),
+         });
+      }
+      await resp;
+      clear_tokens();
+      return resp;
+   }, [clear_tokens, runRawRequest, refreshToken]);
 
    const request = useCallback(
       async <T>(options: APIRequest<T>): Promise<APIResponse<T>> => {
