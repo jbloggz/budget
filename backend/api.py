@@ -182,7 +182,10 @@ def get_allocations(txn: Optional[int] = None,
 @app.get('/api/allocation/{alloc_id}', response_model=Optional[Allocation], dependencies=[Depends(validate_access_token)])
 def get_allocation(alloc_id: int) -> Optional[Allocation]:
     with Database() as db:
-        alloc_list = db.get_allocation_list(f'allocation.id = {alloc_id}')
+        if alloc_id == 0:
+            alloc_list = db.get_allocation_list(f'category.name = \'Unknown\' OR location.name = \'Unknown\' ORDER BY txn.date ASC')
+        else:
+            alloc_list = db.get_allocation_list(f'allocation.id = {alloc_id}')
         return alloc_list.allocations[0] if alloc_list.allocations else None
 
 

@@ -93,17 +93,39 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    const updateQuery = api.useMutationQuery<Allocation>({
       method: 'PUT',
       url: '/api/allocation/',
-      onSuccess: () => props.onSave(),
    });
    const splitQuery = api.useMutationQuery<{ amount: number }, Allocation>({
       method: 'PUT',
-      url: `/api/allocation/${props.id}/split/`,
+      url: allocation ? `/api/allocation/${allocation.id}/split/` : '',
       onSuccess: (new_alloc: Allocation) => {
          new_alloc.category = category;
          new_alloc.location = location;
          updateQuery.mutate(new_alloc);
       },
    });
+
+   /* Check for successful updates */
+   useEffect(() => {
+      if (props.id === '0') {
+         /* 0 is the special "any unknown" entry */
+         if (allocationQuery.data?.code === 404) {
+            toast({
+               title: 'Complete',
+               description: 'All allocations have been successfully processed',
+               status: 'success',
+               duration: 5000,
+            });
+            props.onSave();
+         } else if (updateQuery.isSuccess) {
+            updateQuery.reset();
+            allocationQuery.refetch();
+            setCategory('');
+            setLocation('');
+         }
+      } else if (updateQuery.isSuccess) {
+         props.onSave();
+      }
+   }, [allocation, props, allocationQuery, updateQuery, toast]);
 
    /* Check for query errors */
    useEffect(() => {
