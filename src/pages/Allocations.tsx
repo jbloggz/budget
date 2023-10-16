@@ -43,7 +43,7 @@ const Allocations = () => {
    const toast = useToast();
    const api = useAPI();
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
-   const [selectedSources, setSelectedSources] = useState<readonly {label: string, value: string}[]>([]);
+   const [selectedSources, setSelectedSources] = useState<readonly { label: string; value: string }[]>([]);
    const [textFilter, setTextFilter] = useState<string>('');
    const navigate = useNavigate();
    const query = api.useQuery<AllocationList>({
@@ -88,30 +88,34 @@ const Allocations = () => {
 
    /* Build the tree of allocations */
    const tree = useMemo(() => {
-      return Object.entries(groupBy(allocations, (alloc) => alloc.category)).map(([category, categoryList]) => ({
-         content: <AllocationHeader text={category} allocations={categoryList} />,
-         childItems: Object.entries(groupBy(categoryList, (alloc) => alloc.location)).map(([location, locationList]) => ({
-            content: <AllocationHeader text={location} allocations={locationList} />,
-            childItems: [
-               {
-                  content: (
-                     <Table
-                        onRowClick={(_, row) => !isNaN(+row.id) && navigate(`/allocations/${+row.id}`, {state: 'modal'})}
-                        rows={locationList.map((alloc) => ({
-                           id: alloc.id || 0,
-                           cells: [
-                              <Text>{prettyDate(alloc.date)}</Text>,
-                              <Text>{alloc.description}</Text>,
-                              <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
-                              <SourceLogo source={alloc.source} />,
-                           ],
-                        }))}
-                     />
-                  ),
-               },
-            ],
-         })),
-      }));
+      return Object.entries(groupBy(allocations, (alloc) => alloc.category))
+         .sort((a, b) => a[0].localeCompare(b[0]))
+         .map(([category, categoryList]) => ({
+            content: <AllocationHeader text={category} allocations={categoryList} />,
+            childItems: Object.entries(groupBy(categoryList, (alloc) => alloc.location))
+               .sort((a, b) => a[0].localeCompare(b[0]))
+               .map(([location, locationList]) => ({
+                  content: <AllocationHeader text={location} allocations={locationList} />,
+                  childItems: [
+                     {
+                        content: (
+                           <Table
+                              onRowClick={(_, row) => !isNaN(+row.id) && navigate(`/allocations/${+row.id}`, { state: 'modal' })}
+                              rows={locationList.map((alloc) => ({
+                                 id: alloc.id || 0,
+                                 cells: [
+                                    <Text>{prettyDate(alloc.date)}</Text>,
+                                    <Text>{alloc.description}</Text>,
+                                    <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
+                                    <SourceLogo source={alloc.source} />,
+                                 ],
+                              }))}
+                           />
+                        ),
+                     },
+                  ],
+               })),
+         }));
    }, [allocations, navigate]);
 
    return (
