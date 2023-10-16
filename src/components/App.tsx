@@ -15,7 +15,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { themeConfig } from '../theme';
 import { ThemeProvider, AuthProvider } from '../providers';
 import { Theme } from '../app.types';
-import { TopBar, SideBar, BottomNav } from '.';
+import { TopBar, SideBar } from '.';
 
 // The react-query client to inject into the app
 const queryClient = new QueryClient({

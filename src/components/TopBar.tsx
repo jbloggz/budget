@@ -28,7 +28,6 @@ import {
    MenuGroup,
    MenuItem,
    MenuList,
-   Show,
    useDisclosure,
    useStyleConfig,
 } from '@chakra-ui/react';
