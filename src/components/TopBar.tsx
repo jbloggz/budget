@@ -63,9 +63,7 @@ const TopBar = () => {
             </Drawer>
             <Flex flex="1" justify="left" alignItems="center">
                <Hide above="xl">
-                  <Show above="md">
-                     <IconButton aria-label="Navigation" icon={<HamburgerIcon />} onClick={onOpen} />
-                  </Show>
+                  <IconButton aria-label="Navigation" icon={<HamburgerIcon />} onClick={onOpen} />
                </Hide>
             </Flex>
             <Center flex="1" gap="2">

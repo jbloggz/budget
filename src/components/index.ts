@@ -7,7 +7,6 @@
  */
 
 import App from './App';
-import BottomNav from './BottomNav';
 import DateRangePicker from './DateRangePicker';
 import EditAllocationModal from './EditAllocationModal';
 import NavList from './NavList';
@@ -18,4 +17,4 @@ import Table from './Table';
 import TopBar from './TopBar';
 import TreeView from './TreeView';
 
-export { App, BottomNav, DateRangePicker, EditAllocationModal, NavList, SearchFilter, SideBar, SourceLogo, Table, TopBar, TreeView };
+export { App, DateRangePicker, EditAllocationModal, NavList, SearchFilter, SideBar, SourceLogo, Table, TopBar, TreeView };

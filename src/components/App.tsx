@@ -39,15 +39,12 @@ export const App = () => {
                         <Show above="xl">
                            <SideBar />
                         </Show>
-                        <Box w="100%" overflowY="auto" height="calc(100vh - 100px)">
+                        <Box w="100%">
                            <Container as="main" maxWidth="100%" paddingX="4" paddingY="4">
                               <Outlet />
                            </Container>
                         </Box>
                      </Flex>
-                     <Show below="md">
-                        <BottomNav />
-                     </Show>
                   </Flex>
                </AuthProvider>
             </ThemeProvider>
