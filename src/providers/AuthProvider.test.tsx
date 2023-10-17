@@ -102,7 +102,7 @@ describe('AuthProvider', () => {
          { access_token: newAccessToken, refresh_token: newRefreshToken, token_type: 'bearer' }
       );
       mockFetch.setResponseIf(
-         (req) => req.method === 'GET' && req.url === '/api/oauth2/token/' && req.headers.Authorization === 'Bearer ' + oldAccessToken,
+         (req) => req.method === 'GET' && req.url === '/api/oauth2/token/' && req.headers.Authorization === 'Bearer ' + newAccessToken,
          '',
          204
       );

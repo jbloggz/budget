@@ -384,7 +384,7 @@ describe('useAPI', () => {
       expect(resp.status).toBe(204);
    });
 
-   it('can refresh a token if a request is denied', async () => {
+   it('Will refresh a token if it has expired', async () => {
       const now = Math.floor(Date.now() / 1000);
       const oldAccessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 600, exp: now - 300 }, 'secret');
       const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now + 300 }, 'secret');
@@ -424,15 +424,6 @@ describe('useAPI', () => {
       expect(mockFetch.calls().length).toBeGreaterThan(0);
       let req = mockFetch.calls()[0].request;
       let resp = mockFetch.calls()[0].response;
-      expect(req.url).toEqual('/do/refresh/');
-      expect(req.method).toEqual('GET');
-      expect(req.body).toBeNull();
-      expect(req.headers['Authorization']).toBe('Bearer ' + oldAccessToken);
-      expect(resp.status).toBe(401);
-
-      expect(mockFetch.calls().length).toBeGreaterThan(1);
-      req = mockFetch.calls()[1].request;
-      resp = mockFetch.calls()[1].response;
       expect(req.url).toEqual('/api/oauth2/token/');
       expect(req.method).toEqual('POST');
       expect(req.body).toBe(`refresh_token=${refreshToken}&remember=true&grant_type=refresh_token`);
@@ -441,9 +432,9 @@ describe('useAPI', () => {
       expect(resp.status).toBe(200);
       expect(JSON.parse(resp.body)).toStrictEqual(good_token);
 
-      expect(mockFetch.calls().length).toBe(3);
-      req = mockFetch.calls()[2].request;
-      resp = mockFetch.calls()[2].response;
+      expect(mockFetch.calls().length).toBe(2);
+      req = mockFetch.calls()[1].request;
+      resp = mockFetch.calls()[1].response;
       expect(req.url).toEqual('/do/refresh/');
       expect(req.method).toEqual('GET');
       expect(req.body).toBeNull();

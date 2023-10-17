@@ -195,29 +195,22 @@ export const useAPI = () => {
                options.headers['Content-Type'] = 'application/json';
             }
          }
-         try {
-            return await runRawRequest<T>(options);
-         } catch (error) {
-            if (error instanceof APIError && error.code === 401 && refreshToken) {
-               /* Attempt a token refresh */
-               const tokResp = await runTokenRequest(
-                  new URLSearchParams({
-                     refresh_token: refreshToken,
-                     remember: accessTokenLS ? 'true' : 'false',
-                     grant_type: 'refresh_token',
-                  })
-               );
 
-               /* Re-run the query with the new token */
-               options.headers.Authorization = `Bearer ${tokResp.data.access_token}`;
-               return await runRawRequest<T>(options);
-            }
-
-            /* Rethrow */
-            throw error;
+         if (tokenData.exp + 10 < Date.now() / 1000 && refreshToken) {
+            /* Token has expired (or will within 10 seconds), refresh it */
+            const tokResp = await runTokenRequest(
+               new URLSearchParams({
+                  refresh_token: refreshToken,
+                  remember: accessTokenLS ? 'true' : 'false',
+                  grant_type: 'refresh_token',
+               })
+            );
+            options.headers.Authorization = `Bearer ${tokResp.data.access_token}`;
          }
+
+         return await runRawRequest<T>(options);
       },
-      [runRawRequest, runTokenRequest, refreshToken, accessToken, accessTokenLS]
+      [runRawRequest, runTokenRequest, refreshToken, accessToken, accessTokenLS, tokenData]
    );
 
    const useQuery = <T>(opts: APIRequest<T> & QueryOptions<T>) => {
