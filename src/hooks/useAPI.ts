@@ -196,7 +196,7 @@ export const useAPI = () => {
             }
          }
 
-         if (tokenData.exp + 10 < Date.now() / 1000 && refreshToken) {
+         if (tokenData.exp - 10 < Date.now() / 1000 && refreshToken) {
             /* Token has expired (or will within 10 seconds), refresh it */
             const tokResp = await runTokenRequest(
                new URLSearchParams({
