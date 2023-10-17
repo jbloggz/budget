@@ -66,7 +66,6 @@ class Token(BaseModel):
 class CachedToken(BaseModel):
     value: str
     expire: int
-    token: Optional[Token]
 
 
 class OAuth2RequestForm:

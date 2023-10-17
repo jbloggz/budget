@@ -16,10 +16,7 @@ CREATE INDEX IF NOT exists setting_key ON setting(key);
 /* A table to store in-use refresh tokens */
 CREATE TABLE IF NOT EXISTS token (
    value           TEXT     PRIMARY KEY,  /* The refresh token value */
-   expire          INTEGER  NOT NULL,     /* The time to remove this entry */
-   access_token    TEXT     DEFAULT NULL, /* The access token that was created */
-   refresh_token   TEXT     DEFAULT NULL, /* The refresh token that was created */
-   token_type      TEXT     DEFAULT NULL /* The type of token created */
+   expire          INTEGER  NOT NULL      /* The time to remove this entry */
 );
 
 /* A table to store the raw transactions scaped from the accounts */

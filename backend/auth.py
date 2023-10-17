@@ -30,20 +30,20 @@ with open(os.environ.get('SECRETS_PATH', 'secrets.json')) as fp:
     secrets = json.load(fp)
 
 
-def verify_user(username: str, password: str) -> bool:
+def verify_user(username: str, password: str) -> None:
     '''
-    Verify a user
+    Verify a user. Will raise an error if the user is not valid
 
     Args:
         username: The name of the user
         password: The password of the user
-
-    Returns:
-        True if the user is valid, False if not
     '''
-    if username not in secrets['users']:
-        return False
-    return pwd_context.verify(password, secrets['users'][username])
+    if username not in secrets['users'] or not pwd_context.verify(password, secrets['users'][username]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Incorrect username or password',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
 
 
 def hash_password(password: str) -> str:
@@ -59,13 +59,13 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_token(user: str, cached_token: Optional[str] = None) -> Token:
+def create_token(user: str, refresh_token: Optional[str] = None) -> Token:
     '''
     Create a JSON web token
 
     Args:
-        user:         The user name
-        cached_token: The cached token to update
+        user:          The user name
+        refresh_token: The refresh_token if applicable
 
     Returns:
         The encoded token
@@ -80,11 +80,9 @@ def create_token(user: str, cached_token: Optional[str] = None) -> Token:
     )
 
     with Database() as db:
-        refresh_expire = timegm(utc_refresh_expire.utctimetuple())
-        db.add_cached_token(CachedToken(value=token.refresh_token, expire=refresh_expire, token=None))
-        if cached_token is not None and secrets.get('refresh_token_expire_delay') is not None:
-            expire = timegm(utcnow.utctimetuple()) + secrets['refresh_token_expire_delay']
-            db.update_cached_token(CachedToken(value=cached_token, expire=expire, token=token))
+        db.add_cached_token(CachedToken(value=token.refresh_token, expire=timegm(utc_refresh_expire.utctimetuple())))
+        if refresh_token is not None:
+            db.clear_cached_token(refresh_token)
 
     return token
 
@@ -112,9 +110,16 @@ def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str
     return validate_token('refresh_token_key', token)
 
 
-def get_cached_token(value: Annotated[str, Depends(oauth2_scheme)]) -> Optional[CachedToken]:
+def get_cached_token(value: Annotated[str, Depends(oauth2_scheme)]) -> CachedToken:
     with Database() as db:
-        return db.get_cached_token(value)
+        token = db.get_cached_token(value)
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Incorrect token',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
+        return token
 
 
 def clear_cached_token(value: Annotated[str, Depends(oauth2_scheme)]) -> None:

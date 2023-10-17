@@ -10,8 +10,12 @@ import { useCallback, useEffect, useState } from 'react';
 import jwt_decode from 'jwt-decode';
 import useLocalStorageState from 'use-local-storage-state';
 import useSessionStorageState from 'use-session-storage-state';
+import { Mutex } from 'async-mutex';
 import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens, QueryOptions } from '../app.types';
 import { UseMutationOptions, UseQueryOptions, useQuery as useReactQuery, useMutation as useReactMutation } from '@tanstack/react-query';
+
+/* Mutex for token requests */
+const mutex = new Mutex();
 
 interface TokenData {
    sub: string;
@@ -29,36 +33,31 @@ export class APIError extends Error {
    }
 }
 
+const decode_token = (token: string | undefined | null): TokenData => {
+   try {
+      if (token) {
+         return jwt_decode<TokenData>(token);
+      }
+   } catch (e) {
+      /* Ignore */
+   }
+   return { sub: '', iat: 0, exp: 0 };
+};
+
 export const useAPI = () => {
    const opts = { serializer: { stringify: String, parse: String } };
    const [accessTokenLS, setAccessTokenLS, { removeItem: removeAccessTokenLS }] = useLocalStorageState<string>('access_token', opts);
    const [refreshTokenLS, setRefreshTokenLS, { removeItem: removeRefreshTokenLS }] = useLocalStorageState<string>('refresh_token', opts);
    const [accessTokenSS, setAccessTokenSS, { removeItem: removeAccessTokenSS }] = useSessionStorageState<string>('access_token', opts);
    const [refreshTokenSS, setRefreshTokenSS, { removeItem: removeRefreshTokenSS }] = useSessionStorageState<string>('refresh_token', opts);
-
-   const [accessToken, setAccessToken] = useState<string | undefined>(accessTokenLS || accessTokenSS);
-   const [refreshToken, setRefreshToken] = useState<string | undefined>(refreshTokenLS || refreshTokenSS);
-
+   const accessToken = accessTokenLS || accessTokenSS;
+   const refreshToken = refreshTokenLS || refreshTokenSS;
    const [tokenData, setTokenData] = useState<TokenData>({ sub: '', iat: 0, exp: 0 });
 
+   /* Update the token data whenever the accessToken changes */
    useEffect(() => {
-      if (accessToken) {
-         try {
-            const decoded = jwt_decode<TokenData>(accessToken);
-            setTokenData(decoded);
-            return;
-         } catch (e) {
-            /* Ignore */
-         }
-      }
-
-      setTokenData({ sub: '', iat: 0, exp: 0 });
+      setTokenData(decode_token(accessToken));
    }, [accessToken]);
-
-   useEffect(() => {
-      setAccessToken(accessTokenLS || accessTokenSS);
-      setRefreshToken(refreshTokenLS || refreshTokenSS);
-   }, [accessTokenLS, refreshTokenLS, accessTokenSS, refreshTokenSS]);
 
    const runRawRequest = useCallback(
       async <T>(options: APIRequest<T>): Promise<APIResponse<T>> => {
@@ -103,37 +102,52 @@ export const useAPI = () => {
    );
 
    const clear_tokens = useCallback(() => {
-      setAccessToken(undefined);
-      setRefreshToken(undefined);
       removeAccessTokenLS();
       removeRefreshTokenLS();
       removeAccessTokenSS();
       removeRefreshTokenSS();
-   }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS, setAccessToken, setRefreshToken]);
+   }, [removeAccessTokenLS, removeRefreshTokenLS, removeAccessTokenSS, removeRefreshTokenSS]);
 
    const runTokenRequest = useCallback(
       async (creds: URLSearchParams): Promise<APIResponse<APIAuthTokens>> => {
-         clear_tokens();
-         const resp = await runRawRequest<APIAuthTokens>({
-            method: 'POST',
-            url: '/api/oauth2/token/',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: creds.toString(),
-            validate: isAPIAuthTokens,
+         const resp = await mutex.runExclusive(async () => {
+            /*
+             * Check if the current local/session token is valid before trying
+             * to get a new one. Another token request may have already got a new
+             * token, so don't get another one
+             */
+            const current_access_token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            const current_refresh_token = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
+            const accessTokenData = decode_token(current_access_token);
+            clear_tokens();
+            const resp =
+               accessTokenData.exp > Date.now() / 1000
+                  ? await Promise.resolve({
+                       code: 200,
+                       data: { access_token: current_access_token, refresh_token: current_refresh_token, token_type: 'bearer' },
+                    } as APIResponse<APIAuthTokens>)
+                  : await runRawRequest<APIAuthTokens>({
+                       method: 'POST',
+                       url: '/api/oauth2/token/',
+                       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                       body: creds.toString(),
+                       validate: isAPIAuthTokens,
+                    });
+
+            if (creds.get('remember') === 'true') {
+               setAccessTokenLS(resp.data.access_token);
+               setRefreshTokenLS(resp.data.refresh_token);
+            } else {
+               setAccessTokenSS(resp.data.access_token);
+               setRefreshTokenSS(resp.data.refresh_token);
+            }
+
+            return resp;
          });
-         setAccessToken(resp.data.access_token);
-         setRefreshToken(resp.data.refresh_token);
-         if (creds.get('remember') === 'true') {
-            setAccessTokenLS(resp.data.access_token);
-            setRefreshTokenLS(resp.data.refresh_token);
-         } else {
-            setAccessTokenSS(resp.data.access_token);
-            setRefreshTokenSS(resp.data.refresh_token);
-         }
 
          return resp;
       },
-      [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, clear_tokens, setAccessToken, setRefreshToken]
+      [runRawRequest, setAccessTokenLS, setAccessTokenSS, setRefreshTokenSS, setRefreshTokenLS, clear_tokens]
    );
 
    const login = useCallback(

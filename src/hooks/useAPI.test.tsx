@@ -478,8 +478,8 @@ describe('useAPI', () => {
 
    it('removes tokens from local storage on unsuccessful login', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now + 300 }, 'secret');
-      const refreshToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now + 3000 }, 'secret');
+      const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now - 300 }, 'secret');
+      const refreshToken = jwtEncode({ sub: 'joe@example.com', iat: now, exp: now - 3000 }, 'secret');
       mockFetch.setResponse('', 401);
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);

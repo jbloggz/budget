@@ -38,7 +38,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_token_fields(self) -> None:
         with self.db:
-            self.assertEqual(set(self.db.get_fields('token')), {'value', 'expire', 'access_token', 'refresh_token', 'token_type'})
+            self.assertEqual(set(self.db.get_fields('token')), {'value', 'expire'})
 
     def test_txn_fields(self) -> None:
         with self.db:
@@ -82,19 +82,19 @@ class TestDatabase(unittest.TestCase):
     def test_add_token(self) -> None:
         with self.db:
             self.assertIsNone(self.db.get_cached_token('test_add_token'))
-            self.db.add_cached_token(CachedToken(value='test_add_token', expire=int(time.time()) + 60, token=None))
+            self.db.add_cached_token(CachedToken(value='test_add_token', expire=int(time.time()) + 60))
             self.assertIsNotNone(self.db.get_cached_token('test_add_token'))
 
     def test_clear_token(self) -> None:
         with self.db:
-            self.db.add_cached_token(CachedToken(value='298h2938f', expire=int(time.time()) + 60, token=None))
+            self.db.add_cached_token(CachedToken(value='298h2938f', expire=int(time.time()) + 60))
             self.assertIsNotNone(self.db.get_cached_token('298h2938f'))
             self.db.clear_cached_token('298h2938f')
             self.assertIsNone(self.db.get_cached_token('298h2938f'))
 
     def test_expire_token(self) -> None:
         with self.db:
-            self.db.add_cached_token(CachedToken(value='test_expire_token', expire=int(time.time()) + 1, token=None))
+            self.db.add_cached_token(CachedToken(value='test_expire_token', expire=int(time.time()) + 1))
             self.assertIsNotNone(self.db.get_cached_token('test_expire_token'))
             time.sleep(1)
             self.assertIsNone(self.db.get_cached_token('test_expire_token'))
@@ -634,9 +634,8 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(result['access_token'])
         self.assertTrue(result['refresh_token'])
 
-    def test_refresh_token_can_be_used_multiple_times_within_limit(self) -> None:
+    def test_refresh_token_can_be_used_only_once(self) -> None:
         secrets['users']['foo'] = hash_password('bar')
-        secrets['refresh_token_expire_delay'] = 1
         form_data = {
             'username': 'foo',
             'password': 'bar',
@@ -657,6 +656,7 @@ class TestAPI(unittest.TestCase):
             'refresh_token': result['refresh_token'],
             'grant_type': 'refresh_token'
         }
+        time.sleep(1)
         response = self.client.post(
             '/api/oauth2/token/',
             data=form_data,
@@ -673,23 +673,10 @@ class TestAPI(unittest.TestCase):
             data=form_data,
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         )
-        self.assertEqual(response.status_code, 200)
-        result3 = response.json()
-        self.assertEqual(result2['token_type'], result3['token_type'])
-        self.assertTrue(result2['access_token'], result3['access_token'])
-        self.assertTrue(result2['refresh_token'], result3['refresh_token'])
-
-        time.sleep(1)
-        response = self.client.post(
-            '/api/oauth2/token/',
-            data=form_data,
-            headers={'Content-Type': 'application/x-www-form-urlencoded'}
-        )
         self.assertEqual(response.status_code, 401)
 
     def test_logout_clears_token(self) -> None:
         secrets['users']['foo'] = hash_password('bar')
-        secrets['refresh_token_expire_delay'] = 100
         form_data = {
             'username': 'foo',
             'password': 'bar',

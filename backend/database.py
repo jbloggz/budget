@@ -91,37 +91,20 @@ class Database:
         '''
         self.db.execute('DELETE FROM setting WHERE key = ?', (key, ))
 
-    def add_cached_token(self, token: CachedToken) -> None:
+    def clear_expired_tokens(self) -> None:
         self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
-        self.db.execute('INSERT OR IGNORE INTO token VALUES (?, ?, ?, ?, ?)', (
-            token.value,
-            token.expire,
-            token.token.access_token if token.token else None,
-            token.token.refresh_token if token.token else None,
-            token.token.token_type if token.token else None))
+
+    def add_cached_token(self, token: CachedToken) -> None:
+        self.clear_expired_tokens();
+        self.db.execute('INSERT OR IGNORE INTO token VALUES (?, ?)', (token.value, token.expire))
 
     def get_cached_token(self, value: str) -> Optional[CachedToken]:
-        self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
-        self.db.execute('SELECT value, expire, access_token, refresh_token, token_type FROM token WHERE value = ?', (value,))
+        self.clear_expired_tokens();
+        self.db.execute('SELECT value, expire FROM token WHERE value = ?', (value,))
         row = self.db.fetchone()
         if not row:
             return None
-        return CachedToken(value=row[0], expire=row[1], token=Token(access_token=row[2], refresh_token=row[3], token_type=row[4]) if row[2] else None)
-
-    def update_cached_token(self, token: CachedToken) -> None:
-        '''
-        Updates the database to indicate the token that was created by the cached token
-
-        Args:
-            token: The token to update
-        '''
-        self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
-        self.db.execute('UPDATE token SET expire = ?, access_token = ?, refresh_token = ?, token_type = ? WHERE value = ?', (
-            token.expire,
-            token.token.access_token if token.token else None,
-            token.token.refresh_token if token.token else None,
-            token.token.token_type if token.token else None,
-            token.value))
+        return CachedToken(value=row[0], expire=row[1])
 
     def clear_cached_token(self, value: str) -> None:
         '''
@@ -130,6 +113,7 @@ class Database:
         Args:
             value: The token value
         '''
+        self.clear_expired_tokens();
         self.db.execute('DELETE FROM token WHERE value = ?', (value,))
 
     def add_transaction(self, txn: Transaction) -> Transaction:

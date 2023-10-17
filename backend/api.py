@@ -212,23 +212,9 @@ def merge_allocation(alloc_id: int, ids: Annotated[List[int], Body()]) -> Alloca
 def auth(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Token:
     if form_data.grant_type == 'refresh_token':
         token = get_cached_token(form_data.refresh_token)
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Incorrect username or password',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
-        username = validate_refresh_token(token.value)
-        if token.token:
-            return token.token
-        return create_token(username, token.value)
+        return create_token(validate_refresh_token(token.value), token.value)
     else:
-        if not verify_user(form_data.username, form_data.password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Incorrect username or password',
-                headers={'WWW-Authenticate': 'Bearer'},
-            )
+        verify_user(form_data.username, form_data.password)
         return create_token(form_data.username)
 
 
