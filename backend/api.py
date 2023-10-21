@@ -105,21 +105,25 @@ def get_categorise(description: str) -> Categorisation:
 
     res = Categorisation(categories=[], locations=[])
 
-    # Get the list of categories sorted by score, normalised to the best
-    sorted_category_scores = sorted(category_scores.items(), key=lambda x: x[1]['score'], reverse=True)
-    best_score = sorted_category_scores[0][1]
-    for category, score in sorted_category_scores:
-        res.categories.append(Score(name=category, score=score['score'] / best_score['score'] * best_score['ratio']))
-        all_categories.discard(category)
-    res.categories.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_categories)))
+    if category_scores:
+        # Get the list of categories sorted by score, normalised to the best
+        sorted_category_scores = sorted(category_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+        best_score = sorted_category_scores[0][1]
+        for category, score in sorted_category_scores:
+            score = 0 if best_score['score'] == 0 else score['score'] / best_score['score'] * best_score['ratio']
+            res.categories.append(Score(name=category, score=score))
+            all_categories.discard(category)
+        res.categories.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_categories)))
 
-    # Get the list of locations sorted by score, normalised to the best
-    sorted_location_scores = sorted(location_scores.items(), key=lambda x: x[1]['score'], reverse=True)
-    best_score = sorted_location_scores[0][1]
-    for location, score in sorted_location_scores:
-        res.locations.append(Score(name=location, score=score['score'] / best_score['score'] * best_score['ratio']))
-        all_locations.discard(location)
-    res.locations.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_locations)))
+    if location_scores:
+        # Get the list of locations sorted by score, normalised to the best
+        sorted_location_scores = sorted(location_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+        best_score = sorted_location_scores[0][1]
+        for location, score in sorted_location_scores:
+            score = 0 if best_score['score'] == 0 else score['score'] / best_score['score'] * best_score['ratio']
+            res.locations.append(Score(name=location, score=score))
+            all_locations.discard(location)
+        res.locations.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_locations)))
 
     return res
 
