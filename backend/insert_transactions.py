@@ -24,18 +24,20 @@ from database import Database
 TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
 
 
-def run_scraper(node: str, secrets: str, path: str) -> List[Transaction]:  # pragma: no cover
+def run_scraper(secrets: str, path: str) -> List[Transaction]:  # pragma: no cover
     '''
     Run a scraper file
 
     Args:
-        node:    path to the node binary
         secrets: path to the secrets file
         path:    the scraper JS file
 
     Returns:
         The list of transactions
     '''
+    with open(secrets) as fp:
+        node = json.load(fp)['node_path']
+
     result = subprocess.run([node, './scrapers/' + path, secrets], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
     if result.stdout is None:
         return []
