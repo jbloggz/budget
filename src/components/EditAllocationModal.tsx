@@ -210,7 +210,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          <ModalContent>
             <ModalHeader>
                {allocation && <SourceLogo source={allocation.source} mr={4} />}
-               Edit Allocation
+               {api.readwrite ? 'Edit' : 'View'} Allocation
             </ModalHeader>
             <ModalCloseButton />
             {allocationQuery.isFetching ? (
@@ -233,7 +233,11 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                   </FormControl>
                   <FormControl mt={4} isRequired isInvalid={categoryErrmsg !== ''}>
                      <FormLabel>Category</FormLabel>
-                     {categories.length > 0 ? (
+                     {categoriseQuery.isFetching ? (
+                        <Center>
+                           <Spinner />
+                        </Center>
+                     ) : api.readwrite ? (
                         <CreatableSelect
                            blurInputOnSelect
                            defaultInputValue={category}
@@ -251,15 +255,17 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                            onChange={(v) => setCategory(v?.value || '')}
                         />
                      ) : (
-                        <Center>
-                           <Spinner />
-                        </Center>
+                        <Input disabled value={category} />
                      )}
                      <FormErrorMessage>{categoryErrmsg}</FormErrorMessage>
                   </FormControl>
                   <FormControl mt={4} isRequired isInvalid={locationErrmsg !== ''}>
                      <FormLabel>Location</FormLabel>
-                     {locations.length > 0 ? (
+                     {categoriseQuery.isFetching ? (
+                        <Center>
+                           <Spinner />
+                        </Center>
+                     ) : api.readwrite ? (
                         <CreatableSelect
                            blurInputOnSelect
                            defaultInputValue={location}
@@ -277,25 +283,29 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                            onChange={(v) => setLocation(v?.value || '')}
                         />
                      ) : (
-                        <Center>
-                           <Spinner />
-                        </Center>
+                        <Input disabled value={location} />
                      )}
                      <FormErrorMessage>{locationErrmsg}</FormErrorMessage>
                   </FormControl>
                   <FormControl mt={4} isInvalid={amountErrmsg !== ''}>
                      <FormLabel>Amount</FormLabel>
-                     <Input
-                        type={'number'}
-                        step={'any'}
-                        placeholder={prettyAmount(allocation.amount)}
-                        value={amount}
-                        onChange={(e) => {
-                           setAmountErrmsg('');
-                           setAmount(e.currentTarget.value);
-                        }}
-                     />
-                     <FormHelperText>Set an amount to split the allocation</FormHelperText>
+                     {api.readwrite ? (
+                        <>
+                           <Input
+                              type={'number'}
+                              step={'any'}
+                              placeholder={prettyAmount(allocation.amount)}
+                              value={amount}
+                              onChange={(e) => {
+                                 setAmountErrmsg('');
+                                 setAmount(e.currentTarget.value);
+                              }}
+                           />
+                           <FormHelperText>Set an amount to split the allocation</FormHelperText>
+                        </>
+                     ) : (
+                        <Input disabled value={prettyAmount(allocation.amount)} />
+                     )}
                      <FormErrorMessage>{amountErrmsg}</FormErrorMessage>
                   </FormControl>
                </ModalBody>
@@ -303,9 +313,11 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                <ModalBody>Unable to find allocation with id {props.id}</ModalBody>
             )}
             <ModalFooter>
-               <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} onClick={onSave}>
-                  {amount !== '' && +amount !== 0 ? 'Split' : 'Save'}
-               </Button>
+               {api.readwrite && (
+                  <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} onClick={onSave}>
+                     {amount !== '' && +amount !== 0 ? 'Split' : 'Save'}
+                  </Button>
+               )}
                <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} ml={6} onClick={props.onClose}>
                   Close
                </Button>

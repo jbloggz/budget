@@ -334,7 +334,10 @@ class TestAPI(unittest.TestCase):
             self.db.db.execute('DELETE FROM allocation')
 
         self.client = TestClient(app)
-        secrets['users']['foo'] = hash_password('bar')
+        secrets['users']['foo'] = {
+            "api": "rw",
+            "hash": hash_password('bar')
+        }
         form_data = {'username': 'foo', 'password': 'bar', 'grant_type': 'password'}
         response = self.client.post('/api/oauth2/token/', data=form_data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
         self.assertEqual(response.status_code, 200)
@@ -572,7 +575,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
 
     def test_login(self) -> None:
-        secrets['users']['foo'] = hash_password('bar')
+        secrets['users']['foo'] = {
+            "api": "rw",
+            "hash": hash_password('bar')
+        }
         form_data = {
             'username': 'foo',
             'password': 'bar',
@@ -602,7 +608,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_refresh_token(self) -> None:
-        secrets['users']['foo'] = hash_password('bar')
+        secrets['users']['foo'] = {
+            "api": "rw",
+            "hash": hash_password('bar')
+        }
         form_data = {
             'username': 'foo',
             'password': 'bar',
@@ -635,7 +644,10 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(result['refresh_token'])
 
     def test_refresh_token_can_be_used_only_once(self) -> None:
-        secrets['users']['foo'] = hash_password('bar')
+        secrets['users']['foo'] = {
+            "api": "rw",
+            "hash": hash_password('bar')
+        }
         form_data = {
             'username': 'foo',
             'password': 'bar',
@@ -676,7 +688,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_logout_clears_token(self) -> None:
-        secrets['users']['foo'] = hash_password('bar')
+        secrets['users']['foo'] = {
+            "api": "rw",
+            "hash": hash_password('bar')
+        }
         form_data = {
             'username': 'foo',
             'password': 'bar',
@@ -712,7 +727,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_check_token_is_valid(self) -> None:
-        secrets['users']['foo'] = hash_password('bar')
+        secrets['users']['foo'] = {
+            "api": "rw",
+            "hash": hash_password('bar')
+        }
         self.client.headers.update({'Authorization': f'Bearer {create_token("foo").access_token}'})
         resp = self.client.get(f'/api/oauth2/token/')
         self.assertEqual(resp.status_code, 204)

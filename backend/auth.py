@@ -11,7 +11,7 @@ import os
 import json
 import time
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from calendar import timegm
 from datetime import datetime, timedelta
@@ -38,7 +38,7 @@ def verify_user(username: str, password: str) -> None:
         username: The name of the user
         password: The password of the user
     '''
-    if username not in secrets['users'] or not pwd_context.verify(password, secrets['users'][username]):
+    if username not in secrets['users'] or not pwd_context.verify(password, secrets['users'][username]["hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Incorrect username or password',
@@ -73,9 +73,14 @@ def create_token(user: str, refresh_token: Optional[str] = None) -> Token:
     utcnow = datetime.utcnow()
     utc_access_expire = utcnow + timedelta(seconds=secrets['access_token_ttl'])
     utc_refresh_expire = utcnow + timedelta(seconds=secrets['refresh_token_ttl'])
+    claims = {
+        'sub': user,
+        'iat': utcnow,
+        'api': secrets['users'][user]['api'],
+    }
     token = Token(
-        access_token=jwt.encode({'sub': user, 'exp': utc_access_expire, 'iat': utcnow}, secrets['access_token_key'], algorithm=secrets['algorithm']),
-        refresh_token=jwt.encode({'sub': user, 'exp': utc_refresh_expire, 'iat': utcnow}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
+        access_token=jwt.encode(claims | {'exp': utc_access_expire}, secrets['access_token_key'], algorithm=secrets['algorithm']),
+        refresh_token=jwt.encode(claims | {'exp': utc_refresh_expire}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
         token_type='bearer'
     )
 
@@ -102,8 +107,24 @@ def validate_token(key: str, token: Annotated[str, Depends(oauth2_scheme)]) -> s
         )
 
 
-def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
-    return validate_token('access_token_key', token)
+def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)], request: Request) -> str:
+    username = validate_token('access_token_key', token)
+    if request.method.upper() in ['PUT', 'POST', 'DELETE', 'PATCH']:
+        # read/write access is required
+        if secrets['users'][username]['api'] != 'rw':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Permission denied',
+            )
+    else:
+        # read only access is required
+        if secrets['users'][username]['api'] not in ['r', 'rw']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Permission denied',
+            )
+
+    return username
 
 
 def validate_refresh_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:

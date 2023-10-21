@@ -21,6 +21,7 @@ interface TokenData {
    sub: string;
    iat: number;
    exp: number;
+   api: string;
 }
 
 export class APIError extends Error {
@@ -41,7 +42,7 @@ const decode_token = (token: string | undefined | null): TokenData => {
    } catch (e) {
       /* Ignore */
    }
-   return { sub: '', iat: 0, exp: 0 };
+   return { sub: '', iat: 0, exp: 0, api: '' };
 };
 
 export const useAPI = () => {
@@ -52,7 +53,7 @@ export const useAPI = () => {
    const [refreshTokenSS, setRefreshTokenSS, { removeItem: removeRefreshTokenSS }] = useSessionStorageState<string>('refresh_token', opts);
    const accessToken = accessTokenLS || accessTokenSS;
    const refreshToken = refreshTokenLS || refreshTokenSS;
-   const [tokenData, setTokenData] = useState<TokenData>({ sub: '', iat: 0, exp: 0 });
+   const [tokenData, setTokenData] = useState<TokenData>({ sub: '', iat: 0, exp: 0, api: '' });
 
    /* Update the token data whenever the accessToken changes */
    useEffect(() => {
@@ -268,5 +269,5 @@ export const useAPI = () => {
       );
    };
 
-   return { request, login, logout, useQuery, useMutationFn, useMutationQuery, user: tokenData.sub, expiry: tokenData.exp };
+   return { request, login, logout, useQuery, useMutationFn, useMutationQuery, user: tokenData.sub, readwrite: tokenData.api === 'rw', expiry: tokenData.exp };
 };
