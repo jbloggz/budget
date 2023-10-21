@@ -169,7 +169,7 @@ def update_balance(name: str, initial_balance: int, db):
     logging.info('Updating balances')
 
     running_total = initial_balance
-    txn_list = db.get_transaction_list('txn.source = ? ORDER BY date ASC, amount ASC, description ASC, id ASC', (name,))
+    txn_list = db.get_transaction_list('txn.source = ? ORDER BY date ASC, id ASC', (name,))
     for txn in txn_list.transactions:
         running_total += txn.amount
         old_balance = txn.balance
@@ -188,8 +188,8 @@ def parse_args():  # pragma: no cover
     '''
     parser = argparse.ArgumentParser(description='Process a list of transactions and insert into the database')
     parser.add_argument('--log',     required=True, help='Path to the log file')
-    parser.add_argument('--node',    required=True, help='Path to node binary')
     parser.add_argument('--secrets', required=True, help='Path to the secrets file')
+    parser.add_argument('--balance', action='store_true', help='Only update the balances, don\'t run the scrapers')
 
     args = parser.parse_args()
 
@@ -214,7 +214,8 @@ def main(args):  # pragma: no cover
 
     with Database() as db:
         for name, scraper in secrets['scrapers'].items():
-            insert_transactions(run_scraper(args.node, args.secrets, scraper['path']), db)
+            if not args.balance:
+                insert_transactions(run_scraper(args.secrets, scraper['path']), db)
             update_balance(name, scraper.get('initial_balance', 0), db)
 
     return 0
