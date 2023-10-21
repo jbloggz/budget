@@ -77,12 +77,22 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       url: '/api/allocation/' + props.id,
       validate: isAllocation,
       onSuccess: (alloc: Allocation) => {
-         /* Update category/location when allocation is loaded */
-         if (alloc.category !== 'Unknown') {
-            setCategory(alloc.category);
-         }
-         if (alloc.location !== 'Unknown') {
-            setLocation(alloc.location);
+         if (props.id === '0' && alloc.id === 0) {
+            toast({
+               title: 'Complete',
+               description: 'All allocations have been successfully processed',
+               status: 'success',
+               duration: 5000,
+            });
+            props.onSave();
+         } else {
+            /* Update category/location when allocation is loaded */
+            if (alloc.category !== 'Unknown') {
+               setCategory(alloc.category);
+            }
+            if (alloc.location !== 'Unknown') {
+               setLocation(alloc.location);
+            }
          }
       },
    });
@@ -118,15 +128,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    useEffect(() => {
       if (props.id === '0') {
          /* 0 is the special "any unknown" entry */
-         if (allocationQuery.data?.code === 404) {
-            toast({
-               title: 'Complete',
-               description: 'All allocations have been successfully processed',
-               status: 'success',
-               duration: 5000,
-            });
-            props.onSave();
-         } else if (updateQuery.isSuccess) {
+         if (allocation?.id !== 0 && updateQuery.isSuccess) {
             updateQuery.reset();
             allocationQuery.refetch();
             setCategory('');

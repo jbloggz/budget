@@ -185,13 +185,18 @@ def get_allocations(txn: Optional[int] = None,
 
 
 @app.get('/api/allocation/{alloc_id}', response_model=Optional[Allocation], dependencies=[Depends(validate_access_token)])
-def get_allocation(alloc_id: int) -> Optional[Allocation]:
+def get_allocation(alloc_id: int) -> Allocation:
     with Database() as db:
         if alloc_id == 0:
             alloc_list = db.get_allocation_list(f'category.name = \'Unknown\' OR location.name = \'Unknown\' ORDER BY txn.date ASC')
+            if not alloc_list.allocations:
+                return Allocation(txn_id=0, id=0, date='', amount=0, description='', source='', category='', location='')
         else:
             alloc_list = db.get_allocation_list(f'allocation.id = {alloc_id}')
-        return alloc_list.allocations[0] if alloc_list.allocations else None
+            if not alloc_list.allocations:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        return alloc_list.allocations[0]
 
 
 @app.put('/api/allocation/', dependencies=[Depends(validate_access_token)])
