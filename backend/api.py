@@ -67,7 +67,7 @@ def get_transactions(start: Optional[str],
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f'Invalid sort order: {sort_order}',
             )
-        query += f' ORDER BY {sort_column} {sort_order}'
+        query += f' ORDER BY {sort_column} {sort_order}, id {sort_order}'
 
         return db.get_transaction_list(query, tuple(params), limit, offset)
 
