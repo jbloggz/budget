@@ -26,6 +26,9 @@ coverage:
 	rm -f backend/budget-test.db*
 	node_modules/.bin/vitest run --coverage
 
+scrape:
+	cd backend && python insert_transactions.py --log budget.log --secrets secrets.json
+
 build:
 	npm run build
 
