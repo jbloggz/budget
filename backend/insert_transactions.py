@@ -24,27 +24,25 @@ from database import Database
 TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
 
 
-def run_scraper(secrets: str, path: str) -> List[Transaction]:  # pragma: no cover
+def run_scraper(args, secrets: Dict, scraper: Dict) -> List[Transaction]:  # pragma: no cover
     '''
     Run a scraper file
 
     Args:
-        secrets: path to the secrets file
-        path:    the scraper JS file
+        args:    Command line arguments
+        secrets: Secrets configuration
+        scraper: The scraper configuration
 
     Returns:
         The list of transactions
     '''
-    with open(secrets) as fp:
-        node = json.load(fp)['node_path']
-
-    result = subprocess.run([node, './scrapers/' + path, secrets], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
+    result = subprocess.run([secrets['node_path'], './scrapers/' + scraper['path'], args.secrets], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
     if result.stdout is None:
         return []
 
     data = json.loads(result.stdout)
 
-    return [Transaction(**txn) for txn in data['transactions']]
+    return [Transaction(**txn) for txn in data['transactions'] if txn['date'] >= scraper['start_date']]
 
 
 def build_txn_map(txn_list: TransactionList) -> TxnMapType:
@@ -157,18 +155,18 @@ def insert_transactions(transactions: List[Transaction], db):
     logging.info('Completed inserting transactions')
 
 
-def update_balance(name: str, initial_balance: int, db):
+def update_balance(name: str, start_balance: int, db):
     '''
     Update balance of all transactions
 
     Args:
         name: The name of the source
-        initial_balance: The starting balance for the source
+        start_balance: The starting balance for the source
         db: The database object
     '''
     logging.info('Updating balances')
 
-    running_total = initial_balance
+    running_total = start_balance
     txn_list = db.get_transaction_list('txn.source = ? ORDER BY date ASC, id ASC', (name,))
     for txn in txn_list.transactions:
         running_total += txn.amount
@@ -215,8 +213,8 @@ def main(args):  # pragma: no cover
     with Database() as db:
         for name, scraper in secrets['scrapers'].items():
             if not args.balance:
-                insert_transactions(run_scraper(args.secrets, scraper['path']), db)
-            update_balance(name, scraper.get('initial_balance', 0), db)
+                insert_transactions(run_scraper(args, secrets, scraper), db)
+            update_balance(name, scraper.get('start_balance', 0), db)
 
     return 0
 
