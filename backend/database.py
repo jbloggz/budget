@@ -194,6 +194,15 @@ class Database:
         txn_list = self.get_transaction_list(f'id = {txn_id}')
         return txn_list.transactions[0] if txn_list.transactions else None
 
+    def delete_transactions(self, ids: List[int]) -> None:
+        '''
+        Delete transactions from the database
+
+        Args:
+            ids: The list of transaction ID's to delete
+        '''
+        self.db.execute(f'DELETE FROM txn WHERE id in ({",".join(["?" for _ in ids])})', ids)
+
     def get_description_map(self) -> Dict:
         '''
         Get a map of descriptions to categories and locations

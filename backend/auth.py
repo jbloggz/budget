@@ -76,7 +76,7 @@ def create_token(user: str, refresh_token: Optional[str] = None) -> Token:
     claims = {
         'sub': user,
         'iat': utcnow,
-        'api': secrets['users'][user]['api'],
+        'api': secrets['users'].get(user, {'api': ''})['api'],
     }
     token = Token(
         access_token=jwt.encode(claims | {'exp': utc_access_expire}, secrets['access_token_key'], algorithm=secrets['algorithm']),

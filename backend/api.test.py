@@ -130,6 +130,19 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(txn_list.total, 3)
             self.assertEqual(len(txn_list.transactions), 3)
 
+    def test_delete_transactions(self) -> None:
+        with self.db:
+            initial_count = len(self.db.get_transaction_list().transactions)
+            txn1 = self.db.add_transaction(Transaction(date='2023-07-10', amount=23511, description='FooBar Enterprises', source='Bank of Foo'))
+            assert txn1.id is not None
+            txn2 = self.db.add_transaction(Transaction(date='2023-07-11', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))
+            assert txn2.id is not None
+            added_count = len(self.db.get_transaction_list().transactions)
+            self.assertEqual(added_count, initial_count + 2)
+            self.db.delete_transactions([txn1.id, txn2.id])
+            final_count = len(self.db.get_transaction_list().transactions)
+            self.assertEqual(final_count, initial_count)
+
     def test_default_allocation_added_when_transaction_added(self) -> None:
         with self.db:
             txn = self.db.add_transaction(Transaction(date='2023-07-09', amount=3456, description='FooBar Enterprises', source='Bank of Foo'))

@@ -224,7 +224,7 @@ class TestInsertTransactions(unittest.TestCase):
         running_totals = {'bank of foo': 2234, 'Bar Inc': -48392}
         update_balance('bank of foo', running_totals['bank of foo'], self.db)
         update_balance('Bar Inc', running_totals['Bar Inc'], self.db)
-        txn_list = self.db.get_transaction_list('1 ORDER BY date ASC, amount ASC, description ASC, id ASC')
+        txn_list = self.db.get_transaction_list('1 ORDER BY date ASC, id ASC')
         for txn in txn_list.transactions:
             running_totals[txn.source] += txn.amount
             self.assertEqual(txn.balance, running_totals[txn.source])

@@ -11,7 +11,7 @@ import os
 import difflib
 import math
 from typing import List, Annotated, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Body
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query
 from fastapi.staticfiles import StaticFiles
 
 # Local imports
@@ -79,6 +79,12 @@ def get_transaction(txn_id: int) -> Optional[Transaction]:
         return txn_list.transactions[0] if txn_list.transactions else None
 
 
+@app.delete('/api/transaction/', dependencies=[Depends(validate_access_token)])
+def delete_transactions(id: Annotated[List[int], Query()]) -> None:
+    with Database() as db:
+        db.delete_transactions(id)
+
+
 @app.get('/api/categorise/', response_model=Categorisation, dependencies=[Depends(validate_access_token)])
 def get_categorise(description: str) -> Categorisation:
     with Database() as db:
@@ -110,8 +116,8 @@ def get_categorise(description: str) -> Categorisation:
         sorted_category_scores = sorted(category_scores.items(), key=lambda x: x[1]['score'], reverse=True)
         best_score = sorted_category_scores[0][1]
         for category, score in sorted_category_scores:
-            score = 0 if best_score['score'] == 0 else score['score'] / best_score['score'] * best_score['ratio']
-            res.categories.append(Score(name=category, score=score))
+            value = 0 if best_score['score'] == 0 else score['score'] / best_score['score'] * best_score['ratio']
+            res.categories.append(Score(name=category, score=value))
             all_categories.discard(category)
         res.categories.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_categories)))
 
@@ -120,8 +126,8 @@ def get_categorise(description: str) -> Categorisation:
         sorted_location_scores = sorted(location_scores.items(), key=lambda x: x[1]['score'], reverse=True)
         best_score = sorted_location_scores[0][1]
         for location, score in sorted_location_scores:
-            score = 0 if best_score['score'] == 0 else score['score'] / best_score['score'] * best_score['ratio']
-            res.locations.append(Score(name=location, score=score))
+            value = 0 if best_score['score'] == 0 else score['score'] / best_score['score'] * best_score['ratio']
+            res.locations.append(Score(name=location, score=value))
             all_locations.discard(location)
         res.locations.extend(map(lambda x: Score(name=x, score=0.0), sorted(all_locations)))
 
