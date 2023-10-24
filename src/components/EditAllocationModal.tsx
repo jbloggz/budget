@@ -71,7 +71,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    const [category, setCategory] = useState('');
    const [location, setLocation] = useState('');
 
-   /* Create the api queries */
+   /* This query will retrieve the allocation from the database */
    const allocationQuery = api.useQuery<Allocation>({
       method: 'GET',
       url: '/api/allocation/' + props.id,
@@ -98,6 +98,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    });
    const allocation = allocationQuery.data?.data;
 
+   /* This query retrieves the list possible of categories/locations for the allocation */
    const categoriseQuery = api.useQuery<Categorisation>({
       method: 'GET',
       url: '/api/categorise/',
@@ -105,15 +106,19 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          description: allocation?.description || '',
       }),
       validate: isCategorisation,
-      enabled: allocationQuery.isSuccess,
+      enabled: allocationQuery.isSuccess && !allocationQuery.isFetching,
    });
    const { categories, locations } =
       categoriseQuery.isSuccess && categoriseQuery.data ? categoriseQuery.data.data : { categories: [], locations: [] };
+
+   /* This query is used to update the allocation with a new category/location */
    const updateQuery = api.useMutationQuery<Allocation>({
       method: 'PUT',
       url: '/api/allocation/',
       onSuccess: () => props.id !== '0' && props.onSave(),
    });
+
+   /* This query is used to split an allocation into 2 allocations */
    const splitQuery = api.useMutationQuery<{ amount: number }, Allocation>({
       method: 'PUT',
       url: allocation ? `/api/allocation/${allocation.id}/split/` : '',
@@ -135,7 +140,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
             setLocation('');
          }
       }
-   }, [allocation, props, allocationQuery, updateQuery, toast]);
+   }, [allocation, props, allocationQuery, updateQuery]);
 
    /* Check for query errors */
    useEffect(() => {

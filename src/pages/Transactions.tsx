@@ -6,15 +6,87 @@
  * Transactions.tsx: This file contains the transactions page component
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { AbsoluteCenter, Divider, FormControl, FormLabel, Heading, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
-import { TransactionList, isTransactionList, SortOrder } from '../app.types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+   AbsoluteCenter,
+   AlertDialog,
+   AlertDialogBody,
+   AlertDialogContent,
+   AlertDialogFooter,
+   AlertDialogHeader,
+   AlertDialogOverlay,
+   Button,
+   Divider,
+   FormControl,
+   FormLabel,
+   HStack,
+   Heading,
+   IconButton,
+   Spacer,
+   Spinner,
+   Stack,
+   Text,
+   useToast,
+} from '@chakra-ui/react';
+import { CloseIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { Select } from 'chakra-react-select';
+import { TransactionList, isTransactionList, SortOrder } from '../app.types';
 import { useAPI } from '../hooks';
 import { DateRangePicker, Table, SearchFilter, SourceLogo } from '../components';
-import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { prettyAmount, prettyDate } from '../utils';
 
+interface DeleteDialogProps {
+   isOpen: boolean;
+   ids: Set<number | string>;
+   onClose: (reload: boolean) => void;
+}
+
+function DeleteDialog(props: DeleteDialogProps) {
+   const cancelRef = useRef<HTMLButtonElement>(null);
+   const api = useAPI();
+   const toast = useToast();
+
+   const deleteQuery = api.useMutationQuery<void>({
+      method: 'DELETE',
+      url: '/api/transaction/',
+      params: new URLSearchParams([...props.ids].map((v) => ['id', v.toString()])),
+      onSuccess: () => props.onClose(true),
+      onError: (error) => {
+         toast({
+            title: 'Error',
+            description: error.message,
+            status: 'error',
+            duration: 5000,
+         });
+      },
+   });
+
+   return (
+      <>
+         <AlertDialog isOpen={props.isOpen} leastDestructiveRef={cancelRef} onClose={() => props.onClose(false)}>
+            <AlertDialogOverlay>
+               <AlertDialogContent>
+                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                     Delete Transaction{props.ids.size > 1 ? 's' : ''}
+                  </AlertDialogHeader>
+                  <AlertDialogBody>
+                     Are you sure you want to delete {props.ids.size} transaction{props.ids.size > 1 ? 's' : ''}? This action cannot be undone.
+                  </AlertDialogBody>
+                  <AlertDialogFooter>
+                     <Button ref={cancelRef} onClick={() => props.onClose(false)}>
+                        Cancel
+                     </Button>
+                     <Button isLoading={deleteQuery.isLoading} colorScheme="red" onClick={() => deleteQuery.mutate()} ml={3}>
+                        Delete
+                     </Button>
+                  </AlertDialogFooter>
+               </AlertDialogContent>
+            </AlertDialogOverlay>
+         </AlertDialog>
+      </>
+   );
+}
 const Transactions = () => {
    const toast = useToast();
    const api = useAPI();
@@ -22,7 +94,11 @@ const Transactions = () => {
    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
    const [dates, setDates] = useState<Date[]>([startOfMonth(new Date()), endOfMonth(new Date())]);
    const [textFilter, setTextFilter] = useState<string>('');
-   const [selectedSources, setSelectedSources] = useState<readonly {label: string, value: string}[]>([]);
+   const [selectedSources, setSelectedSources] = useState<readonly { label: string; value: string }[]>([]);
+   const [selectedRows, setSelectedRows] = useState<Set<string | number>>(new Set());
+   const [isEditMode, setEditMode] = useState<boolean>(false);
+   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+
    const query = api.useQuery<TransactionList>({
       method: 'GET',
       url: '/api/transaction/',
@@ -57,9 +133,37 @@ const Transactions = () => {
 
    return (
       <>
-         <Heading pb="8" size="lg">
-            Transactions
-         </Heading>
+         <HStack pb="8">
+            <Heading size="lg">Transactions</Heading>
+            <Spacer />
+            {api.readwrite &&
+               (isEditMode ? (
+                  <>
+                     {selectedRows.size > 0 && (
+                        <IconButton
+                           title={'Delete'}
+                           variant={'ghost'}
+                           color={'red.300'}
+                           aria-label={'delete'}
+                           icon={<DeleteIcon />}
+                           onClick={() => setDeleteDialogOpen(true)}
+                        />
+                     )}
+                     <IconButton
+                        title={'Cancel'}
+                        variant={'ghost'}
+                        aria-label={'cancel'}
+                        icon={<CloseIcon />}
+                        onClick={() => {
+                           setEditMode(false);
+                           setSelectedRows(new Set());
+                        }}
+                     />
+                  </>
+               ) : (
+                  <IconButton title={'Edit'} variant={'ghost'} aria-label={'edit'} icon={<EditIcon />} onClick={() => setEditMode(true)} />
+               ))}
+         </HStack>
          <Stack direction={{ base: 'column', md: 'row' }}>
             <FormControl>
                <FormLabel>Date Range</FormLabel>
@@ -87,6 +191,7 @@ const Transactions = () => {
          ) : (
             <>
                <Table
+                  highlightHover={isEditMode}
                   header={[
                      {
                         sortable: true,
@@ -132,9 +237,35 @@ const Transactions = () => {
                   sortColumn={sortColumn}
                   sortAscending={sortOrder === 'asc'}
                   onSortChanged={setSort}
+                  selectedRows={isEditMode ? selectedRows : undefined}
+                  onRowSelection={
+                     isEditMode
+                        ? (_, row) => {
+                             setSelectedRows((oldSet) => {
+                                const newSet = new Set(oldSet);
+                                if (newSet.has(row.id)) {
+                                   newSet.delete(row.id);
+                                } else {
+                                   newSet.add(row.id);
+                                }
+                                return newSet;
+                             });
+                          }
+                        : undefined
+                  }
                />
             </>
          )}
+         <DeleteDialog
+            isOpen={isDeleteDialogOpen}
+            ids={selectedRows}
+            onClose={(reload: boolean) => {
+               setDeleteDialogOpen(false);
+               if (reload) {
+                  query.refetch();
+               }
+            }}
+         />
       </>
    );
 };

@@ -100,6 +100,7 @@ const Allocations = () => {
                      {
                         content: (
                            <Table
+                              highlightHover
                               onRowClick={(_, row) => !isNaN(+row.id) && navigate(`/allocations/${+row.id}`, { state: 'modal' })}
                               rows={locationList.map((alloc) => ({
                                  id: alloc.id || 0,
