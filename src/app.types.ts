@@ -7,6 +7,7 @@
  * the app
  */
 
+import { APIError } from './hooks';
 import { themes } from './theme';
 
 /* Either a valid theme name or unknown */
@@ -82,6 +83,7 @@ export interface QueryOptions<T> {
 /* The options to use for react-query useMutation */
 export interface MutationOptions<T> {
    onSuccess?: (data: T) => void;
+   onError?: (error: APIError) => void;
 }
 
 /* The credentials returned be the API for a successful login or token refresh */

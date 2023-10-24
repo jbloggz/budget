@@ -11,7 +11,7 @@ import jwt_decode from 'jwt-decode';
 import useLocalStorageState from 'use-local-storage-state';
 import useSessionStorageState from 'use-session-storage-state';
 import { Mutex } from 'async-mutex';
-import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens, QueryOptions } from '../app.types';
+import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens, QueryOptions, MutationOptions } from '../app.types';
 import { UseMutationOptions, UseQueryOptions, useQuery as useReactQuery, useMutation as useReactMutation } from '@tanstack/react-query';
 
 /* Mutex for token requests */
@@ -255,8 +255,8 @@ export const useAPI = () => {
       });
    };
 
-   const useMutationQuery = <TInput = void, TOutput = void>(opts: APIRequest<TOutput> & QueryOptions<TOutput>) => {
-      const { onSuccess, ...apiOpts } = opts;
+   const useMutationQuery = <TInput = void, TOutput = void>(opts: APIRequest<TOutput> & MutationOptions<TOutput>) => {
+      const { onSuccess, onError, ...apiOpts } = opts;
       return useMutationFn(
          useCallback(
             (data: TInput) => {
@@ -265,9 +265,22 @@ export const useAPI = () => {
             },
             [apiOpts]
          ),
-         { ...(onSuccess && { onSuccess: (resp: APIResponse<TOutput>) => onSuccess(resp.data) }) }
+         {
+            ...(onSuccess && { onSuccess: (resp: APIResponse<TOutput>) => onSuccess(resp.data) }),
+            onError,
+         }
       );
    };
 
-   return { request, login, logout, useQuery, useMutationFn, useMutationQuery, user: tokenData.sub, readwrite: tokenData.api === 'rw', expiry: tokenData.exp };
+   return {
+      request,
+      login,
+      logout,
+      useQuery,
+      useMutationFn,
+      useMutationQuery,
+      user: tokenData.sub,
+      readwrite: tokenData.api === 'rw',
+      expiry: tokenData.exp,
+   };
 };
