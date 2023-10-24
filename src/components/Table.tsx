@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
-import { TableContainer, Table as ChakraTable, Thead, Tr, Th, Button, Tbody, Td, useColorModeValue } from '@chakra-ui/react';
+import { TableContainer, Table as ChakraTable, Thead, Tr, Th, Button, Tbody, Td, useColorModeValue, Checkbox } from '@chakra-ui/react';
 
 export interface TableColumn {
    text: string;
@@ -23,10 +23,13 @@ export interface TableRow {
 export interface TableProps {
    header?: TableColumn[];
    rows: TableRow[];
+   onRowSelection?: (index: number, row: TableRow, selected: boolean) => void;
+   selectedRows?: Set<string | number>;
    sortColumn?: string;
    sortAscending?: boolean;
    onSortChanged?: (column: string, ascending: boolean) => void;
    onRowClick?: (index: number, row: TableRow) => void;
+   highlightHover?: boolean;
 }
 
 const Table = (props: TableProps) => {
@@ -40,6 +43,7 @@ const Table = (props: TableProps) => {
             {props.header && (
                <Thead>
                   <Tr>
+                     {props.selectedRows && <Th px={{ base: 1, md: 4 }}></Th>}
                      {props.header.map((col, idx) => (
                         <Th key={idx} px={{ base: 1, md: 4 }}>
                            {col.sortable ? (
@@ -68,11 +72,40 @@ const Table = (props: TableProps) => {
                      key={row.id}
                      onMouseEnter={() => setRowHover(rowIdx)}
                      onMouseLeave={() => setRowHover(-1)}
-                     onClick={() => props.onRowClick && props.onRowClick(rowIdx, row)}
-                     cursor={props.onRowClick ? 'pointer' : 'default'}
+                     onClick={() => {
+                        if (props.onRowClick) {
+                           props.onRowClick(rowIdx, row);
+                        }
+                        if (props.onRowSelection && props.selectedRows) {
+                           props.onRowSelection(rowIdx, row, !props.selectedRows.has(row.id));
+                        }
+                     }}
+                     cursor={props.onRowClick || (props.onRowSelection && props.selectedRows) ? 'pointer' : 'default'}
                   >
+                     {props.selectedRows && (
+                        <Td
+                           bg={
+                              (props.highlightHover && rowHover === rowIdx) || (props.selectedRows && props.selectedRows.has(row.id))
+                                 ? bg + '!important'
+                                 : undefined
+                           }
+                        >
+                           <Checkbox
+                              isChecked={props.selectedRows.has(row.id)}
+                              onChange={(e) => props.onRowSelection && props.onRowSelection(rowIdx, row, e.currentTarget.checked)}
+                           />
+                        </Td>
+                     )}
                      {row.cells.map((cell, colIdx) => (
-                        <Td key={colIdx} px={{ base: 1, md: 4 }} bg={props.onRowClick && rowHover === rowIdx ? bg + '!important' : undefined}>
+                        <Td
+                           key={colIdx}
+                           px={{ base: 1, md: 4 }}
+                           bg={
+                              (props.highlightHover && rowHover === rowIdx) || (props.selectedRows && props.selectedRows.has(row.id))
+                                 ? bg + '!important'
+                                 : undefined
+                           }
+                        >
                            {cell}
                         </Td>
                      ))}
