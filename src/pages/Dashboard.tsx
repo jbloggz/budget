@@ -12,6 +12,7 @@ import {
    Card,
    CardBody,
    Container,
+   Divider,
    Heading,
    Spinner,
    Stat,
@@ -69,6 +70,7 @@ const Dashboard = () => {
       }),
       validate: (data: unknown): data is DashboardPanel[] => Array.isArray(data) && data.every((d) => isDashboardPanel(d)),
    });
+   const panels = query.data?.data;
 
    useEffect(() => {
       if (query.isError) {
@@ -80,6 +82,19 @@ const Dashboard = () => {
          });
       }
    }, [query, toast]);
+
+   const totalPanel: DashboardPanel = {
+      category: 'Total',
+      amount: 0,
+      diff: 0,
+      limit: 0,
+   };
+   if (panels) {
+      totalPanel.amount = panels.reduce((total, panel) => total + panel.amount, 0);
+      totalPanel.limit = panels.reduce((total, panel) => total + panel.limit, 0);
+      const expected_total_amount = panels.reduce((total, panel) => total + panel.amount / (1 + panel.diff / 100), 0);
+      totalPanel.diff = (totalPanel.amount - expected_total_amount) / expected_total_amount * 100;
+   }
 
    return (
       <>
@@ -93,14 +108,23 @@ const Dashboard = () => {
                   <Spinner />
                </AbsoluteCenter>
             ) : (
-               query.isSuccess &&
-               query.data.data.map((panel) => (
-                  <Card m={4} size={'sm'}>
-                     <CardBody>
-                        <PanelStat panel={panel} />
-                     </CardBody>
-                  </Card>
-               ))
+               panels && (
+                  <>
+                     <Card m={4} size={'sm'}>
+                        <CardBody>
+                           <PanelStat panel={totalPanel} />
+                        </CardBody>
+                     </Card>
+                     <Divider />
+                     {panels.map((panel) => (
+                        <Card m={4} size={'sm'}>
+                           <CardBody>
+                              <PanelStat panel={panel} />
+                           </CardBody>
+                        </Card>
+                     ))}
+                  </>
+               )
             )}
          </Container>
       </>

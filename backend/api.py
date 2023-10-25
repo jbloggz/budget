@@ -226,7 +226,7 @@ def get_dashboard(start: str, end: str) -> List[DashboardPanel]:
             alloc_list = db.get_allocation_list(f'txn.date BETWEEN ? AND ? AND category.name = ?', (start, end, panel_cfg['category'])).allocations
             amount = -sum([alloc.amount for alloc in alloc_list])
             expected_amount = ndays / total_ndays * panel_cfg['limit']
-            diff = (amount - expected_amount) / panel_cfg['limit'] * 100
+            diff = (amount - expected_amount) / expected_amount * 100
             panel = DashboardPanel(category=panel_cfg['category'], amount=amount, limit=panel_cfg['limit'], diff=diff)
             resp.append(panel)
 
