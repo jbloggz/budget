@@ -10,14 +10,15 @@
 import os
 import difflib
 import math
+import datetime
 from typing import List, Annotated, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query
 from fastapi.staticfiles import StaticFiles
 
 # Local imports
 from database import Database
-from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score
-from auth import create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token, clear_cached_token
+from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score, DashboardPanel
+from auth import config, create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token, clear_cached_token
 
 
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -203,6 +204,33 @@ def get_allocation(alloc_id: int) -> Allocation:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         return alloc_list.allocations[0]
+
+
+@app.get('/api/dashboard/', response_model=List[DashboardPanel], dependencies=[Depends(validate_access_token)])
+def get_dashboard(start: str, end: str) -> List[DashboardPanel]:
+    resp: List[DashboardPanel] = []
+    with Database() as db:
+        for panel_cfg in config['dashboard']:
+            dt_start = datetime.datetime.strptime(start, '%Y-%m-%d').date()
+            dt_end = datetime.datetime.strptime(end, '%Y-%m-%d').date()
+            today = datetime.date.today()
+            total_ndays = (dt_end - dt_start).days + 1
+            if today < dt_end:
+                if today < dt_start:
+                    ndays = 0
+                else:
+                    ndays = (today - dt_start).days + 1
+            else:
+                ndays = total_ndays
+
+            alloc_list = db.get_allocation_list(f'txn.date BETWEEN ? AND ? AND category.name = ?', (start, end, panel_cfg['category'])).allocations
+            amount = -sum([alloc.amount for alloc in alloc_list])
+            expected_amount = ndays / total_ndays * panel_cfg['limit']
+            diff = (amount - expected_amount) / panel_cfg['limit'] * 100
+            panel = DashboardPanel(category=panel_cfg['category'], amount=amount, limit=panel_cfg['limit'], diff=diff)
+            resp.append(panel)
+
+    return resp
 
 
 @app.put('/api/allocation/', dependencies=[Depends(validate_access_token)])

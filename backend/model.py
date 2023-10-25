@@ -43,6 +43,13 @@ class AllocationList(BaseModel):
     allocations: List[Allocation]
 
 
+class DashboardPanel(BaseModel):
+    category: str
+    amount: int
+    limit: int
+    diff: float
+
+
 class Score(BaseModel):
     name: str
     score: float
