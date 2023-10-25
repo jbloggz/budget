@@ -51,6 +51,14 @@ export type AllocationList = {
    allocations: Allocation[];
 };
 
+/* A dashboard panel */
+export interface DashboardPanel {
+   category: string;
+   amount: number;
+   limit: number;
+   diff: number;
+}
+
 /* Category/location lists ordered by closest match to a description */
 export interface Categorisation {
    categories: { name: string; score: number }[];
@@ -195,4 +203,10 @@ export const isCategorisation = (val: unknown): val is Categorisation => {
    } catch {
       return false;
    }
+};
+
+/* Type predicate for DashboardPanel */
+export const isDashboardPanel = (val: unknown): val is DashboardPanel => {
+   const test = val as DashboardPanel;
+   return typeof test.category === 'string' && typeof test.amount === 'number' && typeof test.limit === 'number' && typeof test.diff === 'number';
 };
