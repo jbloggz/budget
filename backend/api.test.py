@@ -15,7 +15,7 @@ import time
 from api import app
 from database import Database
 from model import Transaction, CachedToken
-from auth import secrets, hash_password, create_token
+from auth import config, hash_password, create_token
 
 
 class TestDatabase(unittest.TestCase):
@@ -347,7 +347,7 @@ class TestAPI(unittest.TestCase):
             self.db.db.execute('DELETE FROM allocation')
 
         self.client = TestClient(app)
-        secrets['users']['foo'] = {
+        config['users']['foo'] = {
             "api": "rw",
             "hash": hash_password('bar')
         }
@@ -588,7 +588,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
 
     def test_login(self) -> None:
-        secrets['users']['foo'] = {
+        config['users']['foo'] = {
             "api": "rw",
             "hash": hash_password('bar')
         }
@@ -621,7 +621,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_refresh_token(self) -> None:
-        secrets['users']['foo'] = {
+        config['users']['foo'] = {
             "api": "rw",
             "hash": hash_password('bar')
         }
@@ -657,7 +657,7 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(result['refresh_token'])
 
     def test_refresh_token_can_be_used_only_once(self) -> None:
-        secrets['users']['foo'] = {
+        config['users']['foo'] = {
             "api": "rw",
             "hash": hash_password('bar')
         }
@@ -701,7 +701,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_logout_clears_token(self) -> None:
-        secrets['users']['foo'] = {
+        config['users']['foo'] = {
             "api": "rw",
             "hash": hash_password('bar')
         }
@@ -740,7 +740,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_check_token_is_valid(self) -> None:
-        secrets['users']['foo'] = {
+        config['users']['foo'] = {
             "api": "rw",
             "hash": hash_password('bar')
         }

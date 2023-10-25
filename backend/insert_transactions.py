@@ -24,19 +24,19 @@ from database import Database
 TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
 
 
-def run_scraper(args, secrets: Dict, scraper: Dict) -> List[Transaction]:  # pragma: no cover
+def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # pragma: no cover
     '''
     Run a scraper file
 
     Args:
         args:    Command line arguments
-        secrets: Secrets configuration
+        config:  Configuration data
         scraper: The scraper configuration
 
     Returns:
         The list of transactions
     '''
-    result = subprocess.run([secrets['node_path'], './scrapers/' + scraper['path'], args.secrets], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
+    result = subprocess.run([config['node_path'], './scrapers/' + scraper['path'], args.config], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
     if result.stdout is None:
         return []
 
@@ -186,7 +186,7 @@ def parse_args():  # pragma: no cover
     '''
     parser = argparse.ArgumentParser(description='Process a list of transactions and insert into the database')
     parser.add_argument('--log',     required=True, help='Path to the log file')
-    parser.add_argument('--secrets', required=True, help='Path to the secrets file')
+    parser.add_argument('--config', required=True, help='Path to the budget config file')
     parser.add_argument('--balance', action='store_true', help='Only update the balances, don\'t run the scrapers')
 
     args = parser.parse_args()
@@ -207,13 +207,13 @@ def main(args):  # pragma: no cover
     Returns:
         code to use as the exit status
     '''
-    with open(args.secrets) as fp:
-        secrets = json.load(fp)
+    with open(args.config) as fp:
+        config = json.load(fp)
 
     with Database() as db:
-        for name, scraper in secrets['scrapers'].items():
+        for name, scraper in config['scrapers'].items():
             if not args.balance:
-                insert_transactions(run_scraper(args, secrets, scraper), db)
+                insert_transactions(run_scraper(args, config, scraper), db)
             update_balance(name, scraper.get('start_balance', 0), db)
 
     return 0

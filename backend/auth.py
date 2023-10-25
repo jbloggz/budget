@@ -9,7 +9,6 @@
 # System imports
 import os
 import json
-import time
 from typing import Annotated
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -26,8 +25,8 @@ from database import Database
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='oauth2/token')
-with open(os.environ.get('SECRETS_PATH', 'secrets.json')) as fp:
-    secrets = json.load(fp)
+with open(os.environ.get('CONFIG_PATH', 'budget.json')) as fp:
+    config = json.load(fp)
 
 
 def verify_user(username: str, password: str) -> None:
@@ -38,7 +37,7 @@ def verify_user(username: str, password: str) -> None:
         username: The name of the user
         password: The password of the user
     '''
-    if username not in secrets['users'] or not pwd_context.verify(password, secrets['users'][username]["hash"]):
+    if username not in config['users'] or not pwd_context.verify(password, config['users'][username]["hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Incorrect username or password',
@@ -71,16 +70,16 @@ def create_token(user: str, refresh_token: Optional[str] = None) -> Token:
         The encoded token
     '''
     utcnow = datetime.utcnow()
-    utc_access_expire = utcnow + timedelta(seconds=secrets['access_token_ttl'])
-    utc_refresh_expire = utcnow + timedelta(seconds=secrets['refresh_token_ttl'])
+    utc_access_expire = utcnow + timedelta(seconds=config['access_token_ttl'])
+    utc_refresh_expire = utcnow + timedelta(seconds=config['refresh_token_ttl'])
     claims = {
         'sub': user,
         'iat': utcnow,
-        'api': secrets['users'].get(user, {'api': ''})['api'],
+        'api': config['users'].get(user, {'api': ''})['api'],
     }
     token = Token(
-        access_token=jwt.encode(claims | {'exp': utc_access_expire}, secrets['access_token_key'], algorithm=secrets['algorithm']),
-        refresh_token=jwt.encode(claims | {'exp': utc_refresh_expire}, secrets['refresh_token_key'], algorithm=secrets['algorithm']),
+        access_token=jwt.encode(claims | {'exp': utc_access_expire}, config['access_token_key'], algorithm=config['algorithm']),
+        refresh_token=jwt.encode(claims | {'exp': utc_refresh_expire}, config['refresh_token_key'], algorithm=config['algorithm']),
         token_type='bearer'
     )
 
@@ -94,9 +93,9 @@ def create_token(user: str, refresh_token: Optional[str] = None) -> Token:
 
 def validate_token(key: str, token: Annotated[str, Depends(oauth2_scheme)]) -> str:
     try:
-        payload = jwt.decode(token, secrets[key], algorithms=secrets['algorithm'])
+        payload = jwt.decode(token, config[key], algorithms=config['algorithm'])
         username: str = payload.get('sub')
-        if username not in secrets['users']:
+        if username not in config['users']:
             raise ValueError('Invalid username')
         return username
     except:
@@ -111,14 +110,14 @@ def validate_access_token(token: Annotated[str, Depends(oauth2_scheme)], request
     username = validate_token('access_token_key', token)
     if request.method.upper() in ['PUT', 'POST', 'DELETE', 'PATCH']:
         # read/write access is required
-        if secrets['users'][username]['api'] != 'rw':
+        if config['users'][username]['api'] != 'rw':
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='Permission denied',
             )
     else:
         # read only access is required
-        if secrets['users'][username]['api'] not in ['r', 'rw']:
+        if config['users'][username]['api'] not in ['r', 'rw']:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail='Permission denied',
