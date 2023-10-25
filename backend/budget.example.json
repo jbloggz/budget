@@ -1,0 +1,45 @@
+{
+   "algorithm": "HS256",
+   "access_token_key": "secret",
+   "refresh_token_key": "secret",
+   "access_token_ttl": 3600,
+   "refresh_token_ttl": 604800,
+   "users": {
+      "jack@test.com": {
+         "api": "rw",
+         "hash": "PASSWORD_HASH"
+      },
+      "jill@example.net": {
+         "api": "r",
+         "hash": "PASSWORD_HASH"
+      }
+   },
+   "node_path": "/path/to/node/binary",
+   "scrapers": {
+      "Some bank": {
+         "user": "username",
+         "password": "password",
+         "path": "foo.js",
+         "start_balance": -1234,
+         "start_date": "2023-10-01"
+      }
+   },
+   "dashboard": [
+      {
+         "category": "Groceries",
+         "limit": 100000
+      },
+      {
+         "category": "General Spending",
+         "limit": 50000
+      },
+      {
+         "category": "Dining/Take out",
+         "limit": 20000
+      },
+      {
+         "category": "Transport",
+         "limit": 10000
+      }
+   ]
+}
