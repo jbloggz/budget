@@ -3,49 +3,27 @@
  *
  * Copyright (c) 2023 Josef Barnes
  *
- * service-worker.js: This file contains the service worker for the PWA. It is
- *                    based on the 'basic' template provided by PWABuilder. See
- *                    https://github.com/pwa-builder/PWABuilder/blob/main/docs/sw.js
- *                    for more info.
+ * service-worker.js: This file contains the service worker for the PWA.
  */
-
-const HOSTNAME_WHITELIST = [self.location.hostname, 'fonts.gstatic.com', 'fonts.googleapis.com', 'cdn.jsdelivr.net'];
-
-const getFixedUrl = (req) => {
-   var now = Date.now();
-   var url = new URL(req.url);
-   url.protocol = self.location.protocol;
-   if (url.hostname === self.location.hostname) {
-      url.search += (url.search ? '&' : '?') + 'cache-bust=' + now;
-   }
-   return url.href;
-};
 
 self.addEventListener('activate', (event) => {
    event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
-   if (HOSTNAME_WHITELIST.indexOf(new URL(event.request.url).hostname) > -1) {
-      const cached = caches.match(event.request);
-      const fixedUrl = getFixedUrl(event.request);
-      const fetched = fetch(fixedUrl, { cache: 'no-store' });
-      const fetchedCopy = fetched.then((resp) => resp.clone());
-
-      event.respondWith(
-         Promise.race([fetched.catch((_) => cached), cached]) /* eslint-disable-line @typescript-eslint/no-unused-vars */
-            .then((resp) => resp || fetched)
-            .catch((_) => { /* eslint-disable-line @typescript-eslint/no-unused-vars */
-               /* eat any errors */
-            })
-      );
-
-      event.waitUntil(
-         Promise.all([fetchedCopy, caches.open('pwa-cache')])
-            .then(([response, cache]) => response.ok && cache.put(event.request, response))
-            .catch((_) => { /* eslint-disable-line @typescript-eslint/no-unused-vars */
-               /* eat any errors */
-            })
-      );
+self.addEventListener('push', async (event) => {
+   const data = event.data.json();
+   if (data.type !== 'new_transactions') {
+      /* Ignore */
+      return;
    }
+   const title = 'New Transactions';
+   const body = `${data.count} new transaction${data.count > 1 ? 's' : ''} found`;
+   const icon = '/favicon.ico';
+   event.waitUntil(self.registration.showNotification(title, { body, icon }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+   console.log(event);
+   event.notification.close();
+   event.waitUntil(self.clients.openWindow('/allocations/0'));
 });
