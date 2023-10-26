@@ -14,6 +14,7 @@ import datetime
 from typing import List, Annotated, Optional, Dict
 from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 # Local imports
 from database import Database
@@ -279,4 +280,17 @@ def logout(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Response:
 
 
 if os.environ.get('DIST_PATH'):  # pragma: no cover
+    templates = Jinja2Templates(directory=os.environ['DIST_PATH'])
+
+    @app.get('/settings')
+    @app.get('/settings/')
+    @app.get('/transactions')
+    @app.get('/transactions/')
+    @app.get('/allocations')
+    @app.get('/allocations/')
+    @app.get('/allocations/{id}')
+    @app.get('/allocations/{id}/')
+    def serve_spa(request: Request):
+        return templates.TemplateResponse('index.html', {'request': request})
+
     app.mount('/', StaticFiles(directory=os.environ.get('DIST_PATH'), html=True))
