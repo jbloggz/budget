@@ -15,6 +15,7 @@ import subprocess
 import logging
 from typing import List, Dict
 from difflib import get_close_matches
+from pywebpush import webpush, WebPushException
 
 # Local imports
 from model import Transaction, TransactionList
@@ -22,6 +23,22 @@ from database import Database
 
 
 TxnMapType = Dict[str, Dict[str, Dict[float, Dict[str, List[int]]]]]
+
+
+def send_push_notification(body: Dict, config, db) -> None:  # pragma: no cover
+    '''
+    Send a push notification
+
+    Args:
+        body:    The body of the notification to send
+    '''
+    for sub in db.get_push_subscriptions():
+        try:
+            webpush(subscription_info=sub.value, data=json.dumps(body),
+                    vapid_private_key=config['vapidPrivateKey'], vapid_claims=config['vapidClaims'])
+        except WebPushException as exc:
+            logging.info(f'Cannot send push notification for {json.dumps(sub.value)}: {exc}')
+            db.delete_push_subscription(sub.id)
 
 
 def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # pragma: no cover
@@ -36,7 +53,8 @@ def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # prag
     Returns:
         The list of transactions
     '''
-    result = subprocess.run([config['node_path'], './scrapers/' + scraper['path'], args.config], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
+    result = subprocess.run([config['node_path'], './scrapers/' + scraper['path'], args.config],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
     if result.stdout is None:
         return []
 
@@ -136,7 +154,7 @@ def find_matching_transaction(txn: Transaction, txn_map: TxnMapType):
         return None
 
 
-def insert_transactions(transactions: List[Transaction], db):
+def insert_transactions(transactions: List[Transaction], db) -> int:
     '''
     Inserts transactions into the database
 
@@ -153,6 +171,8 @@ def insert_transactions(transactions: List[Transaction], db):
         logging.info('Inserted new transaction: %d, %s, %s, %s, "%s"', new_txn.id, new_txn.source, new_txn.date, new_txn.amount, new_txn.description)
 
     logging.info('Completed inserting transactions')
+
+    return len(transactions)
 
 
 def update_balance(name: str, start_balance: int, db):
@@ -188,6 +208,7 @@ def parse_args():  # pragma: no cover
     parser.add_argument('--log',     required=True, help='Path to the log file')
     parser.add_argument('--config', required=True, help='Path to the budget config file')
     parser.add_argument('--balance', action='store_true', help='Only update the balances, don\'t run the scrapers')
+    parser.add_argument('--notification', help='Send a test push notification')
 
     args = parser.parse_args()
 
@@ -211,10 +232,22 @@ def main(args):  # pragma: no cover
         config = json.load(fp)
 
     with Database() as db:
+        if args.notification:
+            send_push_notification(json.loads(args.notification), config, db)
+            return
+
+        count = 0
         for name, scraper in config['scrapers'].items():
             if not args.balance:
-                insert_transactions(run_scraper(args, config, scraper), db)
+                count += insert_transactions(run_scraper(args, config, scraper), db)
             update_balance(name, scraper.get('start_balance', 0), db)
+
+        if count > 0:
+            # Send push notifications if new transactions were found
+            send_push_notification({
+                'type': 'new_transactions',
+                'count': count,
+            }, config, db)
 
     return 0
 
