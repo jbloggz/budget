@@ -35,7 +35,6 @@ class Database:
         self.con = sqlite3.connect(Database.DB_PATH)
         self.con.create_function('REGEXP', 2, lambda x, y: 1 if re.search(x, y or '', re.IGNORECASE) else 0)
         self.db = self.con.cursor()
-        self.db.execute('PRAGMA foreign_keys = ON')
         with open('schema.sql') as fp:
             schema = fp.read()
             self.db.executescript(schema)
