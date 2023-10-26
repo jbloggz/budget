@@ -11,8 +11,8 @@ import os
 import difflib
 import math
 import datetime
-from typing import List, Annotated, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query
+from typing import List, Annotated, Optional, Dict
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query, Request
 from fastapi.staticfiles import StaticFiles
 
 # Local imports
@@ -197,13 +197,13 @@ def get_allocations(txn: Optional[int] = None,
         return db.get_allocation_list(query, tuple(params), limit, offset)
 
 
-@app.get('/api/allocation/{alloc_id}', response_model=Optional[Allocation], dependencies=[Depends(validate_access_token)])
-def get_allocation(alloc_id: int) -> Allocation:
+@app.get('/api/allocation/{alloc_id}', response_model=None, dependencies=[Depends(validate_access_token)])
+def get_allocation(alloc_id: int) -> Allocation | Response:
     with Database() as db:
         if alloc_id == 0:
             alloc_list = db.get_allocation_list(f'category.name = \'Unknown\' OR location.name = \'Unknown\' ORDER BY txn.date ASC')
             if not alloc_list.allocations:
-                return Allocation(txn_id=0, id=0, date='', amount=0, description='', source='', category='', location='')
+                return Response(status_code=status.HTTP_204_NO_CONTENT)
         else:
             alloc_list = db.get_allocation_list(f'allocation.id = {alloc_id}')
             if not alloc_list.allocations:
