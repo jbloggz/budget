@@ -71,16 +71,17 @@ export const useAPI = () => {
             const resp = await fetch(url, { method: options.method, headers: options.headers, body: options.body });
             code = resp.status;
             let data;
-            if (code == 204 && options.url === '/api/oauth2/logout/') {
-               /* Successfully logged out */
-               data = undefined;
-            } else if (code == 204 && options.url === '/api/oauth2/token/') {
-               /* Successfully validated credentials */
-               data = {
-                  access_token: accessToken || '',
-                  refresh_token: refreshToken || '',
-                  token_type: 'bearer',
-               };
+            if (code == 204) {
+               if (code == 204 && options.url === '/api/oauth2/token/') {
+                  /* Successfully validated credentials */
+                  data = {
+                     access_token: accessToken || '',
+                     refresh_token: refreshToken || '',
+                     token_type: 'bearer',
+                  };
+               } else {
+                  data = undefined;
+               }
             } else {
                data = await resp.json();
                if (!resp.ok) {
@@ -89,6 +90,9 @@ export const useAPI = () => {
             }
 
             if (options.validate && !options.validate(data)) {
+               throw new APIError('Response validation failed', code);
+            }
+            if (options.validateOptional && typeof(data) !== 'undefined' && !options.validateOptional(data)) {
                throw new APIError('Response validation failed', code);
             }
             if (code >= 400) {

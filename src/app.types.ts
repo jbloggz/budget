@@ -73,6 +73,7 @@ export interface APIRequest<T> {
    params?: URLSearchParams;
    body?: string;
    validate?: (data: unknown) => data is T;
+   validateOptional?: (data: unknown) => data is T;
 }
 
 /* An API response containing T */
