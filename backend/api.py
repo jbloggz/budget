@@ -101,13 +101,19 @@ def get_categorise(description: str) -> Categorisation:
         for category, count in candidate_data['categories'].items():
             if category == 'Unknown':
                 continue
-            category_scores[category]['score'] += ratio * ratio * math.sqrt(count)
+            current_score = ratio * ratio * math.sqrt(count)
+            if ratio == 1:
+                current_score *= 10
+            category_scores[category]['score'] += current_score
             category_scores[category]['ratio'] = max(ratio, category_scores[category]['ratio'])
 
         for location, count in candidate_data['locations'].items():
             if location == 'Unknown':
                 continue
-            location_scores[location]['score'] += ratio * ratio * math.sqrt(count)
+            current_score = ratio * ratio * math.sqrt(count)
+            if ratio == 1:
+                current_score *= 10
+            location_scores[location]['score'] += current_score
             location_scores[location]['ratio'] = max(ratio, location_scores[location]['ratio'])
 
     res = Categorisation(categories=[], locations=[])
