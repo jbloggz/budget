@@ -4,6 +4,8 @@
    "refresh_token_key": "secret",
    "access_token_ttl": 3600,
    "refresh_token_ttl": 604800,
+   "vapidPublicKey": "public",
+   "vapidPrivateKey": "private",
    "users": {
       "jack@test.com": {
          "api": "rw",
