@@ -18,7 +18,7 @@ from fastapi.templating import Jinja2Templates
 
 # Local imports
 from database import Database
-from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score, DashboardPanel
+from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score, DashboardPanel, PushSubscription
 from auth import config, create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token, clear_cached_token
 
 
@@ -256,6 +256,36 @@ def split_allocation(alloc_id: int, amount: Annotated[int, Body(embed=True)]) ->
 def merge_allocation(alloc_id: int, ids: Annotated[List[int], Body()]) -> Allocation:
     with Database() as db:
         return db.merge_allocations([alloc_id, *ids])
+
+
+@app.put('/api/allocation/{alloc_id}/overwrite/', dependencies=[Depends(validate_access_token)])
+def overwrite_allocation(alloc_id: int, txn_id: Annotated[int, Body(embed=True)]) -> None:
+    with Database() as db:
+        alloc = db.get_allocation(alloc_id)
+        if not alloc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Invalid allocation ID {alloc_id}',
+            )
+        txn = db.get_transaction(alloc.txn_id)
+        if not alloc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Cannot find transaction with ID {alloc.txn_id}',
+            )
+        db.overwrite_transaction(txn_id, txn)
+
+
+@app.post('/api/notification/', status_code=201, response_model=PushSubscription, dependencies=[Depends(validate_access_token)])
+def add_push_subscription(sub: Dict) -> PushSubscription:
+    with Database() as db:
+        try:
+            return db.add_push_subscription(PushSubscription(value=sub))
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Unable to insert push notification',
+            )
 
 
 @app.post('/api/oauth2/token/', response_model=Token)

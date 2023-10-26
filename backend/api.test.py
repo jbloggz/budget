@@ -30,7 +30,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_tables(self) -> None:
         with self.db:
-            self.assertEqual(set(self.db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation', 'token'})
+            self.assertEqual(set(self.db.get_tables()), {'setting', 'txn', 'category', 'location', 'allocation', 'token', 'push_subscription'})
 
     def test_setting_fields(self) -> None:
         with self.db:
@@ -55,6 +55,10 @@ class TestDatabase(unittest.TestCase):
     def test_allocation_fields(self) -> None:
         with self.db:
             self.assertEqual(set(self.db.get_fields('allocation')), {'id', 'txn_id', 'location_id', 'category_id', 'amount', 'note'})
+
+    def test_push_subscription_fields(self) -> None:
+        with self.db:
+            self.assertEqual(set(self.db.get_fields('push_subscription')), {'id', 'value'})
 
     def test_create_setting(self) -> None:
         with self.db:

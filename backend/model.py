@@ -7,7 +7,7 @@
 #
 
 # System imports
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel
 from fastapi.param_functions import Form
 
@@ -73,6 +73,11 @@ class Token(BaseModel):
 class CachedToken(BaseModel):
     value: str
     expire: int
+
+
+class PushSubscription(BaseModel):
+    id: int | None = None
+    value: Dict
 
 
 class OAuth2RequestForm:

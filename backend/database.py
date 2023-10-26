@@ -9,12 +9,13 @@
 # System imports
 import os
 import re
+import json
 import sqlite3
 from typing import List, Optional, Tuple, Dict
 import time
 
 # Local imports
-from model import Transaction, TransactionList, Allocation, AllocationList, CachedToken
+from model import Transaction, TransactionList, Allocation, AllocationList, CachedToken, PushSubscription
 
 
 class Database:
@@ -96,11 +97,11 @@ class Database:
         self.db.execute('DELETE FROM token WHERE expire <= ?', (int(time.time()),))
 
     def add_cached_token(self, token: CachedToken) -> None:
-        self.clear_expired_tokens();
+        self.clear_expired_tokens()
         self.db.execute('INSERT OR IGNORE INTO token VALUES (?, ?)', (token.value, token.expire))
 
     def get_cached_token(self, value: str) -> Optional[CachedToken]:
-        self.clear_expired_tokens();
+        self.clear_expired_tokens()
         self.db.execute('SELECT value, expire FROM token WHERE value = ?', (value,))
         row = self.db.fetchone()
         if not row:
@@ -114,7 +115,7 @@ class Database:
         Args:
             value: The token value
         '''
-        self.clear_expired_tokens();
+        self.clear_expired_tokens()
         self.db.execute('DELETE FROM token WHERE value = ?', (value,))
 
     def add_transaction(self, txn: Transaction) -> Transaction:
@@ -423,3 +424,45 @@ class Database:
         self.db.execute('UPDATE allocation SET amount = ? WHERE id = ?', (alloc_list[0].amount, alloc_list[0].id))
         self.db.execute(f'DELETE FROM allocation WHERE id IN ({",".join(str(i) for i in id_list[1:])})')
         return alloc_list[0]
+
+    def overwrite_transaction(self, old_id: int, txn: Transaction) -> None:
+        '''
+        Overwrite dst transaction with the data from src transaction
+
+        Args:
+            old_id: The transaction id whose data will be overwritten
+            src: The transaction whose data you want
+        '''
+        self.db.execute('UPDATE txn SET date = ?, amount = ?, description = ?, source = ?, balance = ? WHERE id = ?',
+                        (txn.date, txn.amount, txn.description, txn.source, txn.balance, old_id))
+        self.db.execute(f'DELETE FROM txn WHERE id = ?', (txn.id,))
+
+    def add_push_subscription(self, sub: PushSubscription) -> PushSubscription:
+        '''
+        Add a push subscription
+
+        Args:
+            sub: The subscription to add
+        '''
+        self.db.execute('INSERT INTO push_subscription VALUES (NULL, ?)', (json.dumps(sub.value),))
+        sub.id = self.db.lastrowid
+        return sub
+
+    def get_push_subscriptions(self) -> List[PushSubscription]:
+        '''
+        Get a list of all push subscriptions
+
+        Returns:
+            The list of all push subscriptions
+        '''
+        self.db.execute('SELECT id, value FROM push_subscription')
+        return [PushSubscription(id=int(v[0]), value=json.loads(v[1])) for v in self.db.fetchall()]
+
+    def delete_push_subscription(self, id: int) -> None:
+        '''
+        Delete a push subscription
+
+        Args:
+            id: The id to remove
+        '''
+        self.db.execute('DELETE FROM push_subscription WHERE id = ?', (id,))

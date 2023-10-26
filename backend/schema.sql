@@ -58,5 +58,11 @@ CREATE INDEX IF NOT EXISTS allocation_txn_idx ON allocation(txn_id);
 CREATE INDEX IF NOT EXISTS allocation_category_idx ON allocation(category_id);
 CREATE INDEX IF NOT EXISTS allocation_location_idx ON allocation(location_id);
 
+/* A table to store the push subscriptions */
+CREATE TABLE IF NOT EXISTS push_subscription (
+   id              INTEGER  PRIMARY KEY,      /* A unique identifier for this table */
+   value           TEXT     NOT NULL UNIQUE   /* The subscription data */
+);
+
 /* Make sure foreign key constraints are enabled */
 PRAGMA foreign_keys = ON;
