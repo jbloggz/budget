@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import {
+   AbsoluteCenter,
    Button,
    Center,
    FormControl,
@@ -29,11 +30,12 @@ import {
    Text,
    useToast,
 } from '@chakra-ui/react';
-import { Allocation, Categorisation, isAllocation, isCategorisation } from '../app.types';
+import { Allocation, Categorisation, Transaction, TransactionList, isAllocation, isCategorisation, isTransactionList } from '../app.types';
 import { useAPI } from '../hooks';
 import { prettyAmount, prettyDate } from '../utils';
-import { SourceLogo } from '../components';
+import { SourceLogo, Table } from '../components';
 import { CreatableSelect } from 'chakra-react-select';
+import { format } from 'date-fns';
 
 interface EditAllocationModalProps {
    id: string;
@@ -47,6 +49,82 @@ interface SelectOptionProps {
    score: number;
    tagOpacity?: number;
 }
+
+interface OverwriteModalProps {
+   transaction: Transaction;
+   isOpen: boolean;
+   onClose: () => void;
+   onSelect: (id: number) => void;
+}
+
+const OverwriteModal = (props: OverwriteModalProps) => {
+   const start = new Date(props.transaction.date);
+   start.setDate(start.getDate() - 10);
+   const end = new Date();
+
+   const api = useAPI();
+   const query = api.useQuery<TransactionList>({
+      method: 'GET',
+      url: '/api/transaction/',
+      params: new URLSearchParams({
+         start: format(start, 'yyyy-MM-dd'),
+         end: format(end, 'yyyy-MM-dd'),
+         sort_column: 'date',
+         sort_order: 'desc',
+      }),
+      validate: isTransactionList,
+   });
+
+   const possible_transactions = query.isSuccess ? query.data.data.transactions : [];
+
+   return (
+      <Modal onClose={props.onClose} size={{ base: 'full', md: 'xl' }} isOpen={props.isOpen}>
+         <ModalOverlay />
+         <ModalContent>
+            {query.isFetching ? (
+               <AbsoluteCenter>
+                  <Spinner />
+               </AbsoluteCenter>
+            ) : (
+               <>
+                  <ModalHeader>Select an existing transaction</ModalHeader>
+                  <ModalCloseButton />
+                  <ModalBody>
+                     <Table
+                        highlightHover
+                        header={[
+                           {
+                              sortable: false,
+                              text: 'Date',
+                           },
+                           {
+                              sortable: false,
+                              text: 'Description',
+                           },
+                           {
+                              sortable: false,
+                              text: 'Amount',
+                           },
+                        ]}
+                        rows={possible_transactions
+                           .filter((txn) => txn.source === props.transaction.source)
+                           .map((txn) => ({
+                              id: txn.id || 0,
+                              cells: [
+                                 <Text>{prettyDate(txn.date)}</Text>,
+                                 <Text>{txn.description}</Text>,
+                                 <Text color={txn.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(txn.amount)}</Text>,
+                              ],
+                           }))}
+                        onRowClick={(_, row) => props.onSelect(+row.id)}
+                     />
+                  </ModalBody>
+               </>
+            )}
+         </ModalContent>
+      </Modal>
+   );
+};
 
 const SelectOption = (props: SelectOptionProps) => {
    const tagOpacity = typeof props.tagOpacity === 'undefined' ? 1 : props.tagOpacity;
@@ -70,22 +148,15 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
    const [amount, setAmount] = useState('');
    const [category, setCategory] = useState('');
    const [location, setLocation] = useState('');
+   const [isOverwriteModalOpen, setOverwriteModalOpen] = useState(false);
 
    /* This query will retrieve the allocation from the database */
-   const allocationQuery = api.useQuery<Allocation>({
+   const allocationQuery = api.useQuery<Allocation | undefined>({
       method: 'GET',
       url: '/api/allocation/' + props.id,
-      validate: isAllocation,
-      onSuccess: (alloc: Allocation) => {
-         if (props.id === '0' && alloc.id === 0) {
-            toast({
-               title: 'Complete',
-               description: 'All allocations have been successfully processed',
-               status: 'success',
-               duration: 5000,
-            });
-            props.onSave();
-         } else {
+      validateOptional: isAllocation,
+      onSuccess: (alloc?: Allocation) => {
+         if (alloc) {
             /* Update category/location when allocation is loaded */
             if (alloc.category !== 'Unknown') {
                setCategory(alloc.category);
@@ -93,6 +164,14 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
             if (alloc.location !== 'Unknown') {
                setLocation(alloc.location);
             }
+         } else {
+            toast({
+               title: 'Complete',
+               description: 'All allocations have been successfully processed',
+               status: 'success',
+               duration: 5000,
+            });
+            props.onSave();
          }
       },
    });
@@ -129,22 +208,30 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       },
    });
 
+   /* This query is used to overwrite an existing transaction */
+   const overwriteQuery = api.useMutationQuery<{ txn_id: number }>({
+      method: 'PUT',
+      url: allocation ? `/api/allocation/${allocation.id}/overwrite/` : '',
+      onSuccess: () => props.id !== '0' && props.onSave(),
+   });
+
    /* Check for successful updates */
    useEffect(() => {
       if (props.id === '0') {
          /* 0 is the special "any unknown" entry */
-         if (allocation?.id !== 0 && updateQuery.isSuccess) {
+         if (allocation?.id !== 0 && (updateQuery.isSuccess || overwriteQuery.isSuccess)) {
             updateQuery.reset();
+            overwriteQuery.reset();
             allocationQuery.refetch();
             setCategory('');
             setLocation('');
          }
       }
-   }, [allocation, props, allocationQuery, updateQuery]);
+   }, [allocation, props, allocationQuery, updateQuery, overwriteQuery]);
 
    /* Check for query errors */
    useEffect(() => {
-      for (const query of [allocationQuery, categoriseQuery, updateQuery, splitQuery]) {
+      for (const query of [allocationQuery, categoriseQuery, updateQuery, splitQuery, overwriteQuery]) {
          if (query.isError) {
             toast({
                title: 'Error',
@@ -152,9 +239,12 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                status: 'error',
                duration: 5000,
             });
+            if ('reset' in query) {
+               query.reset();
+            }
          }
       }
-   }, [allocationQuery, categoriseQuery, updateQuery, splitQuery, toast]);
+   }, [allocationQuery, categoriseQuery, updateQuery, splitQuery, overwriteQuery, toast]);
 
    /* Update category/location when allocation is loaded */
    useEffect(() => {
@@ -208,6 +298,15 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          updateQuery.mutate(allocation);
       }
    };
+
+   /* Run when user clicks the overwrite button */
+   const onOverwriteTransaction = async (txn_id: number) => {
+      setOverwriteModalOpen(false);
+      /* Overwrite the transaction */
+      overwriteQuery.mutate({ txn_id });
+   };
+
+   const isLoading = updateQuery.isLoading || splitQuery.isLoading || overwriteQuery.isLoading;
 
    return (
       <Modal onClose={props.onClose} size={{ base: 'full', md: 'xl' }} isOpen={props.isOpen}>
@@ -313,17 +412,41 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                      )}
                      <FormErrorMessage>{amountErrmsg}</FormErrorMessage>
                   </FormControl>
+                  {isOverwriteModalOpen && (
+                     <OverwriteModal
+                        transaction={{
+                           id: allocation.txn_id,
+                           date: allocation.date,
+                           amount: allocation.amount,
+                           description: allocation.description,
+                           source: allocation.source,
+                        }}
+                        isOpen={isOverwriteModalOpen}
+                        onSelect={onOverwriteTransaction}
+                        onClose={() => setOverwriteModalOpen(false)}
+                     />
+                  )}
                </ModalBody>
             ) : (
                <ModalBody>Unable to find allocation with id {props.id}</ModalBody>
             )}
             <ModalFooter>
                {api.readwrite && (
-                  <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} onClick={onSave}>
-                     {amount !== '' && +amount !== 0 ? 'Split' : 'Save'}
-                  </Button>
+                  <>
+                     {category === '' && (
+                        <>
+                           <Button isLoading={isLoading} onClick={() => setOverwriteModalOpen(true)}>
+                              Overwrite
+                           </Button>
+                           <Spacer />
+                        </>
+                     )}
+                     <Button isLoading={isLoading} onClick={onSave}>
+                        {amount !== '' && +amount !== 0 ? 'Split' : 'Save'}
+                     </Button>
+                  </>
                )}
-               <Button isLoading={updateQuery.isLoading || splitQuery.isLoading} ml={6} onClick={props.onClose}>
+               <Button isLoading={isLoading} ml={6} onClick={props.onClose}>
                   Close
                </Button>
             </ModalFooter>
