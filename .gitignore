@@ -27,6 +27,5 @@ dist-ssr
 .coverage
 coverage
 htmlcov
-budget.json
 TODO
 backend/*.db
