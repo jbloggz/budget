@@ -28,6 +28,11 @@ beforeEach(() => {
          dispatchEvent: vi.fn(),
       })),
    });
+
+   globalThis.Notification = {
+      requestPermission: vi.fn(),
+      permission: 'granted',
+   } as unknown as jest.Mocked<typeof Notification>;
 });
 
 afterEach(() => {
