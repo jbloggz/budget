@@ -7,7 +7,20 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AbsoluteCenter, Divider, FormControl, FormLabel, HStack, Heading, Spacer, Spinner, Stack, Text, useToast } from '@chakra-ui/react';
+import {
+   AbsoluteCenter,
+   Divider,
+   FormControl,
+   FormLabel,
+   HStack,
+   Heading,
+   IconButton,
+   Spacer,
+   Spinner,
+   Stack,
+   Text,
+   useToast,
+} from '@chakra-ui/react';
 import groupBy from 'object.groupby';
 import { Select } from 'chakra-react-select';
 import { DateRangePicker, SearchFilter, SourceLogo, Table, TreeView } from '../components';
@@ -16,6 +29,7 @@ import { Allocation, AllocationList, isAllocationList } from '../app.types';
 import { useAPI } from '../hooks';
 import { prettyAmount, prettyDate } from '../utils';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { BellIcon } from '@chakra-ui/icons';
 
 interface AllocationHeaderProps {
    text: string;
@@ -87,43 +101,60 @@ const Allocations = () => {
    }, [query.data, selectedSources]);
 
    /* Build the tree of allocations */
-   const tree = useMemo(() => {
-      return Object.entries(groupBy(allocations, (alloc) => alloc.category))
-         .sort((a, b) => a[0].localeCompare(b[0]))
-         .map(([category, categoryList]) => ({
-            content: <AllocationHeader text={category} allocations={categoryList} />,
-            childItems: Object.entries(groupBy(categoryList, (alloc) => alloc.location))
-               .sort((a, b) => a[0].localeCompare(b[0]))
-               .map(([location, locationList]) => ({
-                  content: <AllocationHeader text={location} allocations={locationList} />,
-                  childItems: [
-                     {
-                        content: (
-                           <Table
-                              highlightHover
-                              onRowClick={(_, row) => !isNaN(+row.id) && navigate(`/allocations/${+row.id}`, { state: 'modal' })}
-                              rows={locationList.map((alloc) => ({
-                                 id: alloc.id || 0,
-                                 cells: [
-                                    <Text>{prettyDate(alloc.date)}</Text>,
-                                    <Text>{alloc.description}</Text>,
-                                    <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
-                                    <SourceLogo source={alloc.source} />,
-                                 ],
-                              }))}
-                           />
-                        ),
-                     },
-                  ],
-               })),
-         }));
-   }, [allocations, navigate]);
+   const buildTree = useCallback(
+      (alloc_list: Allocation[]) => {
+         return Object.entries(groupBy(alloc_list, (alloc) => alloc.category))
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([category, categoryList]) => ({
+               content: <AllocationHeader text={category} allocations={categoryList} />,
+               childItems: Object.entries(groupBy(categoryList, (alloc) => alloc.location))
+                  .sort((a, b) => a[0].localeCompare(b[0]))
+                  .map(([location, locationList]) => ({
+                     content: <AllocationHeader text={location} allocations={locationList} />,
+                     childItems: [
+                        {
+                           content: (
+                              <Table
+                                 highlightHover
+                                 onRowClick={(_, row) => !isNaN(+row.id) && navigate(`/allocations/${+row.id}`, { state: 'modal' })}
+                                 rows={locationList.map((alloc) => ({
+                                    id: alloc.id || 0,
+                                    cells: [
+                                       <Text>{prettyDate(alloc.date)}</Text>,
+                                       <Text>{alloc.description}</Text>,
+                                       <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
+                                       <SourceLogo source={alloc.source} />,
+                                    ],
+                                 }))}
+                              />
+                           ),
+                        },
+                     ],
+                  })),
+            }));
+      },
+      [navigate]
+   );
+
+   const tree = useMemo(() => buildTree(allocations.filter((alloc) => alloc.category !== 'Unknown')), [allocations, buildTree]);
+   const unknownTree = useMemo(() => buildTree(allocations.filter((alloc) => alloc.category === 'Unknown')), [allocations, buildTree]);
 
    return (
       <>
-         <Heading pb="8" size="lg">
-            Allocations
-         </Heading>
+         <HStack pb="8">
+            <Heading size="lg">Allocations</Heading>
+            <Spacer />
+            {api.readwrite && unknownTree.length > 0 && (
+               <IconButton
+                  title={'New'}
+                  color={'red.300'}
+                  variant={'ghost'}
+                  aria-label={'new'}
+                  icon={<BellIcon />}
+                  onClick={() => navigate('/allocations/0', { state: 'modal' })}
+               />
+            )}
+         </HStack>
          <Stack direction={{ base: 'column', md: 'row' }}>
             <FormControl>
                <FormLabel>Date Range</FormLabel>
@@ -150,7 +181,13 @@ const Allocations = () => {
             </AbsoluteCenter>
          ) : (
             <>
-               <TreeView childItems={tree || []} />
+               {unknownTree.length > 0 && (
+                  <>
+                     <TreeView childItems={unknownTree} />
+                     <Divider marginBottom={2} marginTop={2} />
+                  </>
+               )}
+               <TreeView childItems={tree} />
                <Divider marginBottom={2} marginTop={2} />
                <TreeView
                   childItems={[
