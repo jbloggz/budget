@@ -117,7 +117,7 @@ const Dashboard = () => {
                      </Card>
                      <Divider />
                      {panels.map((panel) => (
-                        <Card m={4} size={'sm'}>
+                        <Card key={panel.category} m={4} size={'sm'}>
                            <CardBody>
                               <PanelStat panel={panel} />
                            </CardBody>
