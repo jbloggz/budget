@@ -58,6 +58,7 @@ def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # prag
     if result.stdout is None:
         return []
 
+    logging.debug(result.stdout)
     data = json.loads(result.stdout)
 
     return [Transaction(**txn) for txn in data['transactions'] if txn['date'] >= scraper['start_date']]
