@@ -29,6 +29,7 @@ puppeteer.launch({ headless: true, executablePath: '/usr/bin/google-chrome-stabl
    await page.waitForSelector('#acctSummaryList a');
    await page.click('#acctSummaryList a');
    await page.waitForSelector('a[href="#transaction-30days"]');
+   await page.waitForTimeout(3000);
    await page.click('a[href="#transaction-30days"]');
    await page.waitForSelector('#transaction-30days #txnHistoryTable');
    await page.waitForTimeout(3000);
