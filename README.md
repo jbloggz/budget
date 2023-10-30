@@ -30,7 +30,7 @@ This is a simple app to track your spending and monitor transactions in your acc
 
 1. Copy the file `backend/budget.example.json` to `backend/budget.json`, and fill in all the fields:
    - For `access_token_key`/`refresh_token_key`, generate a long (eg. 64 characters) randome hex string
-   - For `GCMAPIKey`, you will to enter a Google Cloud API key.
+   - For `GCMAPIKey`, enter a Google Cloud API key.
    - For `vapidPublicKey`/`vapidPrivateKey`, you can get a set of key with the following command:
       ```sh
       node -e "const webpush = require('web-push');console.log(webpush.generateVAPIDKeys());"
