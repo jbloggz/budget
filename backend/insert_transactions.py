@@ -15,7 +15,6 @@ import subprocess
 import logging
 from typing import List, Dict
 from difflib import get_close_matches
-from pywebpush import webpush, WebPushException
 
 # Local imports
 from model import Transaction, TransactionList
@@ -32,12 +31,22 @@ def send_push_notification(body: Dict, config, db) -> None:  # pragma: no cover
     Args:
         body:    The body of the notification to send
     '''
+
+    content = json.dumps(body)
     for sub in db.get_push_subscriptions():
         try:
-            webpush(subscription_info=sub.value, data=json.dumps(body),
-                    vapid_private_key=config['vapidPrivateKey'], vapid_claims=config['vapidClaims'])
-        except WebPushException as exc:
-            logging.info(f'Cannot send push notification for {json.dumps(sub.value)}: {exc}')
+            sub_value = json.dumps(sub.value)
+
+            # Create and call a node script to do the notification push
+            script = f'''const webpush = require('web-push');
+webpush.setGCMAPIKey(`{config['GCMAPIKey']}`);
+webpush.setVapidDetails(`{config['vapidSub']}`, `{config['vapidPublicKey']}`, `{config['vapidPrivateKey']}`);
+webpush.sendNotification({sub_value}, `{content}`);
+'''
+            subprocess.run([config['node_path'], '-e', script], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
+            logging.info(f'Sent push notification for {sub_value}')
+        except Exception as exc:
+            logging.info(f'Cannot send push notification for {sub_value}: {exc}')
             db.delete_push_subscription(sub.id)
 
 

@@ -4,8 +4,10 @@
    "refresh_token_key": "secret",
    "access_token_ttl": 3600,
    "refresh_token_ttl": 604800,
+   "GCMAPIKey": "apikey",
    "vapidPublicKey": "public",
    "vapidPrivateKey": "private",
+   "vapidSub": "mailto:joe@example.com",
    "users": {
       "jack@test.com": {
          "api": "rw",
