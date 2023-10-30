@@ -8,7 +8,7 @@
 
 import { createBrowserRouter } from 'react-router-dom';
 import { App } from './components';
-import { Allocations, Dashboard, EditAllocation, ErrorPage, Settings, Transactions } from './pages';
+import { Allocations, Dashboard, EditAllocation, ErrorPage, Logs, Settings, Transactions } from './pages';
 
 const router = createBrowserRouter([
    {
@@ -37,6 +37,10 @@ const router = createBrowserRouter([
          {
             path: '/settings',
             element: <Settings />,
+         },
+         {
+            path: '/logs',
+            element: <Logs />,
          },
       ],
    },

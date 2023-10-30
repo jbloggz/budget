@@ -8,6 +8,7 @@
 
 # System imports
 import os
+import re
 import difflib
 import math
 import datetime
@@ -286,6 +287,18 @@ def add_push_subscription(sub: Dict) -> PushSubscription:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f'Unable to insert push notification',
             )
+
+
+@app.get('/api/logs/', dependencies=[Depends(validate_access_token)])
+def get_logs(count: int, filter: str) -> List[str]:
+    output = []
+    regex = re.compile(filter)
+    with open('budget.log') as fp:
+        for line in fp:
+            line = line.strip()
+            if regex.search(line):
+                output.append(line)
+    return output[-count:]
 
 
 @app.post('/api/oauth2/token/', response_model=Token)

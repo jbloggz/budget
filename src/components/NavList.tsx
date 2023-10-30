@@ -7,7 +7,7 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { CalendarIcon, LockIcon, SettingsIcon, StarIcon, TimeIcon } from '@chakra-ui/icons';
+import { CalendarIcon, InfoOutlineIcon, LockIcon, SettingsIcon, StarIcon, TimeIcon } from '@chakra-ui/icons';
 import { Button, List, ListItem } from '@chakra-ui/react';
 import { AuthContext, useContext } from '../providers';
 
@@ -74,6 +74,21 @@ const NavList = () => {
                leftIcon={<SettingsIcon />}
             >
                Settings
+            </Button>
+         </ListItem>
+         <ListItem>
+            <Button
+               as={Link}
+               to="logs"
+               isActive={location.pathname === '/logs'}
+               aria-label="Logs"
+               justifyContent="left"
+               pl="8"
+               width="100%"
+               borderRadius={0}
+               leftIcon={<InfoOutlineIcon />}
+            >
+               Logs
             </Button>
          </ListItem>
          <ListItem>
