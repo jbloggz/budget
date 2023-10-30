@@ -13,6 +13,7 @@ import { Theme } from '../app.types';
 import { useState } from 'react';
 import { urlB64ToUint8Array } from '../utils';
 import { useAPI } from '../hooks';
+import { vapidPublicKey } from '../../backend/budget.json';
 
 const Settings = () => {
    const { theme, setTheme } = useContext(ThemeContext);
@@ -39,9 +40,7 @@ const Settings = () => {
 
          /* Subscribe to push notifications */
          try {
-            const applicationServerKey = urlB64ToUint8Array(
-               'BJH23VfZlRydff75qOh4y3fwBzT1XvKf3mg6lYcOlI1uIRPdScKX4EmXrdqgMZke83jAagAtjY80NTfTCFXY91U'
-            );
+            const applicationServerKey = urlB64ToUint8Array(vapidPublicKey);
             const options = { applicationServerKey, userVisibleOnly: true };
             const swRegistration = await navigator.serviceWorker.ready;
             const subscription = await swRegistration.pushManager.subscribe(options);
