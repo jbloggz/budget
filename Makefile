@@ -27,7 +27,7 @@ coverage:
 	node_modules/.bin/vitest run --coverage
 
 scrape:
-	cd backend && python insert_transactions.py --log budget.log --config budget.json
+	cd backend && python3 insert_transactions.py --log budget.log --config budget.json
 
 build:
 	npm run build
