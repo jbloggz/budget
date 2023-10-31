@@ -19,6 +19,7 @@ class Transaction(BaseModel):
     description: str
     source: str
     balance: int = 0
+    pending: bool = False
 
 
 class TransactionList(BaseModel):
@@ -35,6 +36,7 @@ class Allocation(BaseModel):
     source: str
     category: str
     location: str
+    pending: bool = False
     note: str | None = None
 
 

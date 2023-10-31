@@ -157,9 +157,9 @@ class Database:
             A list of transactions that match the filter
         '''
         if expr:
-            self.db.execute(f'SELECT id, date, amount, description, source, balance FROM txn WHERE {expr}', params)
+            self.db.execute(f'SELECT id, date, amount, description, source, balance, pending FROM txn WHERE {expr}', params)
         else:
-            self.db.execute(f'SELECT id, date, amount, description, source, balance FROM txn')
+            self.db.execute(f'SELECT id, date, amount, description, source, balance, pending FROM txn')
         res = TransactionList(total=0, transactions=[])
         for row in self.db:
             res.total += 1
@@ -178,6 +178,7 @@ class Database:
                 description=row[3],
                 source=row[4],
                 balance=row[5],
+                pending=row[6] == 1,
             ))
         return res
 
@@ -308,6 +309,7 @@ class Database:
                           txn.source as source,
                           category.name as category,
                           location.name as location,
+                          txn.pending as pending,
                           allocation.note as note
                    FROM allocation
                    LEFT JOIN category ON category_id = category.id
@@ -338,7 +340,8 @@ class Database:
                 source=row[5],
                 category=row[6],
                 location=row[7],
-                note=row[8],
+                pending=row[8] == 1,
+                note=row[9],
             ))
 
         return res
