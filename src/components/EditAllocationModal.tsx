@@ -107,7 +107,7 @@ const OverwriteModal = (props: OverwriteModalProps) => {
                            },
                         ]}
                         rows={possible_transactions
-                           .filter((txn) => txn.source === props.transaction.source)
+                           .filter((txn) => txn.source === props.transaction.source && txn.id !== props.transaction.id)
                            .map((txn) => ({
                               id: txn.id || 0,
                               cells: [
