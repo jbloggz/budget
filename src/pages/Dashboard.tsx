@@ -93,7 +93,7 @@ const Dashboard = () => {
       totalPanel.amount = panels.reduce((total, panel) => total + panel.amount, 0);
       totalPanel.limit = panels.reduce((total, panel) => total + panel.limit, 0);
       const expected_total_amount = panels.reduce((total, panel) => total + panel.amount / (1 + panel.diff / 100), 0);
-      totalPanel.diff = (totalPanel.amount - expected_total_amount) / expected_total_amount * 100;
+      totalPanel.diff = isNaN(expected_total_amount) ? -100 : ((totalPanel.amount - expected_total_amount) / expected_total_amount) * 100;
    }
 
    return (
