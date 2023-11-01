@@ -120,9 +120,9 @@ const Allocations = () => {
                                  rows={locationList.map((alloc) => ({
                                     id: alloc.id || 0,
                                     cells: [
-                                       <Text>{prettyDate(alloc.date)}</Text>,
-                                       <Text>{alloc.description}</Text>,
-                                       <Text color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
+                                       <Text opacity={alloc.pending ? '0.65' : undefined} color={alloc.pending ? 'orange.500' : undefined}>{prettyDate(alloc.date)}</Text>,
+                                       <Text opacity={alloc.pending ? '0.65' : undefined} color={alloc.pending ? 'orange.500' : undefined}>{alloc.description}</Text>,
+                                       <Text opacity={alloc.pending ? '0.65' : undefined} color={alloc.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(alloc.amount)}</Text>,
                                        <SourceLogo source={alloc.source} />,
                                     ],
                                  }))}

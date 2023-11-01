@@ -111,9 +111,9 @@ const OverwriteModal = (props: OverwriteModalProps) => {
                            .map((txn) => ({
                               id: txn.id || 0,
                               cells: [
-                                 <Text>{prettyDate(txn.date)}</Text>,
-                                 <Text>{txn.description}</Text>,
-                                 <Text color={txn.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(txn.amount)}</Text>,
+                                 <Text opacity={txn.pending ? '0.65' : undefined} color={txn.pending ? 'orange.500' : undefined}>{prettyDate(txn.date)}</Text>,
+                                 <Text opacity={txn.pending ? '0.65' : undefined} color={txn.pending ? 'orange.500' : undefined}>{txn.description}</Text>,
+                                 <Text opacity={txn.pending ? '0.65' : undefined} color={txn.amount < 0 ? 'red.500' : 'green.500'}>{prettyAmount(txn.amount)}</Text>,
                               ],
                            }))}
                         onRowClick={(_, row) => props.onSelect(+row.id)}
