@@ -64,6 +64,7 @@ page.on('response', async (response) => {
                description: transaction.transactionDescription.replace(/ +XXXX-XXXX-XXXX-[0-9]{4}$/, ''),
                amount: Math.round(transaction.transactionAmount * 100),
                source: 'Coles Credit Card',
+               pending: typeof transaction.transactionPostingDate === 'undefined',
             });
          }
 

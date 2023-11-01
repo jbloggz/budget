@@ -127,7 +127,7 @@ class Database:
         Returns:
             The transaction with the ID filled in
         '''
-        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?, 0)', (txn.date, txn.amount, txn.description, txn.source))
+        self.db.execute('INSERT INTO txn VALUES (NULL, ?, ?, ?, ?, 0, ?)', (txn.date, txn.amount, txn.description, txn.source, txn.pending))
         txn.id = self.db.lastrowid
         self.db.execute('INSERT INTO allocation VALUES (NULL, ?, ?, 1, 1, NULL)', (txn.amount, txn.id))
         return txn

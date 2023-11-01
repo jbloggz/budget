@@ -24,6 +24,7 @@ export interface Transaction {
    description: string;
    source: string;
    balance?: number;
+   pending: boolean;
 }
 
 /* A list of transactions */
@@ -43,6 +44,7 @@ export interface Allocation {
    location: string;
    note: string;
    source: string;
+   pending: boolean;
 }
 
 /* A list of allocations */
@@ -133,7 +135,8 @@ export const isTransaction = (val: unknown): val is Transaction => {
          typeof test.date === 'string' &&
          typeof test.amount === 'number' &&
          typeof test.description === 'string' &&
-         typeof test.source === 'string'
+         typeof test.source === 'string' &&
+         typeof test.pending === 'boolean'
       );
    } catch {
       return false;
@@ -168,6 +171,7 @@ export const isAllocation = (val: unknown): val is Allocation => {
             typeof test.source === 'string' &&
             typeof test.category === 'string' &&
             typeof test.location === 'string' &&
+            typeof test.pending === 'boolean' &&
             typeof test.note === 'string') ||
          test.note === null
       );

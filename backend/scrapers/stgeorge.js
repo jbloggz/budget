@@ -69,6 +69,7 @@ puppeteer.launch({ headless: true, executablePath: '/usr/bin/google-chrome-stabl
          description: out.Description,
          amount: Math.round((out.Debit != 0 ? -out.Debit : out.Credit) * 100),
          source: 'St George Bank',
+         pending: false,
       });
    }
 

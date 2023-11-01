@@ -51,8 +51,8 @@ describe('isAPIAuthTokens', () => {
 
 describe('isTransaction', () => {
    it('correctly checks transaction', () => {
-      expect(isTransaction({ date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' })).toBe(true);
-      expect(isTransaction({ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' })).toBe(true);
+      expect(isTransaction({ date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true })).toBe(true);
+      expect(isTransaction({ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false })).toBe(true);
    });
 
    it('fails for missing properties', () => {
@@ -74,26 +74,26 @@ describe('isTransaction', () => {
 describe('isTransactionList', () => {
    it('correctly checks empty list', () => {
       expect(isTransactionList({ total: 0, transactions: [] })).toBe(true);
-      expect(isTransaction({ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' })).toBe(true);
+      expect(isTransaction({ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false })).toBe(true);
    });
 
    it('correctly checks populated list', () => {
       expect(isTransactionList({ total: 0, transactions: [] })).toBe(true);
       expect(
-         isTransactionList({ total: 1, transactions: [{ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' }] })
+         isTransactionList({ total: 1, transactions: [{ id: 123, date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false }] })
       ).toBe(true);
       expect(
          isTransactionList({
             total: 10,
             transactions: [
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
             ],
          })
       ).toBe(true);
@@ -114,15 +114,15 @@ describe('isTransactionList', () => {
          isTransactionList({
             total: 10,
             transactions: [
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: false },
                { date: 5, amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
-               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo' },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true },
+               { date: '2023-03-04', amount: 1221, description: 'Foo Bar', source: 'bank of Foo', pending: true },
             ],
          })
       ).toBe(false);
