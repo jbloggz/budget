@@ -61,7 +61,7 @@ page.on('response', async (response) => {
          for (const transaction of data.transaction) {
             output.transactions.push({
                date: transaction.transactionDate,
-               description: transaction.transactionDescription,
+               description: transaction.transactionDescription.replace(/ +XXXX-XXXX-XXXX-[0-9]{4}$/, ''),
                amount: Math.round(transaction.transactionAmount * 100),
                source: 'Coles Credit Card',
             });
