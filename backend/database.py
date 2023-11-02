@@ -140,8 +140,8 @@ class Database:
             id:  The id to update
             txn: The new details
         '''
-        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ?, balance = ? WHERE id = ?',
-                        (txn.date, txn.amount, txn.description, txn.source, txn.balance, txn_id))
+        self.db.execute('UPDATE txn set date = ?, amount = ?, description = ?, source = ?, balance = ?, pending = ? WHERE id = ?',
+                        (txn.date, txn.amount, txn.description, txn.source, txn.balance, txn.pending, txn_id))
 
     def get_transaction_list(self, expr: Optional[str] = None, params: Tuple = tuple(), limit: Optional[int] = None, offset: int = 0) -> TransactionList:
         '''
@@ -435,8 +435,8 @@ class Database:
             old_id: The transaction id whose data will be overwritten
             src: The transaction whose data you want
         '''
-        self.db.execute('UPDATE txn SET date = ?, amount = ?, description = ?, source = ?, balance = ? WHERE id = ?',
-                        (txn.date, txn.amount, txn.description, txn.source, txn.balance, old_id))
+        self.db.execute('UPDATE txn SET date = ?, amount = ?, description = ?, source = ?, balance = ?, pending = ? WHERE id = ?',
+                        (txn.date, txn.amount, txn.description, txn.source, txn.balance, txn.pending, old_id))
         self.db.execute(f'DELETE FROM txn WHERE id = ?', (txn.id,))
 
     def add_push_subscription(self, sub: PushSubscription) -> PushSubscription:
