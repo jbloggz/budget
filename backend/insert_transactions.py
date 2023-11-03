@@ -90,7 +90,7 @@ def prune_existing_transactions(transactions: List[Transaction], source: str, db
         # Only get transactions since min_date
         existing_transactions = db.get_transaction_list('date >= ? AND source = ?', (min_date, source)).transactions
         transactions = [txn for txn in transactions if txn.date >= min_date]
-        logging.info(f'There are {len(transactions)} to process from {min_date} to now')
+        logging.info(f'There are {len(transactions)} transactions to process from {min_date} to now')
         logging.info(f'There are {len(existing_transactions)} existing transactions from {min_date} to now')
     else:
         existing_transactions = db.get_transaction_list('source = ?', (source, )).transactions
