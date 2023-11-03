@@ -83,18 +83,7 @@ const Dashboard = () => {
       }
    }, [query, toast]);
 
-   const totalPanel: DashboardPanel = {
-      category: 'Total',
-      amount: 0,
-      diff: 0,
-      limit: 0,
-   };
-   if (panels) {
-      totalPanel.amount = panels.reduce((total, panel) => total + panel.amount, 0);
-      totalPanel.limit = panels.reduce((total, panel) => total + panel.limit, 0);
-      const expected_total_amount = panels.reduce((total, panel) => total + panel.amount / (1 + panel.diff / 100), 0);
-      totalPanel.diff = isNaN(expected_total_amount) ? -100 : ((totalPanel.amount - expected_total_amount) / expected_total_amount) * 100;
-   }
+   const totalPanel = panels?.filter((p) => p.category === 'Total')[0];
 
    return (
       <>
@@ -110,19 +99,23 @@ const Dashboard = () => {
             ) : (
                panels && (
                   <>
-                     <Card m={4} size={'sm'}>
-                        <CardBody>
-                           <PanelStat panel={totalPanel} />
-                        </CardBody>
-                     </Card>
-                     <Divider />
-                     {panels.map((panel) => (
-                        <Card key={panel.category} m={4} size={'sm'}>
+                     {totalPanel && (
+                        <Card m={4} size={'sm'}>
                            <CardBody>
-                              <PanelStat panel={panel} />
+                              <PanelStat panel={totalPanel} />
                            </CardBody>
                         </Card>
-                     ))}
+                     )}
+                     <Divider />
+                     {panels
+                        .filter((p) => p.category !== 'Total')
+                        .map((panel) => (
+                           <Card key={panel.category} m={4} size={'sm'}>
+                              <CardBody>
+                                 <PanelStat panel={panel} />
+                              </CardBody>
+                           </Card>
+                        ))}
                   </>
                )
             )}

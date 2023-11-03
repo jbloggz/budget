@@ -216,27 +216,38 @@ def get_allocation(alloc_id: int) -> Allocation | Response:
 
 @app.get('/api/dashboard/', response_model=List[DashboardPanel], dependencies=[Depends(validate_access_token)])
 def get_dashboard(start: str, end: str) -> List[DashboardPanel]:
+    dt_start = datetime.datetime.strptime(start, '%Y-%m-%d').date()
+    dt_end = datetime.datetime.strptime(end, '%Y-%m-%d').date()
+    today = datetime.date.today()
+    total_ndays = (dt_end - dt_start).days + 1
+    if today < dt_end:
+        if today < dt_start:
+            ndays = 0
+        else:
+            ndays = (today - dt_start).days + 1
+    else:
+        ndays = total_ndays
+
     resp: List[DashboardPanel] = []
+    total_amount = 0
+    total_limit = 0
+    expected_total_amount = 0
     with Database() as db:
         for panel_cfg in config['dashboard']:
-            dt_start = datetime.datetime.strptime(start, '%Y-%m-%d').date()
-            dt_end = datetime.datetime.strptime(end, '%Y-%m-%d').date()
-            today = datetime.date.today()
-            total_ndays = (dt_end - dt_start).days + 1
-            if today < dt_end:
-                if today < dt_start:
-                    ndays = 0
-                else:
-                    ndays = (today - dt_start).days + 1
-            else:
-                ndays = total_ndays
-
             alloc_list = db.get_allocation_list(f'txn.date BETWEEN ? AND ? AND category.name = ?', (start, end, panel_cfg['category'])).allocations
             amount = -sum([alloc.amount for alloc in alloc_list])
             expected_amount = ndays / total_ndays * panel_cfg['limit']
             diff = -100 if expected_amount == 0 else (amount - expected_amount) / expected_amount * 100
-            panel = DashboardPanel(category=panel_cfg['category'], amount=amount, limit=panel_cfg['limit'], diff=diff)
-            resp.append(panel)
+            resp.append(DashboardPanel(category=panel_cfg['category'], amount=amount, limit=panel_cfg['limit'], diff=diff))
+            total_amount += amount
+            total_limit += panel_cfg['limit']
+            expected_total_amount += expected_amount
+
+        # Add a total panel
+        diff = -100 if expected_total_amount == 0 else (total_amount - expected_total_amount) / expected_total_amount * 100
+        resp.append(DashboardPanel(category='Total', amount=total_amount, limit=total_limit, diff=diff))
+
+
 
     return resp
 
