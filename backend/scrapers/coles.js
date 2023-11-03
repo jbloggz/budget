@@ -48,16 +48,18 @@ await sleep(20398);
 const element = await page.waitForSelector('#creditCardsSubPanel img', { visible: true });
 await element.click();
 
-let seen = false;
+const output = {
+   raw: [],
+   transactions: [],
+   balance: null,
+   pending: 0,
+};
 page.on('response', async (response) => {
    const request = response.request();
    if (request.url().includes('hold') && request.url().includes('functionCode=transaction_history')) {
       const data = await response.json();
-      if (!seen) {
-         const output = {
-            raw: data.transaction,
-            transactions: [],
-         };
+      if (output.raw.length === 0) {
+         output.raw = data.transaction;
          for (const transaction of data.transaction) {
             output.transactions.push({
                date: transaction.transactionDate,
@@ -67,9 +69,14 @@ page.on('response', async (response) => {
                pending: typeof transaction.transactionPostingDate === 'undefined',
             });
          }
-
-         console.log(JSON.stringify(output));
-         seen = true;
+      }
+   } else if (request.url().includes('detail') && request.url().includes('functionCode=account_detail')) {
+      const data = await response.json();
+      if (data.creditCardAccount) {
+         const balance = -data.creditCardAccount.outstandingBalance;
+         const pending = data.creditCardAccount.availableCredit - data.creditCardAccount.creditLimit - balance;
+         output.balance = Math.round(balance * 100);
+         output.pending = Math.round(pending * 100);
       }
    }
 });
@@ -79,6 +86,7 @@ const element2 = await page.waitForSelector('#pending', { visible: true });
 await element2.click();
 
 await sleep(17364);
+console.log(JSON.stringify(output));
 await page.goto('https://www.secure.coles.com.au/apps/auth/signout');
 await sleep(15354);
 

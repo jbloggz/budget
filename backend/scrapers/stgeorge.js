@@ -10,7 +10,6 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
 
-
 const config = JSON.parse(fs.readFileSync(process.argv[2], { encoding: 'utf8', flag: 'r' }));
 const { user, security_number, password } = config.scrapers['St George Bank'];
 
@@ -47,10 +46,16 @@ puppeteer.launch({ headless: true, executablePath: '/usr/bin/google-chrome-stabl
    const res = {
       raw: [],
       transactions: [],
+      balance: null,
+      pending: 0,
    };
    for (let i = 0; i < table.length; i++) {
       const row = table[i];
       if (row.length === 0 || row.length !== header.length || row[0] === '') {
+         if (row[1] === 'Closing Balance') {
+            res.balance = +row[5].replace('$', '').replace(',', '');
+            res.balance = Math.round(res.balance * 100);
+         }
          continue;
       }
       const out = {};
