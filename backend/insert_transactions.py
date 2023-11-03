@@ -61,7 +61,7 @@ def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # prag
         scraper: The scraper configuration
 
     Returns:
-        The list of transactions
+        The scraped JSON data
     '''
     result = subprocess.run([config['node_path'], './scrapers/' + scraper['path'], args.config],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', check=True)
@@ -69,9 +69,7 @@ def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # prag
         return []
 
     logging.debug(result.stdout)
-    data = json.loads(result.stdout)
-
-    return [Transaction(**txn) for txn in data['transactions'] if txn['date'] >= scraper['start_date']]
+    return json.loads(result.stdout)
 
 
 def prune_existing_transactions(transactions: List[Transaction], source: str, db, min_date: str = None) -> Tuple[List[Transaction], List[Transaction]]:
@@ -275,9 +273,22 @@ def main(args):  # pragma: no cover
                         db.update_balance(source, scraper['start_balance'])
         else:
             for name, scraper in config['scrapers'].items():
-                if not args.balance:
-                    count += process_transactions(run_scraper(args, config, scraper), name, db, min_date)
-                db.update_balance(name, scraper['start_balance'])
+                if args.balance:
+                    db.update_balance(name, scraper['start_balance'])
+                    continue
+
+                data = run_scraper(args, config, scraper)
+                transactions = [Transaction(**txn) for txn in data['transactions'] if txn['date'] >= scraper['start_date']]
+                count += process_transactions(transactions, name, db, min_date)
+                balance, pending = db.update_balance(name, scraper['start_balance'])
+                if balance == data['balance']:
+                    logging.info(f'Posted balance of {balance} is correct')
+                else:
+                    logging.error(f'Incorrect posted balance. Database has {balance} while scraper found {data["balance"]}')
+                if pending == data['pending']:
+                    logging.info(f'Pending balance of {pending} is correct')
+                else:
+                    logging.error(f'Incorrect pending balance. Database has {pending} while scraper found {data["pending"]}')
 
         if count > 0:
             # Send push notifications if new transactions were found
