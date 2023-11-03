@@ -13,6 +13,7 @@ import argparse
 import json
 import subprocess
 import logging
+import datetime
 from typing import List, Dict, Tuple
 from difflib import get_close_matches
 
@@ -73,7 +74,7 @@ def run_scraper(args, config: Dict, scraper: Dict) -> List[Transaction]:  # prag
     return [Transaction(**txn) for txn in data['transactions'] if txn['date'] >= scraper['start_date']]
 
 
-def prune_existing_transactions(transactions: List[Transaction], source: str, db) -> Tuple[List[Transaction], List[Transaction]]:
+def prune_existing_transactions(transactions: List[Transaction], source: str, db, min_date: str = None) -> Tuple[List[Transaction], List[Transaction]]:
     '''
     Prune existing transactions from the list of new transactions
 
@@ -85,8 +86,14 @@ def prune_existing_transactions(transactions: List[Transaction], source: str, db
     Returns:
         A tuple of the transactions to insert and delete
     '''
-    # TODO: Restrict this to a reasonable recent date range
-    existing_transactions = db.get_transaction_list('source = ?', (source, )).transactions
+    if min_date:
+        # Only get transactions since min_date
+        existing_transactions = db.get_transaction_list('date >= ? AND source = ?', (min_date, source)).transactions
+        transactions = [txn for txn in transactions if txn.date >= min_date]
+        logging.info(f'There are {len(transactions)} to process from {min_date} to now')
+        logging.info(f'There are {len(existing_transactions)} existing transactions from {min_date} to now')
+    else:
+        existing_transactions = db.get_transaction_list('source = ?', (source, )).transactions
 
     # Prune any exact matches
     for txn in transactions:
@@ -186,7 +193,7 @@ def prune_existing_transactions(transactions: List[Transaction], source: str, db
     return to_insert, to_delete
 
 
-def process_transactions(transactions: List[Transaction], source: str, db) -> int:
+def process_transactions(transactions: List[Transaction], source: str, db, min_date: str = None) -> int:
     '''
     Inserts transactions into the database
 
@@ -194,9 +201,10 @@ def process_transactions(transactions: List[Transaction], source: str, db) -> in
         transactions: The list of transactions to insert
         source: The source of the transactions
         db: The database object
+        min_date: Ignore all transactions before this date
     '''
     logging.info(f'Processing {len(transactions)} transactions')
-    to_insert, to_delete = prune_existing_transactions(transactions, source, db)
+    to_insert, to_delete = prune_existing_transactions(transactions, source, db, min_date)
 
     for txn in to_insert:
         new_txn = db.add_transaction(txn)
@@ -221,6 +229,7 @@ def parse_args():  # pragma: no cover
     parser.add_argument('--balance', action='store_true', help='Only update the balances, don\'t run the scrapers')
     parser.add_argument('--notification', help='Send a test push notification')
     parser.add_argument('--replay-path', help='Path to file with raw transactions to replay, one set per line')
+    parser.add_argument('--lastx-days', type=int, default=10, help='Only process transactions from the lastx days')
 
     args = parser.parse_args()
 
@@ -250,6 +259,8 @@ def main(args):  # pragma: no cover
 
         count = 0
 
+        min_date = (datetime.date.today() - datetime.timedelta(days=args.lastx_days)).strftime('%Y-%m-%d')
+
         if args.replay_path:
             with open(args.replay_path) as fp:
                 lines = fp.readlines()
@@ -260,12 +271,12 @@ def main(args):  # pragma: no cover
                     scraper = config['scrapers'][source]
                     if transactions['transactions']:
                         txn_list = [Transaction(**txn) for txn in transactions['transactions'] if txn['date'] >= scraper['start_date']]
-                        count += process_transactions(txn_list, source, db)
+                        count += process_transactions(txn_list, source, db, min_date)
                         db.update_balance(source, scraper['start_balance'])
         else:
             for name, scraper in config['scrapers'].items():
                 if not args.balance:
-                    count += process_transactions(run_scraper(args, config, scraper), name, db)
+                    count += process_transactions(run_scraper(args, config, scraper), name, db, min_date)
                 db.update_balance(name, scraper['start_balance'])
 
         if count > 0:
