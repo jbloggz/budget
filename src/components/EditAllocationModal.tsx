@@ -420,6 +420,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
                            amount: allocation.amount,
                            description: allocation.description,
                            source: allocation.source,
+                           pending: allocation.pending,
                         }}
                         isOpen={isOverwriteModalOpen}
                         onSelect={onOverwriteTransaction}
