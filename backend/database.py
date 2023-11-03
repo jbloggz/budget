@@ -202,7 +202,8 @@ class Database:
         Args:
             ids: The list of transaction ID's to delete
         '''
-        self.db.execute(f'DELETE FROM txn WHERE id in ({",".join(["?" for _ in ids])})', ids)
+        if ids:
+            self.db.execute(f'DELETE FROM txn WHERE id in ({",".join(["?" for _ in ids])})', ids)
 
     def get_description_map(self) -> Dict:
         '''
