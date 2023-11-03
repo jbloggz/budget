@@ -325,6 +325,8 @@ def logout(form_data: Annotated[OAuth2RequestForm, Depends()]) -> Response:
 if os.environ.get('DIST_PATH'):  # pragma: no cover
     templates = Jinja2Templates(directory=os.environ['DIST_PATH'])
 
+    @app.get('/logs')
+    @app.get('/logs/')
     @app.get('/settings')
     @app.get('/settings/')
     @app.get('/transactions')
