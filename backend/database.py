@@ -440,6 +440,23 @@ class Database:
                         (txn.date, txn.amount, txn.description, txn.source, txn.balance, txn.pending, old_id))
         self.db.execute(f'DELETE FROM txn WHERE id = ?', (txn.id,))
 
+    def update_balance(self, source: str, start_balance: int):
+        '''
+        Update balance of all transactions
+
+        Args:
+            source: The name of the source
+            start_balance: The starting balance for the source
+        '''
+        running_total = start_balance
+        txn_list = self.get_transaction_list('txn.source = ? ORDER BY date ASC, id ASC', (source,))
+        for txn in txn_list.transactions:
+            assert txn.id is not None
+            running_total += txn.amount
+            if txn.balance != running_total:
+                txn.balance = running_total
+                self.update_transaction(txn.id, txn)
+
     def add_push_subscription(self, sub: PushSubscription) -> PushSubscription:
         '''
         Add a push subscription

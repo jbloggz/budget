@@ -8,11 +8,13 @@
 #
 
 # System imports
+import sys
+import copy
 import unittest
 from typing import List
 
 # Local imports
-from insert_transactions import insert_transactions, update_balance
+from insert_transactions import process_transactions
 from database import Database
 from model import Transaction
 
@@ -62,6 +64,8 @@ class TestInsertTransactions(unittest.TestCase):
                 amount=-7745,
                 source='bank of foo'
             ),
+        ]
+        self.bar_dummy_data = [
             Transaction(
                 date='2023-08-07',
                 description='Osko Withdrawal 04Aug09:05: Inv 1234 Fooville Community Collage',
@@ -89,49 +93,58 @@ class TestInsertTransactions(unittest.TestCase):
 
     def test_empty_list(self) -> None:
         transactions: List[Transaction] = []
-        insert_transactions(transactions, self.db)
+        process_transactions(transactions, 'bank of foo', self.db)
         txn_list = self.db.get_transaction_list()
         self.assertEqual(len(txn_list.transactions), 0)
 
     def test_full_list(self) -> None:
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
     def test_already_existing(self) -> None:
         self.db.add_transaction(self.dummy_data[0])
         self.db.add_transaction(self.dummy_data[2])
         self.db.add_transaction(self.dummy_data[5])
 
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
     def test_already_existing_update_description(self) -> None:
         txn = self.db.add_transaction(Transaction(
             date='2023-08-03',
             description='FOO BAR PTY LTD SOME TOWN',
             amount=-3140,
-            source='bank of foo'
+            source='bank of foo',
+            pending=True
         ))
         assert txn.id is not None
 
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         updated_txn = self.db.get_transaction(txn.id)
         assert updated_txn is not None
         all_txn = self.db.get_transaction_list()
-        self.assertEqual(len(all_txn.transactions), len(self.dummy_data))
+        self.assertEqual(len(all_txn.transactions), len(self.dummy_data + self.bar_dummy_data))
         self.assertEqual(updated_txn.description, 'FOO BAR PTY LTD        SOMETOWN    AU')
 
     def test_already_existing_multiple_same_amount_same_day_same_descriptions(self) -> None:
         txn = self.dummy_data[2]
-        self.db.add_transaction(txn)
+        self.db.add_transaction(copy.deepcopy(txn))
         txn = self.dummy_data[4]
-        self.db.add_transaction(txn)
+        self.db.add_transaction(copy.deepcopy(txn))
+        txn_list = self.db.get_transaction_list()
+        self.assertEqual(len(txn_list.transactions), 2)
 
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
         txn_list = self.db.get_transaction_list()
         self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
+        txn_list = self.db.get_transaction_list()
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
     def test_new_entry_same_day_same_amount(self) -> None:
         txn = Transaction(
@@ -143,38 +156,42 @@ class TestInsertTransactions(unittest.TestCase):
         self.db.add_transaction(txn)
         self.dummy_data.append(txn)
 
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         txn_list = self.db.get_transaction_list()
         same_amount_txn_list = self.db.get_transaction_list(f'amount = -7745')
         self.assertEqual(len(same_amount_txn_list.transactions), 2)
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
     def test_multiple_same_amount_same_day_change_descriptions(self) -> None:
         txn1 = Transaction(
             date='2023-08-05',
             description='ALLDAY PET INSURANCE FOOVILLE',
             amount=-7745,
-            source='bank of foo'
+            source='bank of foo',
+            pending=True
         )
         txn2 = Transaction(
             date='2023-08-05',
             description='FASTFOOD DT 0398        QWERTY FOO AUS',
             amount=-7745,
-            source='bank of foo'
+            source='bank of foo',
+            pending=True
         )
         self.db.add_transaction(txn1)
         self.db.add_transaction(txn2)
         assert txn1.id is not None
         assert txn2.id is not None
 
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
 
         txn_list = self.db.get_transaction_list()
         updated_txn1 = self.db.get_transaction(txn1.id)
         updated_txn2 = self.db.get_transaction(txn2.id)
         assert updated_txn1 is not None
         assert updated_txn2 is not None
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
         self.assertEqual(updated_txn1.description, 'ALLDAY PET INSURANC    FOOVILLE    AU')
         self.assertEqual(updated_txn2.description, 'FASTFOOD DT 0398        QWERTY FOOAU XXXX-XXXX-XXXX-2837')
 
@@ -188,14 +205,16 @@ class TestInsertTransactions(unittest.TestCase):
         self.db.add_transaction(txn)
         assert txn.id is not None
 
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data) + 1)
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data) + 1)
 
     def test_already_existing_multiple_identcal(self) -> None:
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
         txn = Transaction(
             date='2023-08-03',
@@ -203,27 +222,28 @@ class TestInsertTransactions(unittest.TestCase):
             amount=-97420,
             source='bank of foo'
         )
-        insert_transactions([txn.copy()], self.db)
+        process_transactions([txn.copy()], 'bank of foo', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
-        insert_transactions([txn.copy(), txn.copy()], self.db)
+        process_transactions([txn.copy(), txn.copy()], 'bank of foo', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data))
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data))
 
-        insert_transactions([txn.copy(), txn.copy(), txn.copy()], self.db)
+        process_transactions([txn.copy(), txn.copy(), txn.copy()], 'bank of foo', self.db)
         txn_list = self.db.get_transaction_list()
-        self.assertEqual(len(txn_list.transactions), len(self.dummy_data) + 1)
+        self.assertEqual(len(txn_list.transactions), len(self.dummy_data + self.bar_dummy_data) + 1)
 
     def test_update_balance(self) -> None:
-        insert_transactions(self.dummy_data, self.db)
+        process_transactions(self.dummy_data, 'bank of foo', self.db)
+        process_transactions(self.bar_dummy_data, 'Bar Inc', self.db)
         txn_list = self.db.get_transaction_list()
         for txn in txn_list.transactions:
             self.assertEqual(txn.balance, 0)
 
         running_totals = {'bank of foo': 2234, 'Bar Inc': -48392}
-        update_balance('bank of foo', running_totals['bank of foo'], self.db)
-        update_balance('Bar Inc', running_totals['Bar Inc'], self.db)
+        self.db.update_balance('bank of foo', running_totals['bank of foo'])
+        self.db.update_balance('Bar Inc', running_totals['Bar Inc'])
         txn_list = self.db.get_transaction_list('1 ORDER BY date ASC, id ASC')
         for txn in txn_list.transactions:
             running_totals[txn.source] += txn.amount
