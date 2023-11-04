@@ -214,7 +214,7 @@ def process_transactions(transactions: List[Transaction], source: str, db, min_d
 
     logging.info('Completed processing transactions')
 
-    return len(transactions)
+    return len(to_insert)
 
 
 def parse_args():  # pragma: no cover
