@@ -6,12 +6,15 @@
  * AuthProvider.test.tsx: This file contains the tests for the AuthProvider
  */
 
+import { useEffect, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { useAPI } from '.';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import jwtEncode from 'jwt-encode';
-import { useEffect, useState } from 'react';
 import { mockFetch } from '../mocks';
+import { useAPI } from '.';
+
+const queryClient = new QueryClient();
 
 describe('useAPI', () => {
    beforeEach(() => {
@@ -24,7 +27,11 @@ describe('useAPI', () => {
          const api = useAPI();
          return <div role="test">{api ? 'yes' : 'no'}</div>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       const val = screen.getByRole('test');
       expect(val.textContent).toBe('yes');
    });
@@ -46,7 +53,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('world'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -81,7 +92,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('world'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -112,7 +127,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('post_world'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -142,7 +161,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('put_world'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -172,7 +195,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('delete_world'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -218,14 +245,26 @@ describe('useAPI', () => {
          return <p>logout</p>;
       };
 
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('success'));
 
-      render(<LogoutComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <LogoutComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('logout'));
       expect(localStorage.getItem('access_token')).toBe(null);
 
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('Missing access token'));
    });
 
@@ -261,7 +300,11 @@ describe('useAPI', () => {
          return <p>{api.user}</p>;
       };
 
-      render(<LoginComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <LoginComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('joe@example.com'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -287,7 +330,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('success'));
    });
 
@@ -323,7 +370,11 @@ describe('useAPI', () => {
          return <p>{api.user}</p>;
       };
 
-      render(<LoginComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <LoginComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('joe@example.com'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -351,7 +402,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('success'));
    });
 
@@ -372,7 +427,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -419,7 +478,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{success}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('success'));
       expect(mockFetch.calls().length).toBeGreaterThan(0);
       let req = mockFetch.calls()[0].request;
@@ -463,7 +526,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('Missing access token'));
    });
 
@@ -492,7 +559,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p>{done}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       await waitFor(() => screen.getByText('done'));
       expect(mockFetch.calls().length).toEqual(1);
       const req = mockFetch.calls()[0].request;
@@ -517,7 +588,11 @@ describe('useAPI', () => {
          const api = useAPI();
          return <p role="test">{api.user}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       const val = screen.getByRole('test');
       expect(val.textContent).toBe('joe@example.com');
    });
@@ -555,7 +630,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p role="test">{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       const val = screen.getByRole('test');
       await waitFor(() => expect(val.textContent).not.toBe('waiting'));
       expect(val.textContent).toBe('Response validation failed');
@@ -594,7 +673,11 @@ describe('useAPI', () => {
          }, []); // eslint-disable-line
          return <p role="test">{value}</p>;
       };
-      render(<TestComponent />);
+      render(
+         <QueryClientProvider client={queryClient}>
+            <TestComponent />
+         </QueryClientProvider>
+      );
       const val = screen.getByRole('test');
       await waitFor(() => expect(val.textContent).not.toBe('waiting'));
       expect(val.textContent).toBe('world');

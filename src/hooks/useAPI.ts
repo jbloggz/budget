@@ -12,7 +12,7 @@ import useLocalStorageState from 'use-local-storage-state';
 import useSessionStorageState from 'use-session-storage-state';
 import { Mutex } from 'async-mutex';
 import { APIResponse, APIRequest, APIAuthTokens, isAPIAuthTokens, QueryOptions, MutationOptions } from '../app.types';
-import { UseMutationOptions, UseQueryOptions, useQuery as useReactQuery, useMutation as useReactMutation } from '@tanstack/react-query';
+import { UseMutationOptions, UseQueryOptions, useQuery as useReactQuery, useMutation as useReactMutation, useQueryClient, FetchQueryOptions } from '@tanstack/react-query';
 
 /* Mutex for token requests */
 const mutex = new Mutex();
@@ -54,6 +54,7 @@ export const useAPI = () => {
    const accessToken = accessTokenLS || accessTokenSS;
    const refreshToken = refreshTokenLS || refreshTokenSS;
    const [tokenData, setTokenData] = useState<TokenData>({ sub: '', iat: 0, exp: 0, api: '' });
+   const queryClient = useQueryClient();
 
    /* Update the token data whenever the accessToken changes */
    useEffect(() => {
@@ -276,6 +277,22 @@ export const useAPI = () => {
       );
    };
 
+   const asyncQuery = <T>(opts: APIRequest<T> & FetchQueryOptions<T>) => {
+      const queryKey = [opts.method, opts.url];
+      if (opts.params) {
+         for (const [key, value] of opts.params) {
+            queryKey.push(key);
+            queryKey.push(value);
+         }
+      }
+
+      const queryOpts: UseQueryOptions<APIResponse<T>, APIError> = {
+         queryKey,
+         queryFn: async () => await request<T>(opts),
+      };
+      return queryClient.fetchQuery(queryOpts);
+   };
+
    return {
       request,
       login,
@@ -283,6 +300,7 @@ export const useAPI = () => {
       useQuery,
       useMutationFn,
       useMutationQuery,
+      asyncQuery,
       user: tokenData.sub,
       readwrite: tokenData.api === 'rw',
       expiry: tokenData.exp,

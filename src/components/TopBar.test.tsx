@@ -8,17 +8,22 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { TopBar } from '.';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthContext } from '../providers';
+import { TopBar } from '.';
+
+const queryClient = new QueryClient();
 
 describe('TopBar', () => {
    it('Renders the TopBar', () => {
       render(
          <MemoryRouter initialEntries={['/']}>
-            <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
-               <TopBar />
-            </AuthContext.Provider>
+            <QueryClientProvider client={queryClient}>
+               <AuthContext.Provider value={{ login: vi.fn(), logout: vi.fn() }}>
+                  <TopBar />
+               </AuthContext.Provider>
+            </QueryClientProvider>
          </MemoryRouter>
       );
       const settings_btn = screen.getByLabelText('Settings');
@@ -29,9 +34,11 @@ describe('TopBar', () => {
       const mockLogout = vi.fn();
       render(
          <MemoryRouter>
-            <AuthContext.Provider value={{ login: vi.fn(), logout: mockLogout }}>
-               <TopBar />
-            </AuthContext.Provider>
+            <QueryClientProvider client={queryClient}>
+               <AuthContext.Provider value={{ login: vi.fn(), logout: mockLogout }}>
+                  <TopBar />
+               </AuthContext.Provider>
+            </QueryClientProvider>
          </MemoryRouter>
       );
       const logout_btn = screen.getByLabelText('Logout');

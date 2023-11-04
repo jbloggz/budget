@@ -7,3 +7,5 @@
  */
 
 export { useAPI, APIError } from './useAPI';
+export { useNotification } from './useNotification';
+export { useRunOnce } from './useRunOnce';

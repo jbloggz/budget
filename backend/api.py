@@ -247,8 +247,6 @@ def get_dashboard(start: str, end: str) -> List[DashboardPanel]:
         diff = -100 if expected_total_amount == 0 else (total_amount - expected_total_amount) / expected_total_amount * 100
         resp.append(DashboardPanel(category='Total', amount=total_amount, limit=total_limit, diff=diff))
 
-
-
     return resp
 
 
@@ -288,6 +286,21 @@ def overwrite_allocation(alloc_id: int, txn_id: Annotated[int, Body(embed=True)]
         db.overwrite_transaction(txn_id, txn)
 
 
+@app.get('/api/notification/', response_model=Optional[PushSubscription], dependencies=[Depends(validate_access_token)])
+def get_push_subscription(endpoint: str) -> Optional[PushSubscription]:
+    with Database() as db:
+        try:
+            subs = db.get_push_subscriptions()
+            for s in subs:
+                if s.value.get('endpoint') == endpoint:
+                    return s
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Unable to get push notification',
+            )
+
+
 @app.post('/api/notification/', status_code=201, response_model=PushSubscription, dependencies=[Depends(validate_access_token)])
 def add_push_subscription(sub: Dict) -> PushSubscription:
     with Database() as db:
@@ -297,6 +310,21 @@ def add_push_subscription(sub: Dict) -> PushSubscription:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f'Unable to insert push notification',
+            )
+
+
+@app.delete('/api/notification/', dependencies=[Depends(validate_access_token)])
+def delete_push_subscription(sub: Dict) -> None:
+    with Database() as db:
+        try:
+            subs = db.get_push_subscriptions()
+            for s in subs:
+                if s.value.get('endpoint') == sub.get('endpoint'):
+                    return db.delete_push_subscription(s.id)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Unable to delete push notification',
             )
 
 

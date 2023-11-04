@@ -6,61 +6,28 @@
  * Settings.tsx: This file contains the settings page component
  */
 
-import { FormControl, FormHelperText, FormLabel, Heading, Select, Switch, useToast } from '@chakra-ui/react';
+import { FormControl, FormHelperText, FormLabel, Heading, Select, Spinner, Switch, useToast } from '@chakra-ui/react';
 import { themes } from '../theme';
 import { ThemeContext, useContext } from '../providers';
 import { Theme } from '../app.types';
-import { useState } from 'react';
-import { urlB64ToUint8Array } from '../utils';
-import { useAPI } from '../hooks';
-import { vapidPublicKey } from '../../backend/budget.json';
+import { useNotification } from '../hooks/useNotification';
+import { useEffect } from 'react';
 
 const Settings = () => {
    const { theme, setTheme } = useContext(ThemeContext);
+   const notifications = useNotification();
    const toast = useToast();
-   const api = useAPI();
-   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(self.Notification.permission === 'granted');
-   const addNotificationQuery = api.useMutationQuery<PushSubscription>({
-      method: 'POST',
-      url: '/api/notification/',
-      onError: (error) => {
+
+   useEffect(() => {
+      if (notifications.error) {
          toast({
             title: 'Error',
-            description: error.message,
-            status: 'error',
-            duration: 5000,
-         });
-      },
-   });
-
-   const toggleNotifications = async () => {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-         setNotificationsEnabled(true);
-
-         /* Subscribe to push notifications */
-         try {
-            const applicationServerKey = urlB64ToUint8Array(vapidPublicKey);
-            const options = { applicationServerKey, userVisibleOnly: true };
-            const swRegistration = await navigator.serviceWorker.ready;
-            const subscription = await swRegistration.pushManager.subscribe(options);
-            addNotificationQuery.mutate(subscription);
-         } catch (err) {
-            toast({
-               title: 'Error',
-               description: 'Failed to subscribe to notifications. Please check your application settings: ' + err,
-               status: 'error',
-               duration: 5000,
-            });
-         }
-      } else {
-         toast({
-            description: 'Failed to enable notifications. Please check your application settings',
+            description: notifications.error,
             status: 'error',
             duration: 5000,
          });
       }
-   };
+   }, [notifications.error, toast])
 
    return (
       <>
@@ -83,17 +50,23 @@ const Settings = () => {
             <FormLabel htmlFor="notifications" mb={0}>
                Notifications
             </FormLabel>
-            <Switch
-               colorScheme={theme === 'dark' ? 'blue' : undefined}
-               id="notifications"
-               isChecked={notificationsEnabled}
-               disabled={notificationsEnabled}
-               onChange={toggleNotifications}
-            />
-            {notificationsEnabled && (
-               <FormHelperText pl={4} mt={0}>
-                  Notifications must be disabled from your application settings
-               </FormHelperText>
+            {notifications.isLoading ? (
+               <Spinner />
+            ) : (
+               <>
+                  <Switch
+                     colorScheme={theme === 'dark' ? 'blue' : undefined}
+                     id="notifications"
+                     isDisabled={!notifications.isSupported}
+                     isChecked={notifications.isEnabled}
+                     onChange={(e) => (e.currentTarget.checked ? notifications.enable() : notifications.disable())}
+                  />
+                  {notifications.isSupported || (
+                     <FormHelperText pl={4} mt={0}>
+                        Notifications are not supported by your application
+                     </FormHelperText>
+                  )}
+               </>
             )}
          </FormControl>
       </>
