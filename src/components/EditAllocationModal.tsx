@@ -61,7 +61,7 @@ const OverwriteModal = (props: OverwriteModalProps) => {
    const start = new Date(props.transaction.date);
    start.setDate(start.getDate() - 10);
    const end = new Date();
-
+   const [selectedRow, setSelectedRow] = useState<Transaction>();
    const api = useAPI();
    const query = api.useQuery<TransactionList>({
       method: 'GET',
@@ -75,7 +75,9 @@ const OverwriteModal = (props: OverwriteModalProps) => {
       validate: isTransactionList,
    });
 
-   const possible_transactions = query.isSuccess ? query.data.data.transactions : [];
+   const possible_transactions = query.isSuccess
+      ? query.data.data.transactions.filter((txn) => txn.source === props.transaction.source && txn.id !== props.transaction.id)
+      : [];
 
    return (
       <Modal onClose={props.onClose} size={{ base: 'full', md: 'xl' }} isOpen={props.isOpen}>
@@ -87,27 +89,32 @@ const OverwriteModal = (props: OverwriteModalProps) => {
                </AbsoluteCenter>
             ) : (
                <>
-                  <ModalHeader>Select an existing transaction</ModalHeader>
+                  {!selectedRow && <ModalHeader>Select an existing transaction</ModalHeader>}
                   <ModalCloseButton />
                   <ModalBody>
+                     {selectedRow && <Text py={5}>Are you sure you want to overwrite the following transaction?</Text>}
                      <Table
-                        highlightHover
-                        header={[
-                           {
-                              sortable: false,
-                              text: 'Date',
-                           },
-                           {
-                              sortable: false,
-                              text: 'Description',
-                           },
-                           {
-                              sortable: false,
-                              text: 'Amount',
-                           },
-                        ]}
+                        highlightHover={!selectedRow}
+                        header={
+                           false
+                              ? undefined
+                              : [
+                                   {
+                                      sortable: false,
+                                      text: 'Date',
+                                   },
+                                   {
+                                      sortable: false,
+                                      text: 'Description',
+                                   },
+                                   {
+                                      sortable: false,
+                                      text: 'Amount',
+                                   },
+                                ]
+                        }
                         rows={possible_transactions
-                           .filter((txn) => txn.source === props.transaction.source && txn.id !== props.transaction.id)
+                           .filter((txn) => !selectedRow || selectedRow.id === txn.id)
                            .map((txn) => ({
                               id: txn.id || 0,
                               cells: [
@@ -122,9 +129,19 @@ const OverwriteModal = (props: OverwriteModalProps) => {
                                  </Text>,
                               ],
                            }))}
-                        onRowClick={(_, row) => props.onSelect(+row.id)}
+                        onRowClick={selectedRow ? undefined : (idx) => setSelectedRow(possible_transactions[idx])}
                      />
                   </ModalBody>
+                  {selectedRow && (
+                     <ModalFooter>
+                        <Button mr={6} onClick={props.onClose}>
+                           cancel
+                        </Button>
+                        <Button colorScheme={'red'} onClick={() => props.onSelect(selectedRow.id || 0)}>
+                           Confirm
+                        </Button>
+                     </ModalFooter>
+                  )}
                </>
             )}
          </ModalContent>
