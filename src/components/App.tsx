@@ -7,29 +7,19 @@
  */
 
 import { Outlet } from 'react-router-dom';
-import { useLocalStorage } from 'react-use';
+import useLocalStorageState from 'use-local-storage-state';
 import { Box, Container, Flex, Show } from '@chakra-ui/react';
 import { ChakraProvider } from '@chakra-ui/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { APIProvider } from '@jbloggz/use-api';
 import { themeConfig } from '../theme';
 import { ThemeProvider, AuthProvider } from '../providers';
 import { Theme } from '../app.types';
 import { TopBar, SideBar } from '.';
 
-// The react-query client to inject into the app
-const queryClient = new QueryClient({
-   defaultOptions: {
-      queries: {
-         refetchOnWindowFocus: false
-      },
-   },
-});
-
 export const App = () => {
-   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
+   const [theme, setTheme] = useLocalStorageState<Theme>('theme', { serializer: { stringify: String, parse: String }, defaultValue: 'light' });
    return (
-      <QueryClientProvider client={queryClient}>
+      <APIProvider>
          <ChakraProvider theme={themeConfig(theme)}>
             <ThemeProvider theme={theme} setTheme={setTheme}>
                <AuthProvider>
@@ -49,8 +39,7 @@ export const App = () => {
                </AuthProvider>
             </ThemeProvider>
          </ChakraProvider>
-         <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
+      </APIProvider>
    );
 };
 

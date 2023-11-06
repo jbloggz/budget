@@ -33,7 +33,7 @@ import {
 } from '@chakra-ui/react';
 import { ChevronDownIcon, HamburgerIcon } from '@chakra-ui/icons';
 import { AuthContext, useContext } from '../providers';
-import { useAPI } from '../hooks';
+import useAPI from '@jbloggz/use-api';
 import { NavList } from '.';
 
 const TopBar = () => {

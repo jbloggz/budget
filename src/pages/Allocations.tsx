@@ -26,7 +26,7 @@ import { Select } from 'chakra-react-select';
 import { DateRangePicker, SearchFilter, SourceLogo, Table, TreeView } from '../components';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { Allocation, AllocationList, isAllocationList } from '../app.types';
-import { useAPI } from '../hooks';
+import useAPI from '@jbloggz/use-api';
 import { prettyAmount, prettyDate } from '../utils';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { BellIcon } from '@chakra-ui/icons';

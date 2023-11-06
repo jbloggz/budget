@@ -7,7 +7,6 @@
  * the app
  */
 
-import { APIError } from './hooks';
 import { themes } from './theme';
 
 /* Either a valid theme name or unknown */
@@ -67,43 +66,6 @@ export interface Categorisation {
    locations: { name: string; score: number }[];
 }
 
-/* An API request that is expected to response with T */
-export interface APIRequest<T> {
-   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-   url: string;
-   headers?: { [key: string]: string };
-   params?: URLSearchParams;
-   body?: string;
-   validate?: (data: unknown) => data is T;
-   validateOptional?: (data: unknown) => data is T;
-}
-
-/* An API response containing T */
-export type APIResponse<T> = {
-   code: number;
-   data: T;
-};
-
-/* The options to use for react-query useQuery */
-export interface QueryOptions<T> {
-   enabled?: boolean;
-   runOnce?: boolean;
-   onSuccess?: (data: T) => void;
-}
-
-/* The options to use for react-query useMutation */
-export interface MutationOptions<T> {
-   onSuccess?: (data: T) => void;
-   onError?: (error: APIError) => void;
-}
-
-/* The credentials returned be the API for a successful login or token refresh */
-export interface APIAuthTokens {
-   access_token: string;
-   refresh_token: string;
-   token_type: 'bearer';
-}
-
 /* The credentials used when login in to the app */
 export interface LoginCredentials {
    email: string;
@@ -114,16 +76,6 @@ export interface LoginCredentials {
 /* Type predicate for non-empty string */
 export const isNonEmptyString = (val: unknown): val is string => {
    return typeof val === 'string' && val !== '';
-};
-
-/* Type predicate for APIAuthTokens */
-export const isAPIAuthTokens = (val: unknown): val is APIAuthTokens => {
-   try {
-      const test = val as APIAuthTokens;
-      return typeof test.access_token === 'string' && typeof test.refresh_token === 'string' && test.token_type === 'bearer';
-   } catch {
-      return false;
-   }
 };
 
 /* Type predicate for Transaction */

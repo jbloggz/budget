@@ -8,10 +8,10 @@
 
 import { PropsWithChildren, useCallback } from 'react';
 import { Center, Spinner } from '@chakra-ui/react';
+import useAPI, { APIAuthTokens, APIResponse } from '@jbloggz/use-api';
 import { Login } from '../pages';
+import { LoginCredentials } from '../app.types';
 import { createContext } from '.';
-import { useAPI } from '../hooks';
-import { APIAuthTokens, APIResponse, LoginCredentials } from '../app.types';
 
 export const AuthContext = createContext<{ login: (creds: LoginCredentials) => Promise<APIResponse<APIAuthTokens>>; logout: () => void }>();
 
@@ -31,14 +31,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
    return (
       <AuthContext.Provider value={{ login: loginQuery.mutateAsync, logout: logoutQuery.mutate }}>
-         {tokenCheckQuery.isFetching || logoutQuery.isLoading || logoutQuery.isSuccess ? (
+         {tokenCheckQuery.isFetching || logoutQuery.isPending || logoutQuery.isSuccess ? (
             <Center h="100vh">
                <Spinner />
             </Center>
          ) : loginQuery.isSuccess || tokenCheckQuery.isSuccess ? (
             children
          ) : (
-            <Login isLoading={loginQuery.isLoading} />
+            <Login isLoading={loginQuery.isPending} />
          )}
       </AuthContext.Provider>
    );

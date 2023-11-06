@@ -8,14 +8,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
 import { ChakraProvider } from '@chakra-ui/react';
 import { Theme } from '../app.types';
 import { ThemeProvider } from '../providers';
 import { Transactions } from '.';
 import { mockResizeObserver } from '../mocks';
 
-const queryClient = new QueryClient();
 
 describe('Transactions', () => {
    beforeEach(() => {
@@ -28,9 +27,9 @@ describe('Transactions', () => {
       render(
          <ChakraProvider>
             <ThemeProvider theme={theme} setTheme={setTheme}>
-               <QueryClientProvider client={queryClient}>
+               <APIProvider>
                   <Transactions />
-               </QueryClientProvider>
+               </APIProvider>
             </ThemeProvider>
          </ChakraProvider>
       );

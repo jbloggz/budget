@@ -31,7 +31,7 @@ import {
    useToast,
 } from '@chakra-ui/react';
 import { Allocation, Categorisation, Transaction, TransactionList, isAllocation, isCategorisation, isTransactionList } from '../app.types';
-import { useAPI } from '../hooks';
+import useAPI from '@jbloggz/use-api';
 import { prettyAmount, prettyDate } from '../utils';
 import { SourceLogo, Table } from '../components';
 import { CreatableSelect } from 'chakra-react-select';
@@ -329,7 +329,7 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       overwriteQuery.mutate({ txn_id });
    };
 
-   const isLoading = updateQuery.isLoading || splitQuery.isLoading || overwriteQuery.isLoading;
+   const isLoading = updateQuery.isPending || splitQuery.isPending || overwriteQuery.isPending;
 
    return (
       <Modal onClose={props.onClose} size={{ base: 'full', md: 'xl' }} isOpen={props.isOpen}>

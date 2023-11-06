@@ -10,13 +10,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
 import { mockResizeObserver } from '../mocks';
 import { Theme } from '../app.types';
 import { ThemeProvider } from '../providers';
 import { Allocations } from '.';
 
-const queryClient = new QueryClient();
 
 describe('Allocations', () => {
    beforeEach(() => {
@@ -30,9 +29,9 @@ describe('Allocations', () => {
          <MemoryRouter>
             <ChakraProvider>
                <ThemeProvider theme={theme} setTheme={setTheme}>
-                  <QueryClientProvider client={queryClient}>
+                  <APIProvider>
                      <Allocations />
-                  </QueryClientProvider>
+                  </APIProvider>
                </ThemeProvider>
             </ChakraProvider>
          </MemoryRouter>

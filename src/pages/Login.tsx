@@ -29,7 +29,7 @@ import {
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { AuthContext, useContext } from '../providers';
-import { APIError } from '../hooks';
+import { APIError } from '@jbloggz/use-api';
 import { LoginCredentials, isNonEmptyString } from '../app.types';
 
 const Login = ({ isLoading }: { isLoading: boolean }) => {

@@ -8,20 +8,19 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
 import { ThemeProvider } from '../providers';
 import { Logs } from '.';
 
-const queryClient = new QueryClient();
 
 describe('Logs', () => {
    it('renders the logs page', () => {
       const theme = 'light';
       render(
          <ThemeProvider theme={theme} setTheme={vi.fn()}>
-            <QueryClientProvider client={queryClient}>
+            <APIProvider>
                <Logs />
-            </QueryClientProvider>
+            </APIProvider>
          </ThemeProvider>
       );
       const title = screen.getByText('Logs');

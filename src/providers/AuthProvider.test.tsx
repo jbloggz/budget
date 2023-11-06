@@ -9,9 +9,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
+import mockFetch from '@jbloggz/mock-fetch';
 import jwtEncode from 'jwt-encode';
-import { mockFetch } from '../mocks';
 import { AuthProvider } from '.';
 
 const TestingComponent = () => {
@@ -25,26 +25,24 @@ describe('AuthProvider', () => {
    });
 
    it('can render the AuthProvider', () => {
-      const queryClient = new QueryClient();
       render(
-         <QueryClientProvider client={queryClient}>
+         <APIProvider>
             <MemoryRouter>
                <AuthProvider></AuthProvider>
             </MemoryRouter>
-         </QueryClientProvider>
+         </APIProvider>
       );
    });
 
    it('is not logged in initially', async () => {
-      const queryClient = new QueryClient();
       render(
-         <QueryClientProvider client={queryClient}>
+         <APIProvider>
             <MemoryRouter>
                <AuthProvider>
                   <TestingComponent />
                </AuthProvider>
             </MemoryRouter>
-         </QueryClientProvider>
+         </APIProvider>
       );
       await waitFor(() => expect(screen.getByText('Sign in').textContent).toBe('Sign in'));
       const btn = screen.queryByText('Sign in');
@@ -52,7 +50,6 @@ describe('AuthProvider', () => {
    });
 
    it('is logged in initially with valid token', async () => {
-      const queryClient = new QueryClient();
       const now = Math.floor(Date.now() / 1000);
       const accessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 300, exp: now + 300 }, 'secret');
       const refreshToken = jwtEncode({ sub: 'joe@example.com', iat: now - 300, exp: now + 3000 }, 'secret');
@@ -64,13 +61,13 @@ describe('AuthProvider', () => {
          204
       );
       render(
-         <QueryClientProvider client={queryClient}>
+         <APIProvider>
             <MemoryRouter>
                <AuthProvider>
                   <TestingComponent />
                </AuthProvider>
             </MemoryRouter>
-         </QueryClientProvider>
+         </APIProvider>
       );
 
       await waitFor(() => expect(screen.getByText('Logged in').textContent).toBe('Logged in'));
@@ -79,7 +76,6 @@ describe('AuthProvider', () => {
    });
 
    it('is logged in initially with valid refresh token', async () => {
-      const queryClient = new QueryClient();
       const now = Math.floor(Date.now() / 1000);
       const oldAccessToken = jwtEncode({ sub: 'joe@example.com', iat: now - 600, exp: now - 300 }, 'secret');
       const oldRefreshToken = jwtEncode({ sub: 'joe@example.com', iat: now - 600, exp: now + 3000 }, 'secret');
@@ -108,13 +104,13 @@ describe('AuthProvider', () => {
       );
 
       render(
-         <QueryClientProvider client={queryClient}>
+         <APIProvider>
             <MemoryRouter>
                <AuthProvider>
                   <TestingComponent />
                </AuthProvider>
             </MemoryRouter>
-         </QueryClientProvider>
+         </APIProvider>
       );
 
       await waitFor(() => expect(screen.getByText('Logged in').textContent).toBe('Logged in'));

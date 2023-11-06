@@ -6,7 +6,7 @@
  * ErrorPage.tsx: This file contains the page that is displayed for any errors encountered
  */
 
-import { useLocalStorage } from 'react-use';
+import useLocalStorageState from 'use-local-storage-state';
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom';
 import { Flex, Box, Heading, Text, ChakraProvider } from '@chakra-ui/react';
 import { themeConfig } from '../theme';
@@ -14,7 +14,7 @@ import { ThemeProvider } from '../providers';
 import { Theme } from '../app.types';
 
 const ErrorPage = () => {
-   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
+   const [theme, setTheme] = useLocalStorageState<Theme>('theme', { serializer: { stringify: String, parse: String }, defaultValue: 'light' });
    const error = useRouteError();
    let status, msg;
    if (isRouteErrorResponse(error)) {

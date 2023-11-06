@@ -6,5 +6,4 @@
  * index.ts: This file exports all the mocks
  */
 
-export { mockFetch } from './mockFetch';
 export { mockResizeObserver } from './mockResizeObserver';

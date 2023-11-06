@@ -24,7 +24,7 @@ import {
    useToast,
 } from '@chakra-ui/react';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
-import { useAPI } from '../hooks';
+import useAPI from '@jbloggz/use-api';
 import { DashboardPanel, isDashboardPanel } from '../app.types';
 import { prettyAmount } from '../utils';
 import { DateRangePicker } from '../components';

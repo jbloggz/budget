@@ -9,18 +9,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
 import { EditAllocationModal } from '.';
 
-const queryClient = new QueryClient();
 
 describe('EditAllocationModal', () => {
    it('Wont render an EditAllocationModal if isOpen is false', () => {
       const { container } = render(
          <MemoryRouter>
-            <QueryClientProvider client={queryClient}>
+            <APIProvider>
                <EditAllocationModal isOpen={false} id={''} onClose={vi.fn} onSave={vi.fn} />
-            </QueryClientProvider>
+            </APIProvider>
          </MemoryRouter>
       );
       const elem = container.querySelector('input');

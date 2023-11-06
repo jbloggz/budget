@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isAPIAuthTokens, isCategorisation, isNonEmptyString, isTransaction, isTransactionList } from './app.types';
+import { isCategorisation, isNonEmptyString, isTransaction, isTransactionList } from './app.types';
 
 describe('isNonEmptyString', () => {
    it('correctly checks a non-empty string', () => {
@@ -24,28 +24,6 @@ describe('isNonEmptyString', () => {
       expect(isNonEmptyString({ foo: 1 })).toBe(false);
       expect(isNonEmptyString(null)).toBe(false);
       expect(isNonEmptyString(undefined)).toBe(false);
-   });
-});
-
-describe('isAPIAuthTokens', () => {
-   it('correctly checks API tokens', () => {
-      expect(isAPIAuthTokens({ access_token: 'foo', refresh_token: 'foo', token_type: 'bearer' })).toBe(true);
-   });
-
-   it('fails for incorrect token_type', () => {
-      expect(isAPIAuthTokens({ access_token: 'foo', refresh_token: 'foo', token_type: 'cookie' })).toBe(false);
-   });
-
-   it('fails for missing properties', () => {
-      expect(isAPIAuthTokens({ access_token: 'foo', refresh_token: 'foo' })).toBe(false);
-      expect(isAPIAuthTokens({ access_token: 'foo', token_type: 'cookie' })).toBe(false);
-      expect(isAPIAuthTokens({ refresh_token: 'foo', token_type: 'cookie' })).toBe(false);
-   });
-
-   it('fails for incorrect properties', () => {
-      expect(isAPIAuthTokens({ access_token: 1, refresh_token: 'foo', token_type: 'bearer' })).toBe(false);
-      expect(isAPIAuthTokens({ access_token: 'foo', refresh_token: 2, token_type: 'bearer' })).toBe(false);
-      expect(isAPIAuthTokens({ access_token: 'foo', refresh_token: 'foo', token_type: 3 })).toBe(false);
    });
 });
 

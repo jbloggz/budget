@@ -9,18 +9,17 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
 import { EditAllocation } from '.';
 
-const queryClient = new QueryClient();
 
 describe('EditAllocation', () => {
    it('Wont render an EditAllocation if the allocation is null', () => {
       const { container } = render(
          <MemoryRouter>
-            <QueryClientProvider client={queryClient}>
+            <APIProvider>
                <EditAllocation />
-            </QueryClientProvider>
+            </APIProvider>
          </MemoryRouter>
       );
       const elem = container.querySelector('input');

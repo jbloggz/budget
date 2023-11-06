@@ -8,7 +8,7 @@
 
 import { AbsoluteCenter, Box, Button, Divider, FormControl, FormLabel, Heading, Input, Spinner, useToast } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { useAPI } from '../hooks';
+import useAPI from '@jbloggz/use-api';
 
 const Logs = () => {
    const toast = useToast();

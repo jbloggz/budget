@@ -9,16 +9,15 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Dashboard } from '.';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { APIProvider } from '@jbloggz/use-api';
 
-const queryClient = new QueryClient();
 
 describe('Dashboard', () => {
    it('renders the dashboard page', () => {
       render(
-         <QueryClientProvider client={queryClient}>
+         <APIProvider>
             <Dashboard />
-         </QueryClientProvider>
+         </APIProvider>
       );
       const title = screen.getByText('Dashboard');
       expect(title).toBeInTheDocument();

@@ -32,7 +32,7 @@ import { CloseIcon, DeleteIcon, EditIcon } from '@chakra-ui/icons';
 import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { Select } from 'chakra-react-select';
 import { TransactionList, isTransactionList, SortOrder } from '../app.types';
-import { useAPI } from '../hooks';
+import useAPI from '@jbloggz/use-api';
 import { DateRangePicker, Table, SearchFilter, SourceLogo } from '../components';
 import { prettyAmount, prettyDate } from '../utils';
 
@@ -77,7 +77,7 @@ function DeleteDialog(props: DeleteDialogProps) {
                      <Button ref={cancelRef} onClick={() => props.onClose(false)}>
                         Cancel
                      </Button>
-                     <Button isLoading={deleteQuery.isLoading} colorScheme="red" onClick={() => deleteQuery.mutate()} ml={3}>
+                     <Button isLoading={deleteQuery.isPending} colorScheme="red" onClick={() => deleteQuery.mutate()} ml={3}>
                         Delete
                      </Button>
                   </AlertDialogFooter>

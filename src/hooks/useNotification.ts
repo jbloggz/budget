@@ -7,8 +7,9 @@
  */
 
 import { useState } from 'react';
-import { useAPI, useRunOnce } from '.';
+import useAPI from '@jbloggz/use-api';
 import { vapidPublicKey } from '../../backend/budget.json';
+import { useRunOnce } from '.';
 
 const isNotificationsSupported = () => 'serviceWorker' in navigator && 'PushManager' in window;
 
