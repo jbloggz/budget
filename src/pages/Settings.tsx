@@ -6,7 +6,7 @@
  * Settings.tsx: This file contains the settings page component
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, FormControl, FormHelperText, FormLabel, Heading, Select, Spinner, Switch, useToast } from '@chakra-ui/react';
 import useAPI from '@jbloggz/use-api';
 import { themes } from '../theme';
@@ -19,6 +19,7 @@ const Settings = () => {
    const notifications = useNotification();
    const toast = useToast();
    const api = useAPI();
+   const [waitForScraper, setWaitForScraper] = useState(false);
    const scraperGETQuery = api.useQuery<{ state: string }>({
       method: 'GET',
       url: '/api/scraper/',
@@ -26,7 +27,14 @@ const Settings = () => {
    const scraperPUTQuery = api.useMutationQuery<{ state: string }>({
       method: 'PUT',
       url: '/api/scraper/',
-      onSuccess: () => scraperGETQuery.refetch()
+      onSuccess: () => {
+         /* Wait 5 seconds and check if the scraper is running */
+         setWaitForScraper(true);
+         setTimeout(() => {
+            scraperGETQuery.refetch();
+            setWaitForScraper(false);
+         }, 5);
+      }
    });
 
    useEffect(() => {
@@ -85,7 +93,7 @@ const Settings = () => {
                <Button isDisabled>Scraper is Running</Button>
             ) : (
                <Button
-                  isLoading={scraperGETQuery.isFetching || scraperPUTQuery.isPending}
+                  isLoading={scraperGETQuery.isFetching || scraperPUTQuery.isPending || waitForScraper}
                   onClick={() => scraperPUTQuery.mutate({ state: 'running' })}
                >
                   Run Scrapers
