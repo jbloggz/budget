@@ -16,7 +16,7 @@ This is a simple app to track your spending and monitor transactions in your acc
 
 3. Install all the necessary python dependencies:
    ```sh
-   pip install uvicorn[standard] fastapi python-jose[cryptography] passlib python-multipart jinja2 httpx
+   pip install uvicorn[standard] fastapi python-jose[cryptography] passlib python-multipart jinja2 httpx psutil
    ```
 
 4. For the frontend, you will need at least v18 of node install (nvm is recommended).
