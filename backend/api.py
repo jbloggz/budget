@@ -11,15 +11,17 @@ import os
 import re
 import difflib
 import math
+import psutil
 import datetime
+import subprocess
 from typing import List, Annotated, Optional, Dict
-from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Response, Body, Query, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # Local imports
 from database import Database
-from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score, DashboardPanel, PushSubscription
+from model import Transaction, TransactionList, Allocation, AllocationList, Token, OAuth2RequestForm, Categorisation, Score, DashboardPanel, PushSubscription, ScraperState
 from auth import config, create_token, verify_user, validate_access_token, get_cached_token, validate_refresh_token, clear_cached_token
 
 
@@ -338,6 +340,31 @@ def get_logs(count: int, filter: str) -> List[str]:
             if regex.search(line):
                 output.append(line)
     return output[-count:]
+
+
+@app.get('/api/scraper/', response_model=ScraperState, dependencies=[Depends(validate_access_token)])
+def get_scraper() -> ScraperState:
+    for process in psutil.process_iter():
+        try:
+            process_info = process.as_dict()
+            if 'cmdline' in process_info and len(process_info['cmdline']) > 2 and process_info['cmdline'][1] == 'insert_transactions.py':
+                return ScraperState(state='running')
+        except:
+            pass
+
+    return ScraperState(state='idle')
+
+
+@app.put('/api/scraper/', response_class=Response, dependencies=[Depends(validate_access_token)])
+def put_scraper(state: ScraperState, tasks: BackgroundTasks) -> None:
+    if state.state != 'running':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Invalid scraper state \'{state.state}\'',
+        )
+
+    tasks.add_task(subprocess.run, ['/bin/sh', './scrapers/run.sh'])
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post('/api/oauth2/token/', response_model=Token)

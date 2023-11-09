@@ -6,17 +6,28 @@
  * Settings.tsx: This file contains the settings page component
  */
 
-import { FormControl, FormHelperText, FormLabel, Heading, Select, Spinner, Switch, useToast } from '@chakra-ui/react';
+import { useEffect } from 'react';
+import { Button, FormControl, FormHelperText, FormLabel, Heading, Select, Spinner, Switch, useToast } from '@chakra-ui/react';
+import useAPI from '@jbloggz/use-api';
 import { themes } from '../theme';
 import { ThemeContext, useContext } from '../providers';
 import { Theme } from '../app.types';
 import { useNotification } from '../hooks/useNotification';
-import { useEffect } from 'react';
 
 const Settings = () => {
    const { theme, setTheme } = useContext(ThemeContext);
    const notifications = useNotification();
    const toast = useToast();
+   const api = useAPI();
+   const scraperGETQuery = api.useQuery<{ state: string }>({
+      method: 'GET',
+      url: '/api/scraper/',
+   });
+   const scraperPUTQuery = api.useMutationQuery<{ state: string }>({
+      method: 'PUT',
+      url: '/api/scraper/',
+      onSuccess: () => scraperGETQuery.refetch
+   });
 
    useEffect(() => {
       if (notifications.error) {
@@ -27,7 +38,7 @@ const Settings = () => {
             duration: 5000,
          });
       }
-   }, [notifications.error, toast])
+   }, [notifications.error, toast]);
 
    return (
       <>
@@ -67,6 +78,18 @@ const Settings = () => {
                      </FormHelperText>
                   )}
                </>
+            )}
+         </FormControl>
+         <FormControl display={'flex'} mb={4} alignItems={'center'}>
+            {scraperGETQuery.data?.data.state === 'running' ? (
+               <Button isDisabled>Scraper is Running</Button>
+            ) : (
+               <Button
+                  isLoading={scraperGETQuery.isFetching || scraperPUTQuery.isPending}
+                  onClick={() => scraperPUTQuery.mutate({ state: 'running' })}
+               >
+                  Run Scrapers
+               </Button>
             )}
          </FormControl>
       </>

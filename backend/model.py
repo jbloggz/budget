@@ -82,6 +82,10 @@ class PushSubscription(BaseModel):
     value: Dict
 
 
+class ScraperState(BaseModel):
+    state: str
+
+
 class OAuth2RequestForm:
     '''
     This is a dependency class to use with FastAPI for token authorization. Use
