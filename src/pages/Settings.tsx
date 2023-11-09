@@ -26,7 +26,7 @@ const Settings = () => {
    const scraperPUTQuery = api.useMutationQuery<{ state: string }>({
       method: 'PUT',
       url: '/api/scraper/',
-      onSuccess: () => scraperGETQuery.refetch
+      onSuccess: () => scraperGETQuery.refetch()
    });
 
    useEffect(() => {
