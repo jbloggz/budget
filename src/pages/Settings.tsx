@@ -33,7 +33,7 @@ const Settings = () => {
          setTimeout(() => {
             scraperGETQuery.refetch();
             setWaitForScraper(false);
-         }, 5);
+         }, 5000);
       }
    });
 
