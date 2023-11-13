@@ -19,7 +19,8 @@ self.addEventListener('push', async (event) => {
    const title = 'New Transactions';
    const body = `${data.count} new transaction${data.count > 1 ? 's' : ''} found`;
    const icon = '/favicon.ico';
-   event.waitUntil(self.registration.showNotification(title, { body, icon }));
+   const badge = '/badge.png';
+   event.waitUntil(self.registration.showNotification(title, { body, icon, badge }));
 });
 
 self.addEventListener('notificationclick', (event) => {
