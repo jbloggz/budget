@@ -225,8 +225,8 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
       method: 'PUT',
       url: allocation ? `/api/allocation/${allocation.id}/split/` : '',
       onSuccess: (new_alloc: Allocation) => {
-         new_alloc.category = category;
-         new_alloc.location = location;
+         new_alloc.category = category || categories[0].name;
+         new_alloc.location = location || locations[0].name;
          updateQuery.mutate(new_alloc);
       },
    });
@@ -301,17 +301,13 @@ const EditAllocationModal = (props: EditAllocationModalProps) => {
          setLocationErrmsg('Please select a location');
          error = true;
       }
-      const intAmount = Math.trunc(Math.abs(parseFloat(amount || '0') * 100));
-      if (intAmount > Math.abs(allocation?.amount || 0)) {
-         setAmountErrmsg('Cannot split more than total amount');
-         error = true;
-      }
 
       if (error) {
          return;
       }
 
-      if (intAmount > 0) {
+      const intAmount = Math.round(parseFloat(amount || '0') * 100);
+      if (Math.abs(intAmount) > 0) {
          /* Split the allocation */
          splitQuery.mutate({ amount: intAmount });
       } else {
